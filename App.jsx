@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faTrash, faHome, faBook, faTrophy, faCog } from '@fortawesome/free-solid-svg-icons';
-import Grade1Screen from './screens/Grade1Screen';
+// import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
 import Grade2LessonScreen from './screens/Grade2LessonScreen';
@@ -23,6 +23,8 @@ import AchievementsScreen from './screens/AchievementsScreen';
 import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import Splash from './screens/Splash';
+import Grade1SetScreen from './screens/Grade1SetScreen';
+import Grade1LessonScreen from './screens/Grade1LessonScreen';
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -89,6 +91,10 @@ const App = () => {
   const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
+  // Navigation for Grade 1 lessons
+  const goGrade1Lesson = (lessonNumber) => setNav({ screen: 'grade1Lesson', lessonNumber });
+  const goBackToGrade1Set = () => setNav({ screen: 'grade1' });
+
 
   const saveProfile = async (p) => {
     setProfile(p);
@@ -135,8 +141,9 @@ const App = () => {
   // Render the appropriate screen
   const renderScreen = () => {
     if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
-    // Detail screens
-    if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
+    // Grade 1 screens: set and lesson
+    if (nav.screen === 'grade1') return <Grade1SetScreen onBack={goHome} onLessonSelect={goGrade1Lesson} />;
+    if (nav.screen === 'grade1Lesson') return <Grade1LessonScreen lessonNumber={nav.lessonNumber} onBack={goBackToGrade1Set} />;
     if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onComplete={completeLesson} onPractice={goPractice} onPlayGame={goTapGame} />;
     if (nav.screen === 'practice')
       return (
