@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 
-const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice }) => {
+const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onComplete, onPlayGame }) => {
   // Map of specific quotes per set and lesson
   const quoteMap = {
     '1-1': 'Intone, O My servant, the verses of God that have been received by thee, as intoned by them who have drawn nigh unto Him, that the sweetness of thy melody may kindle thine own soul, and attract the hearts of all men.',

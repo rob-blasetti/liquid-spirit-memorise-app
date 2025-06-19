@@ -27,12 +27,7 @@ platform :ios do
     build_app(
       workspace: "liquid_spirit_memorise.xcworkspace",
       scheme: "liquid_spirit_memorise",
-      export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-          "com.liquidspirit.nuri" => "match AppStore com.liquidspirit.nuri"
-        }
-      }
+      export_method: "app-store"
     )
 
     # 5. Upload to TestFlight

@@ -58,11 +58,6 @@ const App = () => {
     setNumber: prev.setNumber,
     lessonNumber: prev.lessonNumber,
   }));
-  const goBackToLesson = () => setNav(prev => ({
-    screen: 'grade2Lesson',
-    setNumber: prev.setNumber,
-    lessonNumber: prev.lessonNumber,
-  }));
   const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
@@ -116,7 +111,7 @@ const App = () => {
     if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
     // Detail screens
     if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
-    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onComplete={completeLesson} />;
+    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onComplete={completeLesson} onPractice={goPractice} onPlayGame={goTapGame} />;
     if (nav.screen === 'practice')
       return (
         <QuotePracticeScreen
