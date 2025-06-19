@@ -13,6 +13,7 @@ import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
 import Grade2LessonScreen from './screens/Grade2LessonScreen';
+import QuotePracticeScreen from './screens/QuotePracticeScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -32,6 +33,17 @@ const App = () => {
   const goGrade2Lesson = (lessonNumber) => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber }));
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
   const goBackToGrade2 = () => setNav({ screen: 'grade2' });
+  const goPractice = (quote) => setNav(prev => ({
+    screen: 'practice',
+    quote,
+    setNumber: prev.setNumber,
+    lessonNumber: prev.lessonNumber,
+  }));
+  const goBackToLesson = () => setNav(prev => ({
+    screen: 'grade2Lesson',
+    setNumber: prev.setNumber,
+    lessonNumber: prev.lessonNumber,
+  }));
   const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
@@ -70,7 +82,21 @@ const App = () => {
     if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
     // Detail screens
     if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
-    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onPlayGame={goTapGame} />;
+    if (nav.screen === 'grade2Lesson') return (
+      <Grade2LessonScreen
+        setNumber={nav.setNumber}
+        lessonNumber={nav.lessonNumber}
+        onBack={goBackToGrade2Set}
+        onPractice={goPractice}
+      />
+    );
+    if (nav.screen === 'practice')
+      return (
+        <QuotePracticeScreen
+          quote={nav.quote}
+          onBack={goBackToLesson}
+        />
+      );
     if (nav.screen === 'tapGame') return <TapMissingWordsGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 
-const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPlayGame }) => {
+const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice }) => {
   // Map of specific quotes per set and lesson
   const quoteMap = {
     '1-1': 'Intone, O My servant, the verses of God that have been received by thee, as intoned by them who have drawn nigh unto Him, that the sweetness of thy melody may kindle thine own soul, and attract the hearts of all men.',
@@ -21,6 +21,7 @@ const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPlayGame }) => 
       <Text style={styles.title}>Grade 2 - Set {setNumber} Lesson {lessonNumber}</Text>
       <Text style={styles.quote}>{quote}</Text>
       <View style={styles.buttonContainer}>
+        <Button title="Practice" onPress={() => onPractice(quote)} />
         <Button title="Play Game" onPress={() => onPlayGame(quote)} />
       </View>
       <View style={styles.buttonContainer}>
