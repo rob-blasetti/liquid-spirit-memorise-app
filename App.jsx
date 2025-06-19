@@ -8,7 +8,9 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/FontAwesome';
+// Use FontAwesome via @fortawesome/react-native-fontawesome
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faTrash, faHome, faBook, faTrophy, faCog } from '@fortawesome/free-solid-svg-icons';
 import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
@@ -120,6 +122,16 @@ const App = () => {
 
 
   
+  // Wipe profile and score for testing
+  const wipeProfile = async () => {
+    try {
+      await AsyncStorage.removeItem('profile');
+    } catch (e) {
+      // ignore errors
+    }
+    setProfile(null);
+  };
+
   // Render the appropriate screen
   const renderScreen = () => {
     if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
@@ -184,22 +196,28 @@ const App = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
         {renderScreen()}
+        {profile && nav.screen === 'home' && (
+          <TouchableOpacity style={styles.resetButton} onPress={wipeProfile}>
+            <FontAwesomeIcon icon={faTrash} size={24} color="#333" />
+            <Text style={styles.resetText}>Reset</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={goHome}>
-          <Icon name="home" size={24} color="#333" />
+          <FontAwesomeIcon icon={faHome} size={24} color="#333" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goGrade2}>
-          <Icon name="book" size={24} color="#333" />
+          <FontAwesomeIcon icon={faBook} size={24} color="#333" />
           <Text style={styles.navText}>Lessons</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
-          <Icon name="trophy" size={24} color="#333" />
+          <FontAwesomeIcon icon={faTrophy} size={24} color="#333" />
           <Text style={styles.navText}>Badges</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goSettings}>
-          <Icon name="cog" size={24} color="#333" />
+          <FontAwesomeIcon icon={faCog} size={24} color="#333" />
           <Text style={styles.navText}>Settings</Text>
         </TouchableOpacity>
       </View>
@@ -263,6 +281,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navText: {
+    fontSize: 12,
+    marginTop: 4,
+    color: '#333',
+  },
+  // Reset button style on home screen
+  resetButton: {
+    position: 'absolute',
+    left: 16,
+    bottom: 64,
+    alignItems: 'center',
+  },
+  resetText: {
     fontSize: 12,
     marginTop: 4,
     color: '#333',

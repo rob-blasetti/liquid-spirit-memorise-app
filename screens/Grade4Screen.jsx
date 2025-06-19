@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 const Grade4Screen = ({ onBack }) => {
   return (
@@ -7,7 +8,7 @@ const Grade4Screen = ({ onBack }) => {
       <Text style={styles.title}>Grade 4</Text>
       <Text style={styles.subtitle}>Content coming soon</Text>
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={onBack} />
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
     </View>
   );

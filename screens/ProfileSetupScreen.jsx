@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 const ProfileSetupScreen = ({ onSave }) => {
   const [name, setName] = useState('');
@@ -27,7 +28,9 @@ const ProfileSetupScreen = ({ onSave }) => {
         onChangeText={setGrade}
         keyboardType="numeric"
       />
-      <Button title="Save" onPress={save} disabled={!name} />
+      <View style={styles.buttonContainer}>
+        <ThemedButton title="Save" onPress={save} disabled={!name} />
+      </View>
     </View>
   );
 };
@@ -50,6 +53,10 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 16,
     borderRadius: 4,
+  },
+  buttonContainer: {
+    width: '80%',
+    marginVertical: 16,
   },
 });
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 const QuotePracticeScreen = ({ quote, onBack }) => {
   const words = quote.split(/\s+/);
@@ -36,14 +37,14 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
             onChangeText={setInput}
             placeholder="Next word"
           />
-          <Button title="Submit" onPress={checkAnswer} />
+          <ThemedButton title="Submit" onPress={checkAnswer} />
           {message !== '' && <Text style={styles.message}>{message}</Text>}
         </>
       ) : (
         <Text style={styles.message}>Great job! You finished.</Text>
       )}
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={onBack} />
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
     </View>
   );

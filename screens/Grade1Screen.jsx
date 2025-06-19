@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, View, Text, Button, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 export const prayers = [
   'He is God! O God, my God! Bestow upon me a pure heart, like unto a pearl.',
@@ -147,7 +148,7 @@ const Grade1Screen = ({ onBack }) => {
         </View>
       ))}
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={onBack} />
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
     </ScrollView>
   );

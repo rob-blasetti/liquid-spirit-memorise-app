@@ -1,21 +1,22 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 const Grade2Screen = ({ onBack, onSetSelect }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Grade 2</Text>
       <View style={styles.buttonContainer}>
-        <Button title="Set 1" onPress={() => onSetSelect(1)} />
+        <ThemedButton title="Set 1" onPress={() => onSetSelect(1)} />
       </View>
       <View style={styles.buttonContainer}>
-        <Button title="Set 2" onPress={() => onSetSelect(2)} />
+        <ThemedButton title="Set 2" onPress={() => onSetSelect(2)} />
       </View>
       <View style={styles.buttonContainer}>
-        <Button title="Set 3" onPress={() => onSetSelect(3)} />
+        <ThemedButton title="Set 3" onPress={() => onSetSelect(3)} />
       </View>
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={onBack} />
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
     </View>
   );

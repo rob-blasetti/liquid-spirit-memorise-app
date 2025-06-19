@@ -1,10 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import { View, Text, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
+// Use FontAwesome via @fortawesome/react-native-fontawesome
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faCalendarCheck, faTrophy } from '@fortawesome/free-solid-svg-icons';
 
+// Map icon name strings to FontAwesome icons
+const iconMap = {
+  'calendar-check-o': faCalendarCheck,
+  'trophy': faTrophy,
+};
 const AchievementItem = ({ icon, title, description, earned }) => (
   <View style={styles.item}>
-    <Icon name={icon} size={32} color={earned ? '#4caf50' : '#ccc'} />
+    <FontAwesomeIcon icon={iconMap[icon]} size={32} color={earned ? '#4caf50' : '#ccc'} />
     <View style={styles.itemText}>
       <Text style={styles.itemTitle}>{title}</Text>
       <Text style={styles.itemDesc}>{description}</Text>
@@ -25,7 +33,7 @@ const AchievementsScreen = ({ achievements, onDailyPress }) => (
       />
     ))}
     <View style={styles.buttonContainer}>
-      <Button title="Mark Daily Challenge Complete" onPress={onDailyPress} />
+      <ThemedButton title="Mark Daily Challenge Complete" onPress={onDailyPress} />
     </View>
   </View>
 );

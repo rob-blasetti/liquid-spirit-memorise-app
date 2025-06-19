@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onComplete, onPlayGame }) => {
   // Map of specific quotes per set and lesson
@@ -21,12 +22,12 @@ const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onCom
       <Text style={styles.title}>Grade 2 - Set {setNumber} Lesson {lessonNumber}</Text>
       <Text style={styles.quote}>{quote}</Text>
       <View style={styles.buttonContainer}>
-        <Button title="Complete Lesson" onPress={() => onComplete(setNumber, lessonNumber)} />
-        <Button title="Practice" onPress={() => onPractice(quote)} />
-        <Button title="Play Game" onPress={() => onPlayGame(quote)} />
+        <ThemedButton title="Complete Lesson" onPress={() => onComplete(setNumber, lessonNumber)} />
+        <ThemedButton title="Practice" onPress={() => onPractice(quote)} />
+        <ThemedButton title="Play Game" onPress={() => onPlayGame(quote)} />
       </View>
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={onBack} />
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
     </View>
   );

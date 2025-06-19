@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
 
 const TapMissingWordsGame = ({ quote, onBack }) => {
   const [displayWords, setDisplayWords] = useState([]);
@@ -67,7 +68,7 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
       </View>
       {message ? <Text style={styles.message}>{message}</Text> : null}
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={onBack} />
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
     </View>
   );
