@@ -5,8 +5,9 @@
  * @format
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from './screens/Grade2Screen';
@@ -15,9 +16,11 @@ import Grade2LessonScreen from './screens/Grade2LessonScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
+import ProfileSetupScreen from './screens/ProfileSetupScreen';
 
 const App = () => {
   const [nav, setNav] = useState({ screen: 'home' });
+  const [profile, setProfile] = useState(null);
   const goHome = () => setNav({ screen: 'home' });
   const goGrade1 = () => setNav({ screen: 'grade1' });
   const goGrade2 = () => setNav({ screen: 'grade2' });
@@ -29,10 +32,39 @@ const App = () => {
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
   const goBackToGrade2 = () => setNav({ screen: 'grade2' });
 
+  
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await AsyncStorage.getItem('profile');
+        if (data) setProfile(JSON.parse(data));
+      } catch (e) {
+        // ignore errors
+      }
+    };
+    load();
+  }, []);
+
+  const saveProfile = async (p) => {
+    setProfile(p);
+    try {
+      await AsyncStorage.setItem('profile', JSON.stringify(p));
+    } catch (e) {
+      // ignore errors
+    }
+  };
+
+  const addScore = async (value) => {
+    if (!profile) return;
+    const updated = { ...profile, score: (profile.score || 0) + value };
+    await saveProfile(updated);
+  };
+
 
   
   // Render the appropriate screen
   const renderScreen = () => {
+    if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
     // Detail screens
     if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
     if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} />;
@@ -47,7 +79,8 @@ const App = () => {
     // Default: home screen with tiles
     return (
       <>
-        <Text style={styles.title}>Nuri</Text>
+        <Text style={styles.title}>{profile.name}</Text>
+        <Text style={styles.subtitle}>Grade: {profile.grade || 'N/A'}    Score: {profile.score || 0}</Text>
         <View style={styles.tileContainer}>
           <TouchableOpacity style={styles.tile} onPress={goGrade1}>
             <Text style={styles.tileTitle}>Grade 1</Text>
@@ -75,6 +108,7 @@ const App = () => {
             <Text style={styles.tileInfo}>Age 9-10 Years</Text>
           </TouchableOpacity>
         </View>
+        <Button title="Add Point" onPress={() => addScore(1)} />
       </>
     );
   };
@@ -112,6 +146,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 32,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 16,
   },
   buttonContainer: {
     width: '80%',
