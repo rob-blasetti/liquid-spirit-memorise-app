@@ -20,8 +20,10 @@ import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import Splash from './screens/Splash';
 
 const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
   const [achievements, setAchievements] = useState([
@@ -41,6 +43,30 @@ const App = () => {
     },
   ]);
   const [completedLessons, setCompletedLessons] = useState({});
+
+  // Splash timeout
+  useEffect(() => {
+    const timeout = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(timeout);
+  }, []);
+  // Load saved profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await AsyncStorage.getItem('profile');
+        if (data) setProfile(JSON.parse(data));
+      } catch (e) {
+        // ignore errors
+      }
+    };
+    loadProfile();
+  }, []);
+
+  
+
+  if (showSplash) {
+    return <Splash />;
+  }
   const goHome = () => setNav({ screen: 'home' });
   const goGrade1 = () => setNav({ screen: 'grade1' });
   const goGrade2 = () => setNav({ screen: 'grade2' });
@@ -61,18 +87,6 @@ const App = () => {
   const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
-  
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await AsyncStorage.getItem('profile');
-        if (data) setProfile(JSON.parse(data));
-      } catch (e) {
-        // ignore errors
-      }
-    };
-    load();
-  }, []);
 
   const saveProfile = async (p) => {
     setProfile(p);

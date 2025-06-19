@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
+import themeVariables from '../styles/theme';
 
 const Grade2SetScreen = ({ setNumber, onLessonSelect, onBack }) => {
   // For Book 3-2, content is coming soon
