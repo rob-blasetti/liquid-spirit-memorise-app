@@ -1,0 +1,41 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Print environment variables to verify they load correctly
+    UI.message "🚀 Using API_URL: #{ENV['API_URL']}"
+
+    sh "mkdir -p ios"
+    sh "touch ios/Config.xcconfig"
+    
+    # 1. Pull down/update provisioning profiles & certificates from your signing repo
+    match(
+      type: "appstore",
+      git_url: "git@github.com:rob-blasetti/signing-repo.git",
+      app_identifier: "com.liquidspirit.nuri"
+    )
+
+    # 2. Increment build number
+    increment_build_number(
+      xcodeproj: "liquid_spirit_memorise.xcodeproj"
+    )
+
+    # 3. Inject Environment Variables into Xcode
+
+    # 4. Build the app
+    build_app(
+      workspace: "liquid_spirit_memorise.xcworkspace",
+      scheme: "liquid_spirit_memorise",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.liquidspirit.nuri" => "match AppStore com.liquidspirit.nuri"
+        }
+      }
+    )
+
+    # 5. Upload to TestFlight
+    upload_to_testflight
+  end
+end
