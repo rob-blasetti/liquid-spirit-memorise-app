@@ -16,6 +16,7 @@ import Grade2LessonScreen from './screens/Grade2LessonScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
+import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 
 const App = () => {
@@ -31,6 +32,8 @@ const App = () => {
   const goGrade2Lesson = (lessonNumber) => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber }));
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
   const goBackToGrade2 = () => setNav({ screen: 'grade2' });
+  const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
+  const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
   
   useEffect(() => {
@@ -67,7 +70,8 @@ const App = () => {
     if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
     // Detail screens
     if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
-    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} />;
+    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onPlayGame={goTapGame} />;
+    if (nav.screen === 'tapGame') return <TapMissingWordsGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
