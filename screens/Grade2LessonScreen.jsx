@@ -22,6 +22,7 @@ const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice }) => 
       <Text style={styles.quote}>{quote}</Text>
       <View style={styles.buttonContainer}>
         <Button title="Practice" onPress={() => onPractice(quote)} />
+        <Button title="Play Game" onPress={() => onPlayGame(quote)} />
       </View>
       <View style={styles.buttonContainer}>
         <Button title="Back" onPress={onBack} />
