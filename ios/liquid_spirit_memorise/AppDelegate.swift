@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
 
     factory.startReactNative(
-      withModuleName: "liquid_spirit_memorise",
+      withModuleName: "nuri",
       in: window,
       launchOptions: launchOptions
     )

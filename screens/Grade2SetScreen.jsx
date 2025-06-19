@@ -2,6 +2,19 @@ import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 
 const Grade2SetScreen = ({ setNumber, onLessonSelect, onBack }) => {
+  // For Book 3-2, content is coming soon
+  if (setNumber === 2) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Grade 2 - Book 3-2</Text>
+        <Text style={styles.subtitle}>Content coming soon</Text>
+        <View style={styles.buttonContainer}>
+          <Button title="Back" onPress={onBack} />
+        </View>
+      </View>
+    );
+  }
+  // Otherwise, show lessons
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Grade 2 - Set {setNumber}</Text>
@@ -31,6 +44,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 24,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 24,
+    color: '#666',
+    textAlign: 'center',
   },
   buttonContainer: {
     width: '80%',
