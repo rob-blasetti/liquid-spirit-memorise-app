@@ -17,18 +17,37 @@ import QuotePracticeScreen from './screens/QuotePracticeScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
+import AchievementsScreen from './screens/AchievementsScreen';
 import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 
 const App = () => {
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
+  const [achievements, setAchievements] = useState([
+    {
+      id: 'daily',
+      title: 'Daily Learner',
+      description: 'Do a memorisation game each day',
+      icon: 'calendar-check-o',
+      earned: false,
+    },
+    {
+      id: 'set1',
+      title: 'Set 1 Master',
+      description: 'Complete all lessons in Set 1',
+      icon: 'trophy',
+      earned: false,
+    },
+  ]);
+  const [completedLessons, setCompletedLessons] = useState({});
   const goHome = () => setNav({ screen: 'home' });
   const goGrade1 = () => setNav({ screen: 'grade1' });
   const goGrade2 = () => setNav({ screen: 'grade2' });
   const goGrade3 = () => setNav({ screen: 'grade3' });
   const goGrade4 = () => setNav({ screen: 'grade4' });
   const goSettings = () => setNav({ screen: 'settings' });
+  const goAchievements = () => setNav({ screen: 'achievements' });
   const goGrade2Set = (setNumber) => setNav({ screen: 'grade2Set', setNumber });
   const goGrade2Lesson = (lessonNumber) => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber }));
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
@@ -75,6 +94,21 @@ const App = () => {
     await saveProfile(updated);
   };
 
+  const markDaily = () => {
+    setAchievements(a => a.map(ach => ach.id === 'daily' ? { ...ach, earned: true } : ach));
+  };
+
+  const completeLesson = (setNumber, lessonNumber) => {
+    setCompletedLessons(prev => {
+      const lessons = prev[setNumber] || {};
+      const updated = { ...prev, [setNumber]: { ...lessons, [lessonNumber]: true } };
+      if (updated[1] && updated[1][1] && updated[1][2] && updated[1][3]) {
+        setAchievements(a => a.map(ach => ach.id === 'set1' ? { ...ach, earned: true } : ach));
+      }
+      return updated;
+    });
+  };
+
 
   
   // Render the appropriate screen
@@ -82,14 +116,7 @@ const App = () => {
     if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
     // Detail screens
     if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
-    if (nav.screen === 'grade2Lesson') return (
-      <Grade2LessonScreen
-        setNumber={nav.setNumber}
-        lessonNumber={nav.lessonNumber}
-        onBack={goBackToGrade2Set}
-        onPractice={goPractice}
-      />
-    );
+    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onComplete={completeLesson} />;
     if (nav.screen === 'practice')
       return (
         <QuotePracticeScreen
@@ -105,6 +132,7 @@ const App = () => {
     if (nav.screen === 'grade2') return <Grade2Screen onSetSelect={goGrade2Set} onBack={goHome} />;
     if (nav.screen === 'grade3') return <Grade3Screen onBack={goHome} />;
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
+    if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} onDailyPress={markDaily} />;
     if (nav.screen === 'settings') return <SettingsScreen onBack={goHome} />;
     // Default: home screen with tiles
     return (
@@ -156,6 +184,10 @@ const App = () => {
         <TouchableOpacity style={styles.navItem} onPress={goGrade2}>
           <Icon name="book" size={24} color="#333" />
           <Text style={styles.navText}>Lessons</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
+          <Icon name="trophy" size={24} color="#333" />
+          <Text style={styles.navText}>Badges</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goSettings}>
           <Icon name="cog" size={24} color="#333" />
