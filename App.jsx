@@ -5,20 +5,25 @@
  * @format
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
 import Grade2LessonScreen from './screens/Grade2LessonScreen';
+import QuotePracticeScreen from './screens/QuotePracticeScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
+import TapMissingWordsGame from './screens/TapMissingWordsGame';
+import ProfileSetupScreen from './screens/ProfileSetupScreen';
 
 const App = () => {
   const [nav, setNav] = useState({ screen: 'home' });
+  const [profile, setProfile] = useState(null);
   const [achievements, setAchievements] = useState([
     {
       id: 'daily',
@@ -47,6 +52,47 @@ const App = () => {
   const goGrade2Lesson = (lessonNumber) => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber }));
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
   const goBackToGrade2 = () => setNav({ screen: 'grade2' });
+  const goPractice = (quote) => setNav(prev => ({
+    screen: 'practice',
+    quote,
+    setNumber: prev.setNumber,
+    lessonNumber: prev.lessonNumber,
+  }));
+  const goBackToLesson = () => setNav(prev => ({
+    screen: 'grade2Lesson',
+    setNumber: prev.setNumber,
+    lessonNumber: prev.lessonNumber,
+  }));
+  const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
+  const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
+
+  
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await AsyncStorage.getItem('profile');
+        if (data) setProfile(JSON.parse(data));
+      } catch (e) {
+        // ignore errors
+      }
+    };
+    load();
+  }, []);
+
+  const saveProfile = async (p) => {
+    setProfile(p);
+    try {
+      await AsyncStorage.setItem('profile', JSON.stringify(p));
+    } catch (e) {
+      // ignore errors
+    }
+  };
+
+  const addScore = async (value) => {
+    if (!profile) return;
+    const updated = { ...profile, score: (profile.score || 0) + value };
+    await saveProfile(updated);
+  };
 
   const markDaily = () => {
     setAchievements(a => a.map(ach => ach.id === 'daily' ? { ...ach, earned: true } : ach));
@@ -67,9 +113,18 @@ const App = () => {
   
   // Render the appropriate screen
   const renderScreen = () => {
+    if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
     // Detail screens
     if (nav.screen === 'grade1') return <Grade1Screen onBack={goHome} />;
     if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onComplete={completeLesson} />;
+    if (nav.screen === 'practice')
+      return (
+        <QuotePracticeScreen
+          quote={nav.quote}
+          onBack={goBackToLesson}
+        />
+      );
+    if (nav.screen === 'tapGame') return <TapMissingWordsGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
@@ -82,7 +137,8 @@ const App = () => {
     // Default: home screen with tiles
     return (
       <>
-        <Text style={styles.title}>Nuri</Text>
+        <Text style={styles.title}>{profile.name}</Text>
+        <Text style={styles.subtitle}>Grade: {profile.grade || 'N/A'}    Score: {profile.score || 0}</Text>
         <View style={styles.tileContainer}>
           <TouchableOpacity style={styles.tile} onPress={goGrade1}>
             <Text style={styles.tileTitle}>Grade 1</Text>
@@ -110,6 +166,7 @@ const App = () => {
             <Text style={styles.tileInfo}>Age 9-10 Years</Text>
           </TouchableOpacity>
         </View>
+        <Button title="Add Point" onPress={() => addScore(1)} />
       </>
     );
   };
@@ -151,6 +208,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 32,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 16,
   },
   buttonContainer: {
     width: '80%',
