@@ -12,7 +12,7 @@ import GradesScreen from './screens/GradesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faTrash, faHome, faBook, faTrophy, faCog } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faHome, faBook, faTrophy, faCog, faGamepad } from '@fortawesome/free-solid-svg-icons';
 // import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
@@ -39,6 +39,7 @@ import StartScreen from './screens/StartScreen';
 import Splash from './screens/Splash';
 import Grade1SetScreen from './screens/Grade1SetScreen';
 import Grade1LessonScreen from './screens/Grade1LessonScreen';
+import GamesListScreen from './screens/GamesListScreen';
 // Game registry for daily challenge
 import { pickRandomGame } from './games';
 
@@ -298,6 +299,7 @@ const App = () => {
   const goGrade4 = () => setNav({ screen: 'grade4' });
   const goSettings = () => setNav({ screen: 'settings' });
   const goAchievements = () => setNav({ screen: 'achievements' });
+  const goGames = () => setNav({ screen: 'games' });
   const goGrade2Set = (setNumber) => setNav({ screen: 'grade2Set', setNumber });
   // Navigate to "coming soon" for Grade 2 - Book 3-2 from Grades screen
   const goGrade2Coming = () => setNav({ screen: 'grade2Coming' });
@@ -367,6 +369,39 @@ const App = () => {
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
+  const playSelectedGame = (gameId) => {
+    const { setNumber, lessonNumber } = getCurrentProgress();
+    let content = '';
+    if (profile?.grade === 1) {
+      const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
+      content = lesson ? lesson.quote : '';
+    } else if (profile?.grade === 2) {
+      content = quoteMap[`${setNumber}-${lessonNumber}`] || '';
+    }
+    if (gameId === 'practice') {
+      goPractice(content);
+    } else if (gameId === 'tapGame') {
+      goTapGame(content);
+    } else if (gameId === 'scrambleGame') {
+      goScrambleGame(content);
+    } else if (gameId === 'nextWordGame') {
+      goNextWordGame(content);
+    } else if (gameId === 'memoryGame') {
+      goMemoryGame(content);
+    } else if (gameId === 'flashGame') {
+      goFlashGame(content);
+    } else if (gameId === 'revealGame') {
+      goRevealGame(content);
+    } else if (gameId === 'firstLetterGame') {
+      goFirstLetterGame(content);
+    } else if (gameId === 'letterScrambleGame') {
+      goLetterScrambleGame(content);
+    } else if (gameId === 'fastTypeGame') {
+      goFastTypeGame(content);
+    } else {
+      goPractice(content);
+    }
+  };
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
   // Navigation for Grade 1 lessons
@@ -566,6 +601,7 @@ const App = () => {
     if (nav.screen === 'grade3') return <Grade3Screen onBack={goHome} />;
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
     if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} />;
+    if (nav.screen === 'games') return <GamesListScreen onSelect={playSelectedGame} />;
     if (nav.screen === 'settings') {
       return (
         <SettingsScreen
@@ -638,6 +674,10 @@ const App = () => {
         <TouchableOpacity style={styles.navItem} onPress={goGrades}>
           <FontAwesomeIcon icon={faBook} size={24} color="#333" />
           <Text style={styles.navText}>Grade</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={goGames}>
+          <FontAwesomeIcon icon={faGamepad} size={24} color="#333" />
+          <Text style={styles.navText}>Game</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
           <FontAwesomeIcon icon={faTrophy} size={24} color="#333" />
