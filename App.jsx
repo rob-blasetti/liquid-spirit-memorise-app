@@ -187,11 +187,18 @@ const App = () => {
     if (nav.screen === 'grades') {
       return (
         <GradesScreen
-          onGradeSelect={(g) => {
-            if (g === 1) goGrade1();
-            else if (g === 2) goGrade2();
-            else if (g === 3) goGrade3();
-            else if (g === 4) goGrade4();
+          onGradeSelect={(g, setNumber) => {
+            if (g === 1) {
+              goGrade1();
+            } else if (g === 2) {
+              // If a specific book set is provided, go directly to that set
+              if (setNumber) goGrade2Set(setNumber);
+              else goGrade2();
+            } else if (g === 3) {
+              goGrade3();
+            } else if (g === 4) {
+              goGrade4();
+            }
           }}
         />
       );
