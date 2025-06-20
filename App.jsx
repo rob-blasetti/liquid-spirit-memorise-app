@@ -9,7 +9,6 @@ import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import ThemedButton from './components/ThemedButton';
 import GradesScreen from './screens/GradesScreen';
-import Avatar from '@flipxyz/react-native-boring-avatars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -25,10 +24,15 @@ import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import HomeScreen from './screens/HomeScreen';
+import { grade1Lessons } from './screens/Grade1Screen';
+import { quoteMap } from './data/grade2';
 import StartScreen from './screens/StartScreen';
 import Splash from './screens/Splash';
 import Grade1SetScreen from './screens/Grade1SetScreen';
 import Grade1LessonScreen from './screens/Grade1LessonScreen';
+// Game registry for daily challenge
+import { pickRandomGame } from './games';
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -138,6 +142,77 @@ const App = () => {
     });
   };
 
+  // Handle "Go to Lesson" navigation based on current profile grade
+  const handleGoLesson = () => {
+    if (profile.grade === 1) goGrade1();
+    else if (profile.grade === 2) goGrade2();
+    else if (profile.grade === 3) goGrade3();
+    else if (profile.grade === 4) goGrade4();
+    else goHome();
+  };
+
+  // Handle "Go to Set" navigation based on current profile grade
+  const handleGoSet = () => {
+    if (profile.grade === 1) goGrade1();
+    else if (profile.grade === 2) goGrade2();
+    else if (profile.grade === 3) goGrade3();
+    else if (profile.grade === 4) goGrade4();
+    else goGrades();
+  };
+
+  // Determine current set and lesson based on completed lessons
+  const getCurrentProgress = () => {
+    if (!profile) return { setNumber: 1, lessonNumber: 1 };
+    const gradeNum = profile.grade;
+    // Default to first set and first lesson
+    let setNumber = 1;
+    let lessonNumber = 1;
+    // Use completedLessons to find next uncompleted lesson in set 1
+    const completed = completedLessons[setNumber] || {};
+    while (completed[lessonNumber]) {
+      lessonNumber += 1;
+    }
+    return { setNumber, lessonNumber };
+  };
+
+  // Handle navigation to the current lesson directly
+  const handleGoCurrentLesson = () => {
+    const { setNumber, lessonNumber } = getCurrentProgress();
+    if (profile.grade === 1) {
+      goGrade1Lesson(lessonNumber);
+    } else if (profile.grade === 2) {
+      setNav({ screen: 'grade2Lesson', setNumber, lessonNumber });
+    } else if (profile.grade === 3) {
+      goGrade3();
+    } else if (profile.grade === 4) {
+      goGrade4();
+    }
+  };
+
+  // Handle daily challenge for current lesson (practice prayer or quote)
+  const handleDailyChallenge = () => {
+    const { setNumber, lessonNumber } = getCurrentProgress();
+    // Determine quote for current lesson
+    let content = '';
+    if (profile.grade === 1) {
+      const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
+      content = lesson ? lesson.quote : '';
+    } else if (profile.grade === 2) {
+      // Grade 2 quotes from data/grade2
+      content = quoteMap[`${setNumber}-${lessonNumber}`] || '';
+    }
+    // Pick a random game and navigate accordingly
+    const gameId = pickRandomGame();
+    if (gameId === 'practice') {
+      goPractice(content);
+    } else if (gameId === 'tapGame') {
+      goTapGame(content);
+    } else {
+      // Fallback: use practice
+      goPractice(content);
+    }
+  };
+
 
   
   // Wipe profile and score for testing
@@ -224,32 +299,18 @@ const App = () => {
       );
     }
     // Default: home screen (profile overview)
-    // Daily challenge and lesson access buttons
-    return (
-      <>
-        <View style={styles.profileContainer}>
-          <Avatar size={60} name={profile.name} variant="beam" />
-          <View style={styles.profileTextContainer}>
-            <Text style={styles.profileName}>{profile.name}</Text>
-            <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
-          </View>
-        </View>
-        <Text style={styles.scoreText}>Score: {profile.score || 0}</Text>
-        <View style={styles.homeButtonContainer}>
-          <Button title="Daily Challenge" onPress={() => { markDaily(); goAchievements(); }} />
-        </View>
-        <View style={styles.homeButtonContainer}>
-          <Button title="Go to Lesson" onPress={() => {
-            // navigate to this week's lesson content based on grade
-            if (profile.grade === 1) goGrade1();
-            else if (profile.grade === 2) goGrade2();
-            else if (profile.grade === 3) goGrade3();
-            else if (profile.grade === 4) goGrade4();
-            else goHome();
-          }} />
-        </View>
-      </>
-    );
+      const { setNumber, lessonNumber } = getCurrentProgress();
+      return (
+        <HomeScreen
+          profile={profile}
+          onDailyChallenge={handleDailyChallenge}
+          onGoCurrentLesson={handleGoCurrentLesson}
+          onGoSet={handleGoSet}
+          onSeeClass={goGrades}
+          currentSet={setNumber}
+          currentLesson={lessonNumber}
+        />
+      );
   };
 
   return (

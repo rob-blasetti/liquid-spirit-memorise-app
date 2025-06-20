@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
-import { grade1Lessons } from './Grade1Screen';
+import { grade1Lessons } from '../data/grade1';
 
 const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
   const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);

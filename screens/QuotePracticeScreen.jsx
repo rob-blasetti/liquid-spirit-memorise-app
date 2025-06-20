@@ -22,12 +22,35 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
   };
 
   const displayedQuote = words
-    .map((w, i) => (i < index ? w : '_____'))
+    .map((w, i) => {
+      // split word into base and trailing punctuation
+      const base = w.replace(/[.,!?;:]+$/, '');
+      const punctMatch = w.match(/([.,!?;:]+)$/);
+      const punct = punctMatch ? punctMatch[1] : '';
+      if (i < index) {
+        return w;
+      } else if (i === index) {
+        // reveal a hint: first third of the word (at least one letter)
+        const hintLength = Math.max(1, Math.floor(base.length / 3));
+        const hint = base.substring(0, hintLength);
+        const blanks = '_'.repeat(base.length - hintLength);
+        return hint + blanks + punct;
+      } else {
+        // upcoming words: full blanks
+        const blanks = '_'.repeat(base.length);
+        return blanks + punct;
+      }
+    })
     .join(' ');
+  // Provide a static snippet of the beginning of the quote as a hint
+  const snippetWordCount = Math.min(3, words.length);
+  const snippet = words.slice(0, snippetWordCount).join(' ');
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Practice Quote</Text>
+      {/* Hint snippet to jog memory */}
+      <Text style={styles.hint}>Hint: {snippet}...</Text>
       <Text style={styles.quote}>{displayedQuote}</Text>
       {index < words.length ? (
         <>
@@ -60,6 +83,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 16,
+  },
+  hint: {
+    fontStyle: 'italic',
+    color: '#666',
+    fontSize: 14,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 16,

@@ -10,6 +10,8 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
 
+  console.log(quote);
+
   useEffect(() => {
     const words = quote.split(' ');
     const numBlanks = Math.min(4, Math.max(1, Math.floor(words.length / 6)));

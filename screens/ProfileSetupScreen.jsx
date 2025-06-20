@@ -6,7 +6,9 @@ import themeVariables from '../styles/theme';
 import ThemedButton from '../components/ThemedButton';
 
 const ProfileSetupScreen = ({ onSave }) => {
-  const [name, setName] = useState('');
+  // Split name into first and last name fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [grade, setGrade] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [avatarSeed, setAvatarSeed] = useState(Math.random().toString());
@@ -14,9 +16,12 @@ const ProfileSetupScreen = ({ onSave }) => {
   const grades = ['1', '2', '3', '4'];
 
   const save = () => {
-    if (!name) return;
+    // Require both first and last name
+    if (!firstName || !lastName) return;
     const gradeNum = parseInt(grade, 10);
-    onSave({ name, grade: isNaN(gradeNum) ? '' : gradeNum });
+    const fullName = `${firstName} ${lastName}`;
+    // Pass both names and combined name for compatibility
+    onSave({ name: fullName, firstName, lastName, grade: isNaN(gradeNum) ? '' : gradeNum });
   };
 
   const pickImage = async () => {
@@ -51,23 +56,40 @@ const ProfileSetupScreen = ({ onSave }) => {
 
       <Text style={styles.title}>Create Profile</Text>
 
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your name"
-        value={name}
-        onChangeText={setName}
-      />
+      {/* First and Last Name inputs side by side */}
+      <View style={styles.row}>
+        <Text style={styles.labelRow}>First Name</Text>
+        <TextInput
+          style={styles.inputRow}
+          placeholder="First Name"
+          placeholderTextColor={themeVariables.darkGreyColor}
+          value={firstName}
+          onChangeText={setFirstName}
+        />
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.labelRow}>Last Name</Text>
+        <TextInput
+          style={styles.inputRow}
+          placeholder="Last Name"
+          placeholderTextColor={themeVariables.darkGreyColor}
+          value={lastName}
+          onChangeText={setLastName}
+        />
+      </View>
 
-      <Text style={styles.label}>Grade</Text>
-      <TouchableOpacity
-        style={styles.input}
-        onPress={() => setShowDropdown(!showDropdown)}
-      >
-        <Text style={[styles.inputText, !grade && styles.placeholderText]}>
-          {grade ? `Grade ${grade}` : 'Select Grade'}
-        </Text>
-      </TouchableOpacity>
+      {/* Grade row styled like name fields */}
+      <View style={styles.row}>
+        <Text style={styles.labelRow}>Grade</Text>
+        <TouchableOpacity
+          style={styles.inputRow}
+          onPress={() => setShowDropdown(!showDropdown)}
+        >
+          <Text style={[styles.inputText, !grade && styles.placeholderText]}>
+            {grade ? `Grade ${grade}` : 'Select Grade'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       {showDropdown && (
         <View style={styles.dropdown}>
           {grades.map((g, idx) => (
@@ -86,7 +108,7 @@ const ProfileSetupScreen = ({ onSave }) => {
       )}
 
       <View style={styles.buttonContainer}>
-        <ThemedButton title="Save" onPress={save} disabled={!name} />
+        <ThemedButton title="Save" onPress={save} disabled={!firstName || !lastName} />
       </View>
     </View>
   );
@@ -175,6 +197,26 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 16,
     color: themeVariables.blackColor,
+  },
+  // Styles for first and last name rows
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '80%',
+    marginBottom: 16,
+  },
+  labelRow: {
+    fontSize: 16,
+    color: themeVariables.blackColor,
+    marginRight: 8,
+    width: 100,
+  },
+  inputRow: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    borderRadius: 4,
   },
 });
 

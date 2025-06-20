@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import themeVariables from '../styles/theme';
-import { grade1Lessons } from './Grade1Screen';
+import { grade1Lessons } from '../data/grade1';
 
 const Grade1SetScreen = ({ onLessonSelect, onBack }) => {
   return (
