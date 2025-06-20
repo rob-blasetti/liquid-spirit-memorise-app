@@ -23,6 +23,9 @@ import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import TapMissingWordsGame from './screens/TapMissingWordsGame';
+import TapScrambledGame from './screens/TapScrambledGame';
+import NextWordQuizGame from './screens/NextWordQuizGame';
+import MemoryMatchGame from './screens/MemoryMatchGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import HomeScreen from './screens/HomeScreen';
 import { grade1Lessons } from './screens/Grade1Screen';
@@ -245,6 +248,27 @@ const App = () => {
     lessonNumber: prev.lessonNumber,
   }));
   const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
+  const goScrambleGame = (quote) =>
+    setNav(prev => ({
+      screen: 'scrambleGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  const goNextWordGame = (quote) =>
+    setNav(prev => ({
+      screen: 'nextWordGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  const goMemoryGame = (quote) =>
+    setNav(prev => ({
+      screen: 'memoryGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
   // Navigation for Grade 1 lessons
@@ -347,6 +371,12 @@ const App = () => {
       goPractice(content);
     } else if (gameId === 'tapGame') {
       goTapGame(content);
+    } else if (gameId === 'scrambleGame') {
+      goScrambleGame(content);
+    } else if (gameId === 'nextWordGame') {
+      goNextWordGame(content);
+    } else if (gameId === 'memoryGame') {
+      goMemoryGame(content);
     } else {
       // Fallback: use practice
       goPractice(content);
@@ -391,6 +421,12 @@ const App = () => {
         />
       );
     if (nav.screen === 'tapGame') return <TapMissingWordsGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'scrambleGame')
+      return <TapScrambledGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'nextWordGame')
+      return <NextWordQuizGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'memoryGame')
+      return <MemoryMatchGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
