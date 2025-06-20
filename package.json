@@ -2,6 +2,9 @@
   "name": "liquid_spirit_memorise",
   "version": "0.0.1",
   "private": true,
+  "resolutions": {
+    "**/react-native-svg": "15.12.0"
+  },
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
