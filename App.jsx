@@ -22,6 +22,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import StartScreen from './screens/StartScreen';
 import Splash from './screens/Splash';
 import Grade1SetScreen from './screens/Grade1SetScreen';
 import Grade1LessonScreen from './screens/Grade1LessonScreen';
@@ -30,6 +31,7 @@ const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
+  const [showSetup, setShowSetup] = useState(false);
   const [achievements, setAchievements] = useState([
     {
       id: 'daily',
@@ -71,6 +73,10 @@ const App = () => {
   if (showSplash) {
     return <Splash />;
   }
+  const handleStartSignIn = (user) => {
+    saveProfile(user);
+  };
+  const handleContinueGuest = () => setShowSetup(true);
   const goHome = () => setNav({ screen: 'home' });
   const goGrade1 = () => setNav({ screen: 'grade1' });
   const goGrade2 = () => setNav({ screen: 'grade2' });
@@ -136,11 +142,22 @@ const App = () => {
       // ignore errors
     }
     setProfile(null);
+    setShowSetup(false);
   };
 
   // Render the appropriate screen
   const renderScreen = () => {
-    if (!profile) return <ProfileSetupScreen onSave={saveProfile} />;
+    if (!profile) {
+      if (!showSetup) {
+        return (
+          <StartScreen
+            onSignIn={handleStartSignIn}
+            onGuest={handleContinueGuest}
+          />
+        );
+      }
+      return <ProfileSetupScreen onSave={saveProfile} />;
+    }
     // Grade 1 screens: set and lesson
     if (nav.screen === 'grade1') return <Grade1SetScreen onBack={goHome} onLessonSelect={goGrade1Lesson} />;
     if (nav.screen === 'grade1Lesson') return <Grade1LessonScreen lessonNumber={nav.lessonNumber} onBack={goBackToGrade1Set} />;
