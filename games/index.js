@@ -8,6 +8,11 @@ export const gameIds = [
   'scrambleGame',
   'nextWordGame',
   'memoryGame',
+  'flashGame',
+  'revealGame',
+  'firstLetterGame',
+  'letterScrambleGame',
+  'fastTypeGame',
 ];
 
 /**

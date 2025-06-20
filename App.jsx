@@ -26,6 +26,11 @@ import TapMissingWordsGame from './screens/TapMissingWordsGame';
 import TapScrambledGame from './screens/TapScrambledGame';
 import NextWordQuizGame from './screens/NextWordQuizGame';
 import MemoryMatchGame from './screens/MemoryMatchGame';
+import FlashCardRecallGame from './screens/FlashCardRecallGame';
+import RevealWordGame from './screens/RevealWordGame';
+import FirstLetterQuizGame from './screens/FirstLetterQuizGame';
+import LetterScrambleGame from './screens/LetterScrambleGame';
+import FastTypeGame from './screens/FastTypeGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import HomeScreen from './screens/HomeScreen';
 import { grade1Lessons } from './screens/Grade1Screen';
@@ -269,6 +274,41 @@ const App = () => {
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
+  const goFlashGame = (quote) =>
+    setNav(prev => ({
+      screen: 'flashGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  const goRevealGame = (quote) =>
+    setNav(prev => ({
+      screen: 'revealGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  const goFirstLetterGame = (quote) =>
+    setNav(prev => ({
+      screen: 'firstLetterGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  const goLetterScrambleGame = (quote) =>
+    setNav(prev => ({
+      screen: 'letterScrambleGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  const goFastTypeGame = (quote) =>
+    setNav(prev => ({
+      screen: 'fastTypeGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 
   // Navigation for Grade 1 lessons
@@ -377,6 +417,16 @@ const App = () => {
       goNextWordGame(content);
     } else if (gameId === 'memoryGame') {
       goMemoryGame(content);
+    } else if (gameId === 'flashGame') {
+      goFlashGame(content);
+    } else if (gameId === 'revealGame') {
+      goRevealGame(content);
+    } else if (gameId === 'firstLetterGame') {
+      goFirstLetterGame(content);
+    } else if (gameId === 'letterScrambleGame') {
+      goLetterScrambleGame(content);
+    } else if (gameId === 'fastTypeGame') {
+      goFastTypeGame(content);
     } else {
       // Fallback: use practice
       goPractice(content);
@@ -427,6 +477,16 @@ const App = () => {
       return <NextWordQuizGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'memoryGame')
       return <MemoryMatchGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'flashGame')
+      return <FlashCardRecallGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'revealGame')
+      return <RevealWordGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'firstLetterGame')
+      return <FirstLetterQuizGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'letterScrambleGame')
+      return <LetterScrambleGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'fastTypeGame')
+      return <FastTypeGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
