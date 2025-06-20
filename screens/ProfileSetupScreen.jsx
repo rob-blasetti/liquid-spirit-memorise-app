@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 import ThemedButton from '../components/ThemedButton';
@@ -9,6 +10,7 @@ const ProfileSetupScreen = ({ onSave }) => {
   const [grade, setGrade] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [avatarSeed, setAvatarSeed] = useState(Math.random().toString());
+  const [avatarUri, setAvatarUri] = useState(null);
   const grades = ['1', '2', '3', '4'];
 
   const save = () => {
@@ -17,36 +19,52 @@ const ProfileSetupScreen = ({ onSave }) => {
     onSave({ name, grade: isNaN(gradeNum) ? '' : gradeNum });
   };
 
+  const pickImage = async () => {
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 1,
+    });
+
+    if (result.didCancel) return;
+    if (result.errorCode) {
+      console.warn('ImagePicker Error: ', result.errorMessage);
+      return;
+    }
+    const asset = result.assets && result.assets[0];
+    if (asset && asset.uri) {
+      setAvatarUri(asset.uri);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Avatar with Change button */}
       <View style={styles.avatarContainer}>
-        <Avatar
-          size={100}
-          name={avatarSeed}
-          variant="beam"
-        />
-        <TouchableOpacity
-          style={styles.changeButton}
-          onPress={() => setAvatarSeed(Math.random().toString())}
-        >
+        {avatarUri ? (
+          <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+        ) : (
+          <Avatar size={100} name={avatarSeed} variant="beam" />
+        )}
+        <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
           <Text style={styles.changeButtonText}>Change</Text>
         </TouchableOpacity>
       </View>
+
       <Text style={styles.title}>Create Profile</Text>
-      {/* Name input */}
+
+      <Text style={styles.label}>Name</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter your name"
         value={name}
         onChangeText={setName}
       />
-      {/* Grade dropdown */}
+
+      <Text style={styles.label}>Grade</Text>
       <TouchableOpacity
         style={styles.input}
         onPress={() => setShowDropdown(!showDropdown)}
       >
-        <Text style={[styles.inputText, !grade && styles.placeholderText]}>  
+        <Text style={[styles.inputText, !grade && styles.placeholderText]}>
           {grade ? `Grade ${grade}` : 'Select Grade'}
         </Text>
       </TouchableOpacity>
@@ -56,14 +74,17 @@ const ProfileSetupScreen = ({ onSave }) => {
             <TouchableOpacity
               key={g}
               style={[styles.dropdownItem, idx < grades.length - 1 && styles.dropdownItemBorder]}
-              onPress={() => { setGrade(g); setShowDropdown(false); }}
+              onPress={() => {
+                setGrade(g);
+                setShowDropdown(false);
+              }}
             >
               <Text style={styles.dropdownItemText}>Grade {g}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
-      {/* Save button */}
+
       <View style={styles.buttonContainer}>
         <ThemedButton title="Save" onPress={save} disabled={!name} />
       </View>
@@ -77,6 +98,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: '#fefefe',
+  },
+  label: {
+    width: '80%',
+    alignSelf: 'center',
+    fontSize: 16,
+    color: themeVariables.blackColor,
+    marginBottom: 4,
   },
   title: {
     fontSize: 24,
@@ -113,6 +142,11 @@ const styles = StyleSheet.create({
   changeButtonText: {
     color: themeVariables.primaryColor,
     fontSize: 14,
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   // Text inside custom dropdown
   inputText: {

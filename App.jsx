@@ -7,6 +7,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import ThemedButton from './components/ThemedButton';
+import GradesScreen from './screens/GradesScreen';
+import Avatar from '@flipxyz/react-native-boring-avatars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -80,6 +83,7 @@ const App = () => {
   const goHome = () => setNav({ screen: 'home' });
   const goGrade1 = () => setNav({ screen: 'grade1' });
   const goGrade2 = () => setNav({ screen: 'grade2' });
+  const goGrades = () => setNav({ screen: 'grades' });
   const goGrade3 = () => setNav({ screen: 'grade3' });
   const goGrade4 = () => setNav({ screen: 'grade4' });
   const goSettings = () => setNav({ screen: 'settings' });
@@ -179,39 +183,44 @@ const App = () => {
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
     if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} onDailyPress={markDaily} />;
     if (nav.screen === 'settings') return <SettingsScreen onBack={goHome} />;
-    // Default: home screen with tiles
+    // Grades pick screen
+    if (nav.screen === 'grades') {
+      return (
+        <GradesScreen
+          onGradeSelect={(g) => {
+            if (g === 1) goGrade1();
+            else if (g === 2) goGrade2();
+            else if (g === 3) goGrade3();
+            else if (g === 4) goGrade4();
+          }}
+        />
+      );
+    }
+    // Default: home screen (profile overview)
+    // Daily challenge and lesson access buttons
     return (
       <>
-        <Text style={styles.title}>{profile.name}</Text>
-        <Text style={styles.subtitle}>Grade: {profile.grade || 'N/A'}    Score: {profile.score || 0}</Text>
-        <View style={styles.tileContainer}>
-          <TouchableOpacity style={styles.tile} onPress={goGrade1}>
-            <Text style={styles.tileTitle}>Grade 1</Text>
-            <Text style={styles.tileInfo}>Book 3</Text>
-            <Text style={styles.tileInfo}>Age 5-7 Years</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={() => goGrade2Set(1)}>
-            <Text style={styles.tileTitle}>Grade 2</Text>
-            <Text style={styles.tileInfo}>Book 3-1</Text>
-            <Text style={styles.tileInfo}>Age 7-8 Years</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={() => goGrade2Set(2)}>
-            <Text style={styles.tileTitle}>Grade 2</Text>
-            <Text style={styles.tileInfo}>Book 3-2</Text>
-            <Text style={styles.tileInfo}>Age 7-8 Years</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={goGrade3}>
-            <Text style={styles.tileTitle}>Grade 3</Text>
-            <Text style={styles.tileInfo}>Book 3-3</Text>
-            <Text style={styles.tileInfo}>Age 8-9 Years</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={goGrade4}>
-            <Text style={styles.tileTitle}>Grade 4</Text>
-            <Text style={styles.tileInfo}>Book 3-4</Text>
-            <Text style={styles.tileInfo}>Age 9-10 Years</Text>
-          </TouchableOpacity>
+        <View style={styles.profileContainer}>
+          <Avatar size={60} name={profile.name} variant="beam" />
+          <View style={styles.profileTextContainer}>
+            <Text style={styles.profileName}>{profile.name}</Text>
+            <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+          </View>
         </View>
-        <Button title="Add Point" onPress={() => addScore(1)} />
+        <Text style={styles.scoreText}>Score: {profile.score || 0}</Text>
+        <View style={styles.homeButtonContainer}>
+          <Button title="Daily Challenge" onPress={() => { markDaily(); goAchievements(); }} />
+        </View>
+        <View style={styles.homeButtonContainer}>
+          <Button title="Go to Lesson" onPress={() => {
+            // navigate to this week's lesson content based on grade
+            if (profile.grade === 1) goGrade1();
+            else if (profile.grade === 2) goGrade2();
+            else if (profile.grade === 3) goGrade3();
+            else if (profile.grade === 4) goGrade4();
+            else goHome();
+          }} />
+        </View>
       </>
     );
   };
@@ -232,9 +241,9 @@ const App = () => {
           <FontAwesomeIcon icon={faHome} size={24} color="#333" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={goGrade2}>
+        <TouchableOpacity style={styles.navItem} onPress={goGrades}>
           <FontAwesomeIcon icon={faBook} size={24} color="#333" />
-          <Text style={styles.navText}>Lessons</Text>
+          <Text style={styles.navText}>Grade</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
           <FontAwesomeIcon icon={faTrophy} size={24} color="#333" />
@@ -308,6 +317,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     color: '#333',
+  },
+  // Home/profile overview styles
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profileTextContainer: {
+    marginLeft: 12,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  profileGrade: {
+    fontSize: 16,
+  },
+  scoreText: {
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  homeButtonContainer: {
+    width: '80%',
+    marginVertical: 8,
   },
   // Reset button style on home screen
   resetButton: {
