@@ -48,6 +48,7 @@ const App = () => {
       title: 'Daily Learner',
       description: 'Do a memorisation game each day',
       icon: 'calendar-check-o',
+      points: 5,
       earned: false,
     },
     {
@@ -55,6 +56,7 @@ const App = () => {
       title: 'Set 1 Master',
       description: 'Complete all lessons in Set 1',
       icon: 'trophy',
+      points: 10,
       earned: false,
     },
     {
@@ -62,6 +64,7 @@ const App = () => {
       title: 'Prayer Beginner',
       description: 'Memorise your first prayer',
       icon: 'trophy',
+      points: 5,
       earned: false,
     },
     {
@@ -69,6 +72,7 @@ const App = () => {
       title: 'Prayer Enthusiast',
       description: 'Memorise five prayers',
       icon: 'trophy',
+      points: 15,
       earned: false,
     },
     {
@@ -76,6 +80,7 @@ const App = () => {
       title: 'Prayer Expert',
       description: 'Memorise ten prayers',
       icon: 'trophy',
+      points: 25,
       earned: false,
     },
     {
@@ -83,6 +88,7 @@ const App = () => {
       title: 'Quote Starter',
       description: 'Memorise your first quote',
       icon: 'trophy',
+      points: 5,
       earned: false,
     },
     {
@@ -90,6 +96,7 @@ const App = () => {
       title: 'Quote Collector',
       description: 'Memorise five quotes',
       icon: 'trophy',
+      points: 15,
       earned: false,
     },
     {
@@ -97,6 +104,7 @@ const App = () => {
       title: 'Quote Scholar',
       description: 'Memorise fifteen quotes',
       icon: 'trophy',
+      points: 25,
       earned: false,
     },
     {
@@ -104,6 +112,7 @@ const App = () => {
       title: 'Set 2 Master',
       description: 'Complete all lessons in Set 2',
       icon: 'trophy',
+      points: 10,
       earned: false,
     },
     {
@@ -111,6 +120,7 @@ const App = () => {
       title: 'Set 3 Master',
       description: 'Complete all lessons in Set 3',
       icon: 'trophy',
+      points: 10,
       earned: false,
     },
     {
@@ -118,6 +128,7 @@ const App = () => {
       title: 'Set 4 Master',
       description: 'Complete all lessons in Set 4',
       icon: 'trophy',
+      points: 10,
       earned: false,
     },
     {
@@ -125,6 +136,7 @@ const App = () => {
       title: 'Grade 1 Star',
       description: 'Finish all Grade 1 lessons',
       icon: 'trophy',
+      points: 20,
       earned: false,
     },
     {
@@ -132,6 +144,7 @@ const App = () => {
       title: 'Grade 2 Star',
       description: 'Finish all Grade 2 lessons',
       icon: 'trophy',
+      points: 25,
       earned: false,
     },
     {
@@ -139,6 +152,7 @@ const App = () => {
       title: 'Daily Streak 3',
       description: 'Do the daily challenge three days in a row',
       icon: 'calendar-check-o',
+      points: 5,
       earned: false,
     },
     {
@@ -146,6 +160,7 @@ const App = () => {
       title: 'Daily Streak 7',
       description: 'Do the daily challenge seven days in a row',
       icon: 'calendar-check-o',
+      points: 15,
       earned: false,
     },
     {
@@ -153,6 +168,7 @@ const App = () => {
       title: 'Daily Streak 30',
       description: 'Do the daily challenge thirty days in a row',
       icon: 'calendar-check-o',
+      points: 30,
       earned: false,
     },
     {
@@ -160,6 +176,7 @@ const App = () => {
       title: 'Game Beginner',
       description: 'Play your first game',
       icon: 'trophy',
+      points: 5,
       earned: false,
     },
     {
@@ -167,6 +184,7 @@ const App = () => {
       title: 'Game Fanatic',
       description: 'Play ten games',
       icon: 'trophy',
+      points: 20,
       earned: false,
     },
     {
@@ -174,6 +192,7 @@ const App = () => {
       title: 'Quote Practice Pro',
       description: 'Practice quotes twenty times',
       icon: 'trophy',
+      points: 10,
       earned: false,
     },
     {
@@ -181,6 +200,7 @@ const App = () => {
       title: 'Tap Game Champ',
       description: 'Finish a tap game without mistakes',
       icon: 'trophy',
+      points: 15,
       earned: false,
     },
     {
@@ -188,6 +208,7 @@ const App = () => {
       title: 'Profile Setup',
       description: 'Create your profile and avatar',
       icon: 'trophy',
+      points: 5,
       earned: false,
     },
     {
@@ -195,15 +216,36 @@ const App = () => {
       title: 'Class Explorer',
       description: 'Visit all grade levels',
       icon: 'trophy',
+      points: 10,
       earned: false,
     },
   ]);
   const [completedLessons, setCompletedLessons] = useState({});
+  const [overrideProgress, setOverrideProgress] = useState(null);
 
   // Splash timeout
   useEffect(() => {
     const timeout = setTimeout(() => setShowSplash(false), 2000);
     return () => clearTimeout(timeout);
+  }, []);
+  
+  // Load saved override progress
+  useEffect(() => {
+    const loadOverride = async () => {
+      try {
+        const setStr = await AsyncStorage.getItem('currentSet');
+        const lessonStr = await AsyncStorage.getItem('currentLesson');
+        if (setStr != null && lessonStr != null) {
+          setOverrideProgress({
+            setNumber: parseInt(setStr, 10),
+            lessonNumber: parseInt(lessonStr, 10),
+          });
+        }
+      } catch (e) {
+        // ignore errors
+      }
+    };
+    loadOverride();
   }, []);
   // Load saved profile
   useEffect(() => {
@@ -225,6 +267,22 @@ const App = () => {
   }
   const handleStartSignIn = (user) => {
     saveProfile(user);
+  };
+  
+  // Save override progress (or clear if null)
+  const saveOverrideProgress = async (progress) => {
+    setOverrideProgress(progress);
+    try {
+      if (progress) {
+        await AsyncStorage.setItem('currentSet', progress.setNumber.toString());
+        await AsyncStorage.setItem('currentLesson', progress.lessonNumber.toString());
+      } else {
+        await AsyncStorage.removeItem('currentSet');
+        await AsyncStorage.removeItem('currentLesson');
+      }
+    } catch (e) {
+      // ignore errors
+    }
   };
   const handleContinueGuest = () => setShowSetup(true);
   const goHome = () => setNav({ screen: 'home' });
@@ -326,6 +384,7 @@ const App = () => {
 
   // Determine current set and lesson based on completed lessons
   const getCurrentProgress = () => {
+    if (overrideProgress) return overrideProgress;
     if (!profile) return { setNumber: 1, lessonNumber: 1 };
     const gradeNum = profile.grade;
     // Default to first set and first lesson
@@ -446,8 +505,18 @@ const App = () => {
     }
     if (nav.screen === 'grade3') return <Grade3Screen onBack={goHome} />;
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
-    if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} onDailyPress={markDaily} />;
-    if (nav.screen === 'settings') return <SettingsScreen onBack={goHome} />;
+    if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} />;
+    if (nav.screen === 'settings') {
+      return (
+        <SettingsScreen
+          profile={profile}
+          currentProgress={getCurrentProgress()}
+          overrideProgress={overrideProgress}
+          onSaveOverride={saveOverrideProgress}
+          onBack={goHome}
+        />
+      );
+    }
     // Grades pick screen
     if (nav.screen === 'grades') {
       return (
@@ -479,6 +548,7 @@ const App = () => {
       return (
         <HomeScreen
           profile={profile}
+          achievements={achievements}
           onDailyChallenge={handleDailyChallenge}
           onGoCurrentLesson={handleGoCurrentLesson}
           onGoSet={handleGoSet}
@@ -525,9 +595,12 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
+    // Allow screens to fill full width and align at top
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    // Horizontal padding can be managed within individual screens as needed
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 24,

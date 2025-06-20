@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 
@@ -14,19 +16,26 @@ import themeVariables from '../styles/theme';
  *  - currentSet: number
  *  - currentLesson: number
  */
-const HomeScreen = ({ profile, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson }) => (
-  <>
-    {/* Header: avatar, name/grade on left, score on right */}
-    <View style={styles.header}>
-      <View style={styles.profileContainer}>
-        <Avatar size={60} name={profile.name} variant="beam" />
-        <View style={styles.profileTextContainer}>
-          <Text style={styles.profileName}>{profile.name}</Text>
-          <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson }) => {
+  const totalPoints = achievements
+    ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
+    : 0;
+  return (
+    <>
+      {/* Header: avatar and points */}
+      <View style={styles.header}>
+        <View style={styles.profileContainer}>
+          <Avatar size={60} name={profile.name} variant="beam" />
+          <View style={styles.profileTextContainer}>
+            <Text style={styles.profileName}>{profile.name}</Text>
+            <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+          </View>
+        </View>
+        <View style={styles.pointsContainer}>
+          <FontAwesomeIcon icon={faStar} size={20} color="#f1c40f" />
+          <Text style={styles.pointsText}>{totalPoints}</Text>
         </View>
       </View>
-      <Text style={styles.scoreText}>{profile.score || 0}</Text>
-    </View>
     {/* Current progress */}
     <View style={styles.progressContainer}>
       <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
@@ -46,8 +55,9 @@ const HomeScreen = ({ profile, onDailyChallenge, onGoCurrentLesson, onGoSet, onS
         <Text style={styles.tileText}>See Class</Text>
       </TouchableOpacity>
     </View>
-  </>
-);
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
@@ -56,6 +66,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingVertical: 16,
+  },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pointsText: {
+    fontSize: 16,
+    marginLeft: 4,
+    fontWeight: 'bold',
   },
   profileContainer: {
     flexDirection: 'row',
@@ -70,10 +89,6 @@ const styles = StyleSheet.create({
   },
   profileGrade: {
     fontSize: 16,
-  },
-  scoreText: {
-    fontSize: 16,
-    marginBottom: 16,
   },
   tileContainer: {
     flexDirection: 'row',

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+// import ThemedButton from '../components/ThemedButton';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCalendarCheck, faTrophy } from '@fortawesome/free-solid-svg-icons';
@@ -20,42 +20,77 @@ const AchievementItem = ({ icon, title, description, earned }) => (
   </View>
 );
 
-const AchievementsScreen = ({ achievements, onDailyPress }) => (
-  <View style={styles.container}>
-    <Text style={styles.title}>Achievements</Text>
-    {achievements.map((ach) => (
-      <AchievementItem
-        key={ach.id}
-        icon={ach.icon}
-        title={ach.title}
-        description={ach.description}
-        earned={ach.earned}
-      />
-    ))}
-    <View style={styles.buttonContainer}>
-      <ThemedButton title="Mark Daily Challenge Complete" onPress={onDailyPress} />
+const AchievementsScreen = ({ achievements }) => {
+  // Group achievements into categories based on id prefix
+  const grouped = achievements.reduce((acc, ach) => {
+    let category = 'Other';
+    if (ach.id === 'daily') category = 'Daily Challenge';
+    else if (ach.id.startsWith('streak')) category = 'Streaks';
+    else if (ach.id.startsWith('set')) category = 'Sets';
+    else if (ach.id.startsWith('grade')) category = 'Grades';
+    else if (ach.id.startsWith('prayer')) category = 'Prayers';
+    else if (ach.id.startsWith('quote')) category = 'Quotes';
+    else if (ach.id.startsWith('practice')) category = 'Practice';
+    else if (ach.id.startsWith('game') || ach.id === 'tapPerfect') category = 'Games';
+    else if (ach.id === 'profile') category = 'Profile';
+    else if (ach.id === 'explorer') category = 'Explorer';
+    acc[category] = acc[category] || [];
+    acc[category].push(ach);
+    return acc;
+  }, {});
+  // Define display order for categories
+  const order = ['Daily Challenge', 'Streaks', 'Sets', 'Grades', 'Prayers', 'Quotes', 'Practice', 'Games', 'Profile', 'Explorer', 'Other'];
+  return (
+    <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Achievements</Text>
+      </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {order.map((section) => {
+          const items = grouped[section];
+          if (!items) return null;
+          return (
+            <View key={section} style={styles.section}>
+              <Text style={styles.sectionHeader}>{section}</Text>
+              {items.map((ach) => (
+                <AchievementItem
+                  key={ach.id}
+                  icon={ach.icon}
+                  title={ach.title}
+                  description={ach.description}
+                  earned={ach.earned}
+                />
+              ))}
+            </View>
+          );
+        })}
+      </ScrollView>
+      {/* Mark Daily Challenge button removed */}
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    padding: 16,
+    alignSelf: 'stretch',
   },
   title: {
     fontSize: 24,
-    marginBottom: 24,
+  },
+  headerContainer: {
+    paddingTop: 16,
+    paddingBottom: 8,
+    alignItems: 'center',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
     marginVertical: 8,
+    width: '100%',
   },
   itemText: {
-    marginLeft: 16,
+    marginLeft: 12,
     flex: 1,
   },
   itemTitle: {
@@ -66,9 +101,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  buttonContainer: {
-    marginTop: 24,
-    width: '100%',
+  scrollView: {
+    flex: 1,
+    alignSelf: 'stretch',
+  },
+  scrollContent: {
+    paddingVertical: 8,
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
 });
 
