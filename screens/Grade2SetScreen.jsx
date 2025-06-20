@@ -1,22 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import themeVariables from '../styles/theme';
 import ThemedButton from '../components/ThemedButton';
 
 const Grade2SetScreen = ({ setNumber, onLessonSelect, onBack }) => {
-  // For Book 3-2, content is coming soon
-  if (setNumber === 2) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Grade 2 - Book 3-2</Text>
-        <Text style={styles.subtitle}>Content coming soon</Text>
-        <View style={styles.buttonContainer}>
-          <ThemedButton title="Back" onPress={onBack} />
-        </View>
-      </View>
-    );
-  }
-  // Otherwise, show lessons
+  // Show lessons for all sets
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Grade 2 - Set {setNumber}</Text>

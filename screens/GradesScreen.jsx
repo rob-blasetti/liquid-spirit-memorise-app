@@ -6,9 +6,9 @@ const GradesScreen = ({ onGradeSelect }) => (
   <View style={styles.container}>
     <Text style={styles.title}>Select Grade</Text>
     <View style={styles.tileContainer}>
-      {[
+        {[
         { grade: 1, book: 'Book 3', ages: 'Ages 5-7' },
-        { grade: 2, book: 'Book 3-1', ages: 'Ages 7-8', setNumber: 1 },
+        { grade: 2, book: 'Book 3-1', ages: 'Ages 7-8' },
         { grade: 2, book: 'Book 3-2', ages: 'Ages 7-8', setNumber: 2 },
         { grade: 3, book: 'Book 3-3', ages: 'Ages 8-9' },
         { grade: 4, book: 'Book 3-4', ages: 'Ages 9-10' },

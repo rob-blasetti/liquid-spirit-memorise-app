@@ -89,6 +89,8 @@ const App = () => {
   const goSettings = () => setNav({ screen: 'settings' });
   const goAchievements = () => setNav({ screen: 'achievements' });
   const goGrade2Set = (setNumber) => setNav({ screen: 'grade2Set', setNumber });
+  // Navigate to "coming soon" for Grade 2 - Book 3-2 from Grades screen
+  const goGrade2Coming = () => setNav({ screen: 'grade2Coming' });
   const goGrade2Lesson = (lessonNumber) => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber }));
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
   const goBackToGrade2 = () => setNav({ screen: 'grade2' });
@@ -179,6 +181,18 @@ const App = () => {
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
     }
     if (nav.screen === 'grade2') return <Grade2Screen onSetSelect={goGrade2Set} onBack={goHome} />;
+    if (nav.screen === 'grade2Coming') {
+      // Coming soon for Grade 2 - Book 3-2
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>Grade 2 - Book 3-2</Text>
+          <Text style={styles.subtitle}>Content coming soon</Text>
+          <View style={styles.buttonContainer}>
+            <ThemedButton title="Back" onPress={goGrades} />
+          </View>
+        </View>
+      );
+    }
     if (nav.screen === 'grade3') return <Grade3Screen onBack={goHome} />;
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
     if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} onDailyPress={markDaily} />;
@@ -191,9 +205,15 @@ const App = () => {
             if (g === 1) {
               goGrade1();
             } else if (g === 2) {
-              // If a specific book set is provided, go directly to that set
-              if (setNumber) goGrade2Set(setNumber);
-              else goGrade2();
+              // Book 3-2 is coming soon: show coming soon screen
+              if (setNumber === 2) {
+                goGrade2Coming();
+              } else if (setNumber) {
+                // Navigate to specific set (for Book 3-1 and others)
+                goGrade2Set(setNumber);
+              } else {
+                goGrade2();
+              }
             } else if (g === 3) {
               goGrade3();
             } else if (g === 4) {
