@@ -2,7 +2,13 @@
 // Registry of available games for Daily Challenge
 
 // List of game IDs. Each ID corresponds to a game component and route in App.
-export const gameIds = ['practice', 'tapGame'];
+export const gameIds = [
+  'practice',
+  'tapGame',
+  'scrambleGame',
+  'nextWordGame',
+  'memoryGame',
+];
 
 /**
  * Pick a random game ID from the registry.
