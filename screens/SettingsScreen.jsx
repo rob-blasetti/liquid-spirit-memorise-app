@@ -13,8 +13,9 @@ import { quoteMap } from '../data/grade2';
  *  - overrideProgress: { setNumber, lessonNumber } | null
  *  - onSaveOverride: (progress | null) => void
  *  - onBack: () => void
+ *  - onReset: () => void (reset profile data)
  */
-const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack }) => {
+const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset }) => {
   const [selectedSet, setSelectedSet] = useState(
     overrideProgress?.setNumber ?? currentProgress.setNumber
   );
@@ -80,6 +81,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           />
           <ThemedButton title="Auto Progress" onPress={clearOverride} />
           <ThemedButton title="Back" onPress={onBack} />
+          <ThemedButton title="Reset" onPress={onReset} />
         </View>
       </ScrollView>
     );
@@ -145,6 +147,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           />
           <ThemedButton title="Auto Progress" onPress={clearOverride} />
           <ThemedButton title="Back" onPress={onBack} />
+          <ThemedButton title="Reset" onPress={onReset} />
         </View>
       </ScrollView>
     );
@@ -155,7 +158,10 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.subtitle}>Settings for Grade {profile.grade} not available</Text>
-      <ThemedButton title="Back" onPress={onBack} />
+      <View style={styles.buttonContainer}>
+        <ThemedButton title="Back" onPress={onBack} />
+        <ThemedButton title="Reset" onPress={onReset} />
+      </View>
     </View>
   );
 };

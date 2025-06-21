@@ -692,6 +692,7 @@ const App = () => {
           overrideProgress={overrideProgress}
           onSaveOverride={saveOverrideProgress}
           onBack={goHome}
+          onReset={wipeProfile}
         />
       );
     }
@@ -723,10 +724,17 @@ const App = () => {
     }
     // Default: home screen (profile overview)
       const { setNumber, lessonNumber } = getCurrentProgress();
+      // Determine current content: prayer for Grade 1, quote for Grade 2
+      const content = profile.grade === 1
+        ? (grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '')
+        : profile.grade === 2
+          ? (quoteMap[`${setNumber}-${lessonNumber}`] || '')
+          : '';
       return (
         <HomeScreen
           profile={profile}
           achievements={achievements}
+          content={content}
           onDailyChallenge={handleDailyChallenge}
           onGoCurrentLesson={handleGoCurrentLesson}
           onGoSet={handleGoSet}
@@ -741,12 +749,6 @@ const App = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
         {renderScreen()}
-        {profile && nav.screen === 'home' && (
-          <TouchableOpacity style={styles.resetButton} onPress={wipeProfile}>
-            <FontAwesomeIcon icon={faTrash} size={24} color="#333" />
-            <Text style={styles.resetText}>Reset</Text>
-          </TouchableOpacity>
-        )}
       </View>
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={goHome}>
@@ -860,18 +862,6 @@ const styles = StyleSheet.create({
   homeButtonContainer: {
     width: '80%',
     marginVertical: 8,
-  },
-  // Reset button style on home screen
-  resetButton: {
-    position: 'absolute',
-    left: 16,
-    bottom: 64,
-    alignItems: 'center',
-  },
-  resetText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: '#333',
   },
 });
 

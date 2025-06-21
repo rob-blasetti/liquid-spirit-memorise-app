@@ -10,18 +10,19 @@ import themeVariables from '../styles/theme';
  * Props:
  *  - profile: { name, grade, score }
  *  - onDailyChallenge: () => void
- *  - onGoCurrentLesson: () => void
+  - onGoCurrentLesson: () => void
  *  - onGoSet: () => void
  *  - onSeeClass: () => void
  *  - currentSet: number
  *  - currentLesson: number
+ *  - content: string (current quote or prayer)
  */
-const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson }) => {
+const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson, content }) => {
   const totalPoints = achievements
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
   return (
-    <>
+    <View style={styles.container}>
       {/* Header: avatar and points */}
       <View style={styles.header}>
         <View style={styles.profileContainer}>
@@ -36,26 +37,33 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson
           <Text style={styles.pointsText}>{totalPoints}</Text>
         </View>
       </View>
-    {/* Current progress */}
-    <View style={styles.progressContainer}>
-      <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
+
+      {/* Current progress */}
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
+      </View>
+
+      {/* Current quote or prayer */}
+      <View style={styles.contentContainer}>
+        <Text style={styles.contentText}>{content}</Text>
+      </View>
+
+      {/* Bottom action buttons */}
+      <View style={styles.bottomButtonContainer}>
+        <TouchableOpacity style={styles.bottomButton} onPress={onDailyChallenge}>
+          <Text style={styles.bottomButtonText}>Daily Challenge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomButton} onPress={onSeeClass}>
+          <Text style={styles.bottomButtonText}>See Class</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomButton} onPress={onGoSet}>
+          <Text style={styles.bottomButtonText}>Go To Set</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomButton} onPress={onGoCurrentLesson}>
+          <Text style={styles.bottomButtonText}>Current Lesson</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-    {/* Tile grid */}
-    <View style={styles.tileContainer}>
-      <TouchableOpacity style={styles.tile} onPress={onDailyChallenge}>
-        <Text style={styles.tileText}>Daily Challenge</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.tile} onPress={onGoCurrentLesson}>
-        <Text style={styles.tileText}>Current Lesson</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.tile} onPress={onGoSet}>
-        <Text style={styles.tileText}>Go To Set</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.tile} onPress={onSeeClass}>
-        <Text style={styles.tileText}>See Class</Text>
-      </TouchableOpacity>
-    </View>
-    </>
   );
 };
 
@@ -90,25 +98,42 @@ const styles = StyleSheet.create({
   profileGrade: {
     fontSize: 16,
   },
-  tileContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  // Main container
+  container: {
+    flex: 1,
+    padding: 16,
+    alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: 16,
   },
-  tile: {
-    backgroundColor: themeVariables.primaryColor,
-    width: '48%',
-    aspectRatio: 1,
-    alignItems: 'center',
+  // Content display
+  contentContainer: {
+    flex: 1,
     justifyContent: 'center',
-    marginBottom: 16,
-    borderRadius: themeVariables.borderRadiusPill,
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
-  tileText: {
+  contentText: {
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  // Bottom action buttons
+  bottomButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  bottomButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: themeVariables.primaryColor,
+    paddingVertical: 12,
+    borderRadius: themeVariables.borderRadiusPill,
+    alignItems: 'center',
+  },
+  bottomButtonText: {
     color: themeVariables.whiteColor,
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
   },
   // Progress display
