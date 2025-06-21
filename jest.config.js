@@ -7,6 +7,8 @@ module.exports = {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|react-native-vector-icons)/)',
+    // Transform these modules by Babel
+    // Transform these external modules by Babel
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|react-native-vector-icons|@fortawesome/react-native-fontawesome|react-native-image-picker|@flipxyz/react-native-boring-avatars)/)',
   ],
 };

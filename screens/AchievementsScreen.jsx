@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-// import ThemedButton from '../components/ThemedButton';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faCalendarCheck, faTrophy } from '@fortawesome/free-solid-svg-icons';
+import { faCalendarCheck, faTrophy, faStar } from '@fortawesome/free-solid-svg-icons';
+import theme from '../styles/theme';
 
 // Map icon name strings to FontAwesome icons
 const iconMap = {
@@ -12,11 +12,22 @@ const iconMap = {
 };
 const AchievementItem = ({ icon, title, description, points, earned }) => (
   <View style={styles.item}>
-    <FontAwesomeIcon icon={iconMap[icon]} size={32} color={earned ? '#4caf50' : '#ccc'} />
+    <FontAwesomeIcon
+      icon={iconMap[icon]}
+      size={32}
+      color={earned ? theme.secondaryColor : '#ccc'}
+    />
     <View style={styles.itemText}>
       <Text style={styles.itemTitle}>{title}</Text>
       <Text style={styles.itemDesc}>{description}</Text>
-      <Text style={styles.itemPoints}>Points: {points}</Text>
+    </View>
+    <View style={styles.pointsContainer}>
+      <Text style={styles.pointsText}>{points}</Text>
+      <FontAwesomeIcon
+        icon={faStar}
+        size={24}
+        color={earned ? theme.secondaryColor : '#ccc'}
+      />
     </View>
   </View>
 );
@@ -107,9 +118,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  // Deprecated: use pointsContainer and pointsText instead
   itemPoints: {
     fontSize: 12,
     color: '#333',
+  },
+  pointsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 50,
+    marginRight: 16,
+  },
+  pointsText: {
+    fontSize: 12,
+    color: '#333',
+    marginBottom: 4,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,

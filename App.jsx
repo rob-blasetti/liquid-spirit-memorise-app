@@ -245,8 +245,12 @@ const App = () => {
   const [visitedGrades, setVisitedGrades] = useState({});
   const [gamesPlayed, setGamesPlayed] = useState(0);
 
-  // Splash timeout
+  // Splash timeout (skip delay during tests)
   useEffect(() => {
+    if (process.env.NODE_ENV === 'test') {
+      setShowSplash(false);
+      return;
+    }
     const timeout = setTimeout(() => setShowSplash(false), 2000);
     return () => clearTimeout(timeout);
   }, []);
@@ -417,6 +421,7 @@ const App = () => {
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
+  };
 
   const playSelectedGame = (gameId) => {
     const { setNumber, lessonNumber } = getCurrentProgress();
