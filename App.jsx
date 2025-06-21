@@ -79,6 +79,7 @@ const App = () => {
       description: 'Memorise five prayers',
       icon: 'trophy',
       points: 15,
+      prereq: 'prayer1',
       earned: false,
     },
     {
@@ -87,6 +88,7 @@ const App = () => {
       description: 'Memorise ten prayers',
       icon: 'trophy',
       points: 25,
+      prereq: 'prayer5',
       earned: false,
     },
     {
@@ -103,6 +105,7 @@ const App = () => {
       description: 'Memorise five quotes',
       icon: 'trophy',
       points: 15,
+      prereq: 'quote1',
       earned: false,
     },
     {
@@ -111,6 +114,7 @@ const App = () => {
       description: 'Memorise fifteen quotes',
       icon: 'trophy',
       points: 25,
+      prereq: 'quote5',
       earned: false,
     },
     {
@@ -119,6 +123,7 @@ const App = () => {
       description: 'Complete all lessons in Set 2',
       icon: 'trophy',
       points: 10,
+      prereq: 'set1',
       earned: false,
     },
     {
@@ -127,6 +132,7 @@ const App = () => {
       description: 'Complete all lessons in Set 3',
       icon: 'trophy',
       points: 10,
+      prereq: 'set2',
       earned: false,
     },
     {
@@ -135,6 +141,7 @@ const App = () => {
       description: 'Complete all lessons in Set 4',
       icon: 'trophy',
       points: 10,
+      prereq: 'set3',
       earned: false,
     },
     {
@@ -143,6 +150,7 @@ const App = () => {
       description: 'Finish all Grade 1 lessons',
       icon: 'trophy',
       points: 20,
+      prereq: 'set4',
       earned: false,
     },
     {
@@ -151,6 +159,7 @@ const App = () => {
       description: 'Finish all Grade 2 lessons',
       icon: 'trophy',
       points: 25,
+      prereq: 'grade1',
       earned: false,
     },
     {
@@ -167,6 +176,7 @@ const App = () => {
       description: 'Do the daily challenge seven days in a row',
       icon: 'calendar-check-o',
       points: 15,
+      prereq: 'streak3',
       earned: false,
     },
     {
@@ -175,6 +185,7 @@ const App = () => {
       description: 'Do the daily challenge thirty days in a row',
       icon: 'calendar-check-o',
       points: 30,
+      prereq: 'streak7',
       earned: false,
     },
     {
@@ -191,6 +202,7 @@ const App = () => {
       description: 'Play ten games',
       icon: 'trophy',
       points: 20,
+      prereq: 'game1',
       earned: false,
     },
     {
@@ -199,6 +211,7 @@ const App = () => {
       description: 'Practice quotes twenty times',
       icon: 'trophy',
       points: 10,
+      prereq: 'quote1',
       earned: false,
     },
     {
@@ -207,6 +220,7 @@ const App = () => {
       description: 'Finish a tap game without mistakes',
       icon: 'trophy',
       points: 15,
+      prereq: 'game1',
       earned: false,
     },
     {
@@ -228,6 +242,8 @@ const App = () => {
   ]);
   const [completedLessons, setCompletedLessons] = useState({});
   const [overrideProgress, setOverrideProgress] = useState(null);
+  const [visitedGrades, setVisitedGrades] = useState({});
+  const [gamesPlayed, setGamesPlayed] = useState(0);
 
   // Splash timeout
   useEffect(() => {
@@ -292,11 +308,20 @@ const App = () => {
   };
   const handleContinueGuest = () => setShowSetup(true);
   const goHome = () => setNav({ screen: 'home' });
-  const goGrade1 = () => setNav({ screen: 'grade1' });
-  const goGrade2 = () => setNav({ screen: 'grade2' });
+  const visitGrade = (g) => {
+    setVisitedGrades(prev => {
+      const updated = { ...prev, [g]: true };
+      if (updated[1] && updated[2] && updated[3] && updated[4]) {
+        awardAchievement('explorer');
+      }
+      return updated;
+    });
+  };
+  const goGrade1 = () => { visitGrade(1); setNav({ screen: 'grade1' }); };
+  const goGrade2 = () => { visitGrade(2); setNav({ screen: 'grade2' }); };
   const goGrades = () => setNav({ screen: 'grades' });
-  const goGrade3 = () => setNav({ screen: 'grade3' });
-  const goGrade4 = () => setNav({ screen: 'grade4' });
+  const goGrade3 = () => { visitGrade(3); setNav({ screen: 'grade3' }); };
+  const goGrade4 = () => { visitGrade(4); setNav({ screen: 'grade4' }); };
   const goSettings = () => setNav({ screen: 'settings' });
   const goAchievements = () => setNav({ screen: 'achievements' });
   const goGames = () => setNav({ screen: 'games' });
@@ -312,63 +337,87 @@ const App = () => {
     setNumber: prev.setNumber,
     lessonNumber: prev.lessonNumber,
   }));
-  const goTapGame = (quote) => setNav(prev => ({ screen: 'tapGame', quote, setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
-  const goScrambleGame = (quote) =>
+  const goTapGame = (quote) => {
+    markGamePlayed();
+    setNav(prev => ({
+      screen: 'tapGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  };
+  const goScrambleGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'scrambleGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goNextWordGame = (quote) =>
+  };
+  const goNextWordGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'nextWordGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goMemoryGame = (quote) =>
+  };
+  const goMemoryGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'memoryGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goFlashGame = (quote) =>
+  };
+  const goFlashGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'flashGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goRevealGame = (quote) =>
+  };
+  const goRevealGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'revealGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goFirstLetterGame = (quote) =>
+  };
+  const goFirstLetterGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'firstLetterGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goLetterScrambleGame = (quote) =>
+  };
+  const goLetterScrambleGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'letterScrambleGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
-  const goFastTypeGame = (quote) =>
+  };
+  const goFastTypeGame = (quote) => {
+    markGamePlayed();
     setNav(prev => ({
       screen: 'fastTypeGame',
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
     }));
+
   const playSelectedGame = (gameId) => {
     const { setNumber, lessonNumber } = getCurrentProgress();
     let content = '';
@@ -416,6 +465,7 @@ const App = () => {
     } catch (e) {
       // ignore errors
     }
+    awardAchievement('profile');
   };
 
   const addScore = async (value) => {
@@ -424,16 +474,42 @@ const App = () => {
     await saveProfile(updated);
   };
 
+  const markGamePlayed = () => {
+    setGamesPlayed(n => {
+      const total = n + 1;
+      if (total >= 1) awardAchievement('game1');
+      if (total >= 10) awardAchievement('game10');
+      return total;
+    });
+  };
+
+  const awardAchievement = (id) => {
+    setAchievements(a => a.map(ach => {
+      if (ach.id === id && !ach.earned) {
+        addScore(ach.points || 0);
+        return { ...ach, earned: true };
+      }
+      return ach;
+    }));
+  };
+
   const markDaily = () => {
-    setAchievements(a => a.map(ach => ach.id === 'daily' ? { ...ach, earned: true } : ach));
+    awardAchievement('daily');
   };
 
   const completeLesson = (setNumber, lessonNumber) => {
     setCompletedLessons(prev => {
       const lessons = prev[setNumber] || {};
       const updated = { ...prev, [setNumber]: { ...lessons, [lessonNumber]: true } };
-      if (updated[1] && updated[1][1] && updated[1][2] && updated[1][3]) {
-        setAchievements(a => a.map(ach => ach.id === 'set1' ? { ...ach, earned: true } : ach));
+      if (updated[setNumber] && updated[setNumber][1] && updated[setNumber][2] && updated[setNumber][3]) {
+        awardAchievement(`set${setNumber}`);
+      }
+      // After completing sets 1-3, award grade2 achievement
+      if ([1, 2, 3].every(num => {
+        const lessonsInSet = updated[num];
+        return lessonsInSet && lessonsInSet[1] && lessonsInSet[2] && lessonsInSet[3];
+      })) {
+        awardAchievement('grade2');
       }
       return updated;
     });
@@ -489,6 +565,7 @@ const App = () => {
 
   // Handle daily challenge for current lesson (practice prayer or quote)
   const handleDailyChallenge = () => {
+    markDaily();
     const { setNumber, lessonNumber } = getCurrentProgress();
     // Determine quote for current lesson
     let content = '';

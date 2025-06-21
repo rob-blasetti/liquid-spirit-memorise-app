@@ -10,19 +10,24 @@ const iconMap = {
   'calendar-check-o': faCalendarCheck,
   'trophy': faTrophy,
 };
-const AchievementItem = ({ icon, title, description, earned }) => (
+const AchievementItem = ({ icon, title, description, points, earned }) => (
   <View style={styles.item}>
     <FontAwesomeIcon icon={iconMap[icon]} size={32} color={earned ? '#4caf50' : '#ccc'} />
     <View style={styles.itemText}>
       <Text style={styles.itemTitle}>{title}</Text>
       <Text style={styles.itemDesc}>{description}</Text>
+      <Text style={styles.itemPoints}>Points: {points}</Text>
     </View>
   </View>
 );
 
 const AchievementsScreen = ({ achievements }) => {
+  // Only show achievements when prerequisites are met
+  const visible = achievements.filter(
+    (ach) => !ach.prereq || achievements.find(a => a.id === ach.prereq)?.earned
+  );
   // Group achievements into categories based on id prefix
-  const grouped = achievements.reduce((acc, ach) => {
+  const grouped = visible.reduce((acc, ach) => {
     let category = 'Other';
     if (ach.id === 'daily') category = 'Daily Challenge';
     else if (ach.id.startsWith('streak')) category = 'Streaks';
@@ -58,6 +63,7 @@ const AchievementsScreen = ({ achievements }) => {
                   icon={ach.icon}
                   title={ach.title}
                   description={ach.description}
+                  points={ach.points}
                   earned={ach.earned}
                 />
               ))}
@@ -100,6 +106,10 @@ const styles = StyleSheet.create({
   itemDesc: {
     fontSize: 14,
     color: '#666',
+  },
+  itemPoints: {
+    fontSize: 12,
+    color: '#333',
   },
   scrollView: {
     flex: 1,
