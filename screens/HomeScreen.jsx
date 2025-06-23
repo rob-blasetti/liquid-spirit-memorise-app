@@ -5,19 +5,7 @@ import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 
-/**
- * Home screen showing profile overview, current progress, and action tiles.
- * Props:
- *  - profile: { name, grade, score }
- *  - onDailyChallenge: () => void
-  - onGoCurrentLesson: () => void
- *  - onGoSet: () => void
- *  - onSeeClass: () => void
- *  - currentSet: number
- *  - currentLesson: number
- *  - content: string (current quote or prayer)
- */
-const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson, content }) => {
+const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson, content, onProfilePress }) => {
   const totalPoints = achievements
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
@@ -25,13 +13,13 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson
     <View style={styles.container}>
       {/* Header: avatar and points */}
       <View style={styles.header}>
-        <View style={styles.profileContainer}>
+        <TouchableOpacity style={styles.profileContainer} onPress={onProfilePress}>
           <Avatar size={60} name={profile.name} variant="beam" />
           <View style={styles.profileTextContainer}>
             <Text style={styles.profileName}>{profile.name}</Text>
             <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={styles.pointsContainer}>
           <FontAwesomeIcon icon={faStar} size={20} color="#f1c40f" />
           <Text style={styles.pointsText}>{totalPoints}</Text>

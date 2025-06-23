@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity, Modal, FlatList, Image } from 'react-native';
+import Avatar from '@flipxyz/react-native-boring-avatars';
 import ThemedButton from './components/ThemedButton';
 import GradesScreen from './screens/GradesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -43,24 +44,27 @@ import { UserProvider, UserContext } from './contexts/UserContext';
 
  const MainApp = () => {
   // access user context (user, family, children, classes)
-  const { user, classes, setUser } = useUser();
+  const { user, classes, children, setUser } = useUser();
   useEffect(() => {
     console.log('API_URL:', API_URL);
   }, []);
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
-  // when profile loads, if multiple children ask the user; otherwise set context immediately
+  // when profile loads, if multiple children, ask the user to pick a default child
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
-  // When profile loads, if multiple children ask user; otherwise pick child and set in context
   useEffect(() => {
     if (!profile) return;
-    const childrenList = profile.userContext?.children || [];
-    if (childrenList.length > 1) {
+    // Use profile.children (array of { child, classes }) to decide if we need to choose
+    const childEntries = profile.children || [];
+    if (childEntries.length > 1) {
       setChooseChildVisible(true);
-    } else {
-      const activeChild = childrenList[0] || null;
-      setUser({ ...profile, activeChild });
+    } else if (childEntries.length === 1) {
+      // only one entry: auto-select its child
+      const entry = childEntries[0];
+      const child = entry.child || entry;
+      setProfile(child);
+      setUser(child);
     }
   }, [profile]);
   const [showSetup, setShowSetup] = useState(false);
@@ -293,7 +297,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const data = await AsyncStorage.getItem('profile');
+        const data = await AsyncStorage.getItem('user');
         if (data) setProfile(JSON.parse(data));
       } catch (e) {
         // ignore errors
@@ -764,6 +768,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
           onSeeClass={classes?.length > 0 ? goClass : undefined}
           currentSet={setNumber}
           currentLesson={lessonNumber}
+          onProfilePress={() => setChooseChildVisible(true)}
         />
       );
   };
@@ -771,25 +776,33 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   return (
     <SafeAreaView style={styles.container}>
       {/* if multiple children, show chooser modal */}
-      {chooseChildVisible && profile && (
+      {chooseChildVisible && (
         <Modal visible transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Who are you?</Text>
               <FlatList
-                data={profile.userContext.children}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.childButton}
-                    onPress={() => {
-                      setUser({ ...profile, activeChild: item });
-                      setChooseChildVisible(false);
-                    }}
-                  >
-                    <Text style={styles.childText}>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
+                data={children}
+                keyExtractor={item => item.child._id}
+                renderItem={({ item }) => {
+                  // extract the child object and compute full name
+                  const childObj = item.child;
+                  const fullName = `${childObj.firstName} ${childObj.lastName}`;
+                  const selected = { ...childObj, name: fullName };
+                  return (
+                    <TouchableOpacity
+                      style={styles.childButton}
+                      onPress={() => {
+                        setProfile(selected);
+                        setUser(selected);
+                        setChooseChildVisible(false);
+                      }}
+                    >
+                      <Avatar size={40} name={fullName} variant="beam" />
+                      <Text style={styles.childText}>{fullName}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
               />
             </View>
           </View>
@@ -863,7 +876,7 @@ const styles = StyleSheet.create({
     width: '48%',
     aspectRatio: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     padding: 10,
     marginBottom: 16,
     borderRadius: 8,
@@ -920,7 +933,7 @@ const styles = StyleSheet.create({
   // Modal styles for choosing a child
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
@@ -938,11 +951,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   childButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
+  },
+  childAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   childText: {
     fontSize: 16,
-    textAlign: 'center',
+    marginLeft: 12,
   },
 });
 
