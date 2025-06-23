@@ -52,27 +52,21 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     return (
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Select Lesson</Text>
-        <View style={styles.grid}>
-          {grade1Lessons.map(l => (
-            <TouchableOpacity
-              key={l.lesson}
-              style={[
-                styles.gridItem,
-                selectedLesson === l.lesson && styles.gridItemSelected,
-              ]}
-              onPress={() => setSelectedLesson(l.lesson)}
-            >
-              <Text
-                style={[
-                  styles.gridItemText,
-                  selectedLesson === l.lesson && styles.gridItemTextSelected,
-                ]}
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>Lesson</Text>
+          <View style={styles.rowOptions}>
+            {grade1Lessons.map(l => (
+              <TouchableOpacity
+                key={l.lesson}
+                style={[styles.cell, selectedLesson === l.lesson && styles.cellSelected]}
+                onPress={() => setSelectedLesson(l.lesson)}
               >
-                Lesson {l.lesson}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.cellText, selectedLesson === l.lesson && styles.cellTextSelected]}>
+                  {l.lesson}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
         <View style={styles.buttonContainer}>
           <ThemedButton
@@ -81,8 +75,10 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           />
           <ThemedButton title="Auto Progress" onPress={clearOverride} />
           <ThemedButton title="Back" onPress={onBack} />
-          <ThemedButton title="Reset" onPress={onReset} />
         </View>
+        <TouchableOpacity style={styles.resetRow} onPress={onReset}>
+          <Text style={styles.resetRowText}>Wipe User Details</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -96,49 +92,37 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     return (
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Select Set</Text>
-        <View style={styles.grid}>
-          {[1, 2, 3].map(setNum => (
-            <TouchableOpacity
-              key={setNum}
-              style={[
-                styles.gridItem,
-                selectedSet === setNum && styles.gridItemSelected,
-              ]}
-              onPress={() => setSelectedSet(setNum)}
-            >
-              <Text
-                style={[
-                  styles.gridItemText,
-                  selectedSet === setNum && styles.gridItemTextSelected,
-                ]}
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>Set</Text>
+          <View style={styles.rowOptions}>
+            {[1, 2, 3].map(setNum => (
+              <TouchableOpacity
+                key={setNum}
+                style={[styles.cell, selectedSet === setNum && styles.cellSelected]}
+                onPress={() => setSelectedSet(setNum)}
               >
-                Set {setNum}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.cellText, selectedSet === setNum && styles.cellTextSelected]}>
+                  {setNum}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-        <Text style={styles.subtitle}>Select Lesson</Text>
-        <View style={styles.grid}>
-          {lessons.map(ln => (
-            <TouchableOpacity
-              key={ln}
-              style={[
-                styles.gridItem,
-                selectedLesson === ln && styles.gridItemSelected,
-              ]}
-              onPress={() => setSelectedLesson(ln)}
-            >
-              <Text
-                style={[
-                  styles.gridItemText,
-                  selectedLesson === ln && styles.gridItemTextSelected,
-                ]}
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>Lesson</Text>
+          <View style={styles.rowOptions}>
+            {lessons.map(ln => (
+              <TouchableOpacity
+                key={ln}
+                style={[styles.cell, selectedLesson === ln && styles.cellSelected]}
+                onPress={() => setSelectedLesson(ln)}
               >
-                Lesson {ln}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.cellText, selectedLesson === ln && styles.cellTextSelected]}>
+                  {ln}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
         <View style={styles.buttonContainer}>
           <ThemedButton
@@ -147,8 +131,10 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           />
           <ThemedButton title="Auto Progress" onPress={clearOverride} />
           <ThemedButton title="Back" onPress={onBack} />
-          <ThemedButton title="Reset" onPress={onReset} />
         </View>
+        <TouchableOpacity style={styles.resetRow} onPress={onReset}>
+          <Text style={styles.resetRowText}>Wipe User Details</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -183,6 +169,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  rowLabel: {
+    width: 80,
+    fontSize: 16,
+    color: themeVariables.primaryColor,
+  },
+  rowOptions: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -210,9 +212,42 @@ const styles = StyleSheet.create({
   gridItemTextSelected: {
     color: themeVariables.whiteColor,
   },
+  cell: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: themeVariables.primaryColor,
+    borderRadius: themeVariables.borderRadiusPill,
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: themeVariables.whiteColor,
+  },
+  cellSelected: {
+    backgroundColor: themeVariables.primaryColor,
+  },
+  cellText: {
+    fontSize: 14,
+    color: themeVariables.primaryColor,
+  },
+  cellTextSelected: {
+    color: themeVariables.whiteColor,
+  },
   buttonContainer: {
     width: '80%',
     marginTop: 16,
+  },
+  resetRow: {
+    width: '100%',
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginTop: 16,
+  },
+  resetRowText: {
+    color: themeVariables.redColor,
+    fontSize: 16,
   },
 });
 
