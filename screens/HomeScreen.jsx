@@ -53,9 +53,12 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson
         <TouchableOpacity style={styles.bottomButton} onPress={onDailyChallenge}>
           <Text style={styles.bottomButtonText}>Daily Challenge</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomButton} onPress={onSeeClass}>
-          <Text style={styles.bottomButtonText}>See Class</Text>
-        </TouchableOpacity>
+        {/* Only show See Class if there are classes */}
+        {onSeeClass && (
+          <TouchableOpacity style={styles.bottomButton} onPress={onSeeClass}>
+            <Text style={styles.bottomButtonText}>See Class</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.bottomButton} onPress={onGoSet}>
           <Text style={styles.bottomButtonText}>Go To Set</Text>
         </TouchableOpacity>

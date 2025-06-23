@@ -1,12 +1,5 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import ThemedButton from './components/ThemedButton';
 import GradesScreen from './screens/GradesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,20 +26,43 @@ import LetterScrambleGame from './screens/LetterScrambleGame';
 import FastTypeGame from './screens/FastTypeGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import HomeScreen from './screens/HomeScreen';
-import { grade1Lessons } from './screens/Grade1Screen';
+import { grade1Lessons } from './data/grade1';
 import { quoteMap } from './data/grade2';
 import StartScreen from './screens/StartScreen';
 import Splash from './screens/Splash';
 import Grade1SetScreen from './screens/Grade1SetScreen';
 import Grade1LessonScreen from './screens/Grade1LessonScreen';
 import GamesListScreen from './screens/GamesListScreen';
+import ClassScreen from './screens/ClassScreen';
+import { useUser } from './contexts/UserContext';
 // Game registry for daily challenge
 import { pickRandomGame } from './games';
+import { API_URL } from './config';
 
-const App = () => {
+import { UserProvider, UserContext } from './contexts/UserContext';
+
+ const MainApp = () => {
+  // access user context (user, family, children, classes)
+  const { user, classes, setUser } = useUser();
+  useEffect(() => {
+    console.log('API_URL:', API_URL);
+  }, []);
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
+  // when profile loads, if multiple children ask the user; otherwise set context immediately
+  const [chooseChildVisible, setChooseChildVisible] = useState(false);
+  // When profile loads, if multiple children ask user; otherwise pick child and set in context
+  useEffect(() => {
+    if (!profile) return;
+    const childrenList = profile.userContext?.children || [];
+    if (childrenList.length > 1) {
+      setChooseChildVisible(true);
+    } else {
+      const activeChild = childrenList[0] || null;
+      setUser({ ...profile, activeChild });
+    }
+  }, [profile]);
   const [showSetup, setShowSetup] = useState(false);
   const [achievements, setAchievements] = useState([
     {
@@ -324,6 +340,7 @@ const App = () => {
   const goGrade1 = () => { visitGrade(1); setNav({ screen: 'grade1' }); };
   const goGrade2 = () => { visitGrade(2); setNav({ screen: 'grade2' }); };
   const goGrades = () => setNav({ screen: 'grades' });
+  const goClass = () => setNav({ screen: 'class' });
   const goGrade3 = () => { visitGrade(3); setNav({ screen: 'grade3' }); };
   const goGrade4 = () => { visitGrade(4); setNav({ screen: 'grade4' }); };
   const goSettings = () => setNav({ screen: 'settings' });
@@ -696,6 +713,11 @@ const App = () => {
         />
       );
     }
+    // Class page
+    if (nav.screen === 'class') {
+      // Pass aggregated classes from user context
+      return <ClassScreen classes={classes || []} onBack={goHome} />;
+    }
     // Grades pick screen
     if (nav.screen === 'grades') {
       return (
@@ -738,7 +760,8 @@ const App = () => {
           onDailyChallenge={handleDailyChallenge}
           onGoCurrentLesson={handleGoCurrentLesson}
           onGoSet={handleGoSet}
-          onSeeClass={goGrades}
+          // show class button only if there are any classes in context
+          onSeeClass={classes?.length > 0 ? goClass : undefined}
           currentSet={setNumber}
           currentLesson={lessonNumber}
         />
@@ -747,6 +770,31 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* if multiple children, show chooser modal */}
+      {chooseChildVisible && profile && (
+        <Modal visible transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Who are you?</Text>
+              <FlatList
+                data={profile.userContext.children}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.childButton}
+                    onPress={() => {
+                      setUser({ ...profile, activeChild: item });
+                      setChooseChildVisible(false);
+                    }}
+                  >
+                    <Text style={styles.childText}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
       <View style={styles.container}>
         {renderScreen()}
       </View>
@@ -775,6 +823,12 @@ const App = () => {
     </SafeAreaView>
   );
 };
+
+const App = () => (
+  <UserProvider>
+    <MainApp />
+  </UserProvider>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -862,6 +916,33 @@ const styles = StyleSheet.create({
   homeButtonContainer: {
     width: '80%',
     marginVertical: 8,
+  },
+  // Modal styles for choosing a child
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 8,
+    width: '80%',
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  childButton: {
+    paddingVertical: 12,
+  },
+  childText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

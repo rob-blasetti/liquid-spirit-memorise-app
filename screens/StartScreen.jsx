@@ -1,17 +1,45 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, Linking, TextInput } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import { signInWithLiquidSpirit } from '../services/authService';
+import { useUser } from '../contexts/UserContext';
 import splashLogo from '../assets/img/Nuri_Splash.png';
 
 const StartScreen = ({ onSignIn, onGuest }) => {
+  // Local state for user credentials
+  const [bahaiId, setBahaiId] = useState('');
+  const [password, setPassword] = useState('');
+  // Context setters for user data
+  const { setUser, setClasses, setFamily, setChildren } = useUser();
   const handleSignIn = async () => {
     try {
-      const user = await signInWithLiquidSpirit();
-      onSignIn(user);
+      // Call auth service with credentials and log the response
+      const loginDetails = await signInWithLiquidSpirit(bahaiId, password);
+      console.log('signInWithLiquidSpirit response:', loginDetails);
+      // Update context: user info, family, children, and aggregate classes from all children
+      setUser(loginDetails);
+      setFamily(loginDetails.family);
+      if (loginDetails.children) {
+        // store children list
+        setChildren(loginDetails.children);
+        // aggregate all classes arrays from each child into one list
+        const allClasses = loginDetails.children.reduce((acc, child) => {
+          if (Array.isArray(child.classes)) {
+            acc.push(...child.classes);
+          }
+          return acc;
+        }, []);
+        setClasses(allClasses);
+      } else {
+        // no children: clear
+        setChildren([]);
+        setClasses([]);
+      }
+      // Proceed with sign-in callback, passing the user details
+      onSignIn(loginDetails);
     } catch (e) {
-      // handle error - for now we simply log
-      console.error(e);
+      // Log any sign-in errors
+      console.error('Sign in failed:', e);
     }
   };
 
@@ -19,6 +47,23 @@ const StartScreen = ({ onSignIn, onGuest }) => {
     <View style={styles.container}>
       <Text style={styles.heading}>Nuri</Text>
       <Image source={splashLogo} style={styles.image} resizeMode="contain" />
+      {/* Credential inputs */}
+      <TextInput
+        placeholder="Bahai ID"
+        style={styles.input}
+        value={bahaiId}
+        onChangeText={setBahaiId}
+        autoCapitalize="none"
+        keyboardType="default"
+      />
+      <TextInput
+        placeholder="Password"
+        style={styles.input}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoCapitalize="none"
+      />
       <View style={styles.buttonContainer}>
         <ThemedButton
           title="Sign in with Liquid Spirit"
@@ -58,6 +103,16 @@ const styles = StyleSheet.create({
     width: '80%',
     height: 200,
     marginBottom: 32,
+  },
+  // Input fields for Bahai ID and password
+  input: {
+    width: '80%',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    marginVertical: 8,
   },
   buttonContainer: {
     width: '80%',

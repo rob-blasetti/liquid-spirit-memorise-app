@@ -50,7 +50,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   // Grade 1: select lesson only
   if (profile.grade === 1) {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Lesson</Text>
@@ -90,7 +90,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       .map(key => parseInt(key.split('-')[1], 10))
       .sort((a, b) => a - b);
     return (
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Set</Text>
@@ -153,10 +153,12 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 };
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 16,
   },
   title: {
