@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
@@ -74,9 +75,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: themeVariables.neutralLight,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -87,20 +89,22 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   card: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: themeVariables.secondaryLightColor,
     width: 60,
     height: 60,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 4,
-    borderRadius: 4,
+    borderRadius: themeVariables.borderRadiusPill,
   },
   cardText: {
-    fontSize: 16,
+    fontSize: 18,
+    color: themeVariables.whiteColor,
+    fontWeight: 'bold',
   },
   message: {
-    fontSize: 16,
-    color: '#e52f2f',
+    fontSize: 18,
+    color: themeVariables.primaryColor,
     marginVertical: 8,
   },
   buttonContainer: {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const FastTypeGame = ({ quote, onBack }) => {
   const [time, setTime] = useState(15);
@@ -57,13 +58,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: themeVariables.neutralLight,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 16,
   },
   timer: {
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 8,
   },
   input: {
@@ -72,10 +74,11 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 8,
     width: '80%',
+    fontSize: 18,
   },
   message: {
-    fontSize: 16,
-    color: '#e52f2f',
+    fontSize: 18,
+    color: themeVariables.primaryColor,
     marginVertical: 8,
   },
   buttonContainer: {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const FlashCardRecallGame = ({ quote, onBack }) => {
   const [showQuote, setShowQuote] = useState(true);
@@ -54,13 +55,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: themeVariables.neutralLight,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 16,
   },
   quote: {
-    fontSize: 16,
+    fontSize: 20,
     marginVertical: 24,
     textAlign: 'center',
   },
@@ -70,10 +72,11 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 8,
     width: '80%',
+    fontSize: 18,
   },
   message: {
-    fontSize: 16,
-    color: '#e52f2f',
+    fontSize: 18,
+    color: themeVariables.primaryColor,
     marginVertical: 8,
   },
   buttonContainer: {

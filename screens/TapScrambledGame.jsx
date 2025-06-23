@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => {
   const copy = [...arr];
@@ -64,9 +65,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: themeVariables.neutralLight,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -76,17 +78,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wordButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 8,
+    backgroundColor: themeVariables.secondaryLightColor,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     margin: 4,
-    borderRadius: 4,
+    borderRadius: themeVariables.borderRadiusPill,
   },
   wordText: {
-    fontSize: 16,
+    fontSize: 18,
+    color: themeVariables.whiteColor,
+    fontWeight: 'bold',
   },
   message: {
-    fontSize: 16,
-    color: '#e52f2f',
+    fontSize: 18,
+    color: themeVariables.primaryColor,
     marginVertical: 8,
   },
   buttonContainer: {
