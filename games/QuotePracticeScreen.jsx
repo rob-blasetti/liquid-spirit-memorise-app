@@ -70,9 +70,6 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
       ) : (
         <Text style={styles.message}>Great job! You finished.</Text>
       )}
-      <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-      </View>
     </View>
   );
 };

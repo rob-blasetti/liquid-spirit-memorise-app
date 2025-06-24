@@ -64,7 +64,6 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
         </View>
       )}
       {message ? <Text style={styles.message}>{message}</Text> : null}
-      <ThemedButton title="Back" onPress={onBack} />
     </View>
   );
 };

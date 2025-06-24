@@ -64,9 +64,6 @@ const NextWordQuizGame = ({ quote, onBack }) => {
         ))}
       </View>
       {message !== '' && <Text style={styles.message}>{message}</Text>}
-      <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-      </View>
     </View>
   );
 };

@@ -55,7 +55,6 @@ const HangmanGame = ({ quote, onBack }) => {
           <ThemedButton title="Guess" onPress={handleGuess} />
         </View>
       )}
-      <ThemedButton title="Back" onPress={onBack} />
     </View>
   );
 };

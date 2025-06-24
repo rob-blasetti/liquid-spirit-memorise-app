@@ -29,9 +29,6 @@ const RevealWordGame = ({ quote, onBack }) => {
         <ThemedButton title="Reveal Word" onPress={revealNext} />
       )}
       {index === words.length && <Text style={styles.message}>All done!</Text>}
-      <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-      </View>
     </View>
   );
 };

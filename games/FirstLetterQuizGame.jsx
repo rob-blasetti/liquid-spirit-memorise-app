@@ -45,9 +45,6 @@ const FirstLetterQuizGame = ({ quote, onBack }) => {
       ) : (
         <Text style={styles.message}>Great job!</Text>
       )}
-      <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-      </View>
     </View>
   );
 };

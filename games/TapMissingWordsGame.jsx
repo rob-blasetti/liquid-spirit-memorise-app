@@ -78,9 +78,6 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
         ))}
       </View>
       {message ? <Text style={styles.message}>{message}</Text> : null}
-      <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-      </View>
     </View>
   );
 };

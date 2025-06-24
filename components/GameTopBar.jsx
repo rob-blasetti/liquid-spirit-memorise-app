@@ -17,12 +17,13 @@ const GameTopBar = ({ onBack }) => (
 );
 
 const styles = StyleSheet.create({
+  // Position the back chevron in the top-left corner of the game screen
   container: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    padding: 16,
+    zIndex: 1,
   },
   iconButton: {
     padding: 4,
