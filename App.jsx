@@ -11,26 +11,16 @@ import { faTrash, faHome, faBook, faTrophy, faCog, faGamepad } from '@fortawesom
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
 import Grade2LessonScreen from './screens/Grade2LessonScreen';
-import QuotePracticeScreen from './games/QuotePracticeScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
-import TapMissingWordsGame from './games/TapMissingWordsGame';
-import TapScrambledGame from './games/TapScrambledGame';
-import NextWordQuizGame from './games/NextWordQuizGame';
-import MemoryMatchGame from './games/MemoryMatchGame';
-import FlashCardRecallGame from './games/FlashCardRecallGame';
-import RevealWordGame from './games/RevealWordGame';
-import FirstLetterQuizGame from './games/FirstLetterQuizGame';
-import LetterScrambleGame from './games/LetterScrambleGame';
-import FastTypeGame from './games/FastTypeGame';
-import HangmanGame from './games/HangmanGame';
-import FillBlankTypingGame from './games/FillBlankTypingGame';
+import { gameScreens } from './games/gameRoutes';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import HomeScreen from './screens/HomeScreen';
 import { grade1Lessons } from './data/grade1';
 import { quoteMap } from './data/grade2';
+import { achievements as defaultAchievements } from './data/achievements';
 import StartScreen from './screens/StartScreen';
 import Splash from './screens/Splash';
 import Grade1SetScreen from './screens/Grade1SetScreen';
@@ -70,198 +60,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     }
   }, [profile]);
   const [showSetup, setShowSetup] = useState(false);
-  const [achievements, setAchievements] = useState([
-    {
-      id: 'daily',
-      title: 'Daily Learner',
-      description: 'Do a memorisation game each day',
-      icon: 'calendar-check-o',
-      points: 5,
-      earned: false,
-    },
-    {
-      id: 'set1',
-      title: 'Set 1 Master',
-      description: 'Complete all lessons in Set 1',
-      icon: 'trophy',
-      points: 10,
-      earned: false,
-    },
-    {
-      id: 'prayer1',
-      title: 'Prayer Beginner',
-      description: 'Memorise your first prayer',
-      icon: 'trophy',
-      points: 5,
-      earned: false,
-    },
-    {
-      id: 'prayer5',
-      title: 'Prayer Enthusiast',
-      description: 'Memorise five prayers',
-      icon: 'trophy',
-      points: 15,
-      prereq: 'prayer1',
-      earned: false,
-    },
-    {
-      id: 'prayer10',
-      title: 'Prayer Expert',
-      description: 'Memorise ten prayers',
-      icon: 'trophy',
-      points: 25,
-      prereq: 'prayer5',
-      earned: false,
-    },
-    {
-      id: 'quote1',
-      title: 'Quote Starter',
-      description: 'Memorise your first quote',
-      icon: 'trophy',
-      points: 5,
-      earned: false,
-    },
-    {
-      id: 'quote5',
-      title: 'Quote Collector',
-      description: 'Memorise five quotes',
-      icon: 'trophy',
-      points: 15,
-      prereq: 'quote1',
-      earned: false,
-    },
-    {
-      id: 'quote15',
-      title: 'Quote Scholar',
-      description: 'Memorise fifteen quotes',
-      icon: 'trophy',
-      points: 25,
-      prereq: 'quote5',
-      earned: false,
-    },
-    {
-      id: 'set2',
-      title: 'Set 2 Master',
-      description: 'Complete all lessons in Set 2',
-      icon: 'trophy',
-      points: 10,
-      prereq: 'set1',
-      earned: false,
-    },
-    {
-      id: 'set3',
-      title: 'Set 3 Master',
-      description: 'Complete all lessons in Set 3',
-      icon: 'trophy',
-      points: 10,
-      prereq: 'set2',
-      earned: false,
-    },
-    {
-      id: 'set4',
-      title: 'Set 4 Master',
-      description: 'Complete all lessons in Set 4',
-      icon: 'trophy',
-      points: 10,
-      prereq: 'set3',
-      earned: false,
-    },
-    {
-      id: 'grade1',
-      title: 'Grade 1 Star',
-      description: 'Finish all Grade 1 lessons',
-      icon: 'trophy',
-      points: 20,
-      prereq: 'set4',
-      earned: false,
-    },
-    {
-      id: 'grade2',
-      title: 'Grade 2 Star',
-      description: 'Finish all Grade 2 lessons',
-      icon: 'trophy',
-      points: 25,
-      prereq: 'grade1',
-      earned: false,
-    },
-    {
-      id: 'streak3',
-      title: 'Daily Streak 3',
-      description: 'Do the daily challenge three days in a row',
-      icon: 'calendar-check-o',
-      points: 5,
-      earned: false,
-    },
-    {
-      id: 'streak7',
-      title: 'Daily Streak 7',
-      description: 'Do the daily challenge seven days in a row',
-      icon: 'calendar-check-o',
-      points: 15,
-      prereq: 'streak3',
-      earned: false,
-    },
-    {
-      id: 'streak30',
-      title: 'Daily Streak 30',
-      description: 'Do the daily challenge thirty days in a row',
-      icon: 'calendar-check-o',
-      points: 30,
-      prereq: 'streak7',
-      earned: false,
-    },
-    {
-      id: 'game1',
-      title: 'Game Beginner',
-      description: 'Play your first game',
-      icon: 'trophy',
-      points: 5,
-      earned: false,
-    },
-    {
-      id: 'game10',
-      title: 'Game Fanatic',
-      description: 'Play ten games',
-      icon: 'trophy',
-      points: 20,
-      prereq: 'game1',
-      earned: false,
-    },
-    {
-      id: 'practice20',
-      title: 'Quote Practice Pro',
-      description: 'Practice quotes twenty times',
-      icon: 'trophy',
-      points: 10,
-      prereq: 'quote1',
-      earned: false,
-    },
-    {
-      id: 'tapPerfect',
-      title: 'Tap Game Champ',
-      description: 'Finish a tap game without mistakes',
-      icon: 'trophy',
-      points: 15,
-      prereq: 'game1',
-      earned: false,
-    },
-    {
-      id: 'profile',
-      title: 'Profile Setup',
-      description: 'Create your profile and avatar',
-      icon: 'trophy',
-      points: 5,
-      earned: false,
-    },
-    {
-      id: 'explorer',
-      title: 'Class Explorer',
-      description: 'Visit all grade levels',
-      icon: 'trophy',
-      points: 10,
-      earned: false,
-    },
-  ]);
+  const [achievements, setAchievements] = useState(defaultAchievements);
   const [completedLessons, setCompletedLessons] = useState({});
   const [overrideProgress, setOverrideProgress] = useState(null);
   const [visitedGrades, setVisitedGrades] = useState({});
@@ -364,100 +163,11 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     setNumber: prev.setNumber,
     lessonNumber: prev.lessonNumber,
   }));
-  const goTapGame = (quote) => {
+
+  const goGame = (gameId, quote) => {
     markGamePlayed();
     setNav(prev => ({
-      screen: 'tapGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goScrambleGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'scrambleGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goNextWordGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'nextWordGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goMemoryGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'memoryGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goFlashGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'flashGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goRevealGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'revealGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goFirstLetterGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'firstLetterGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goLetterScrambleGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'letterScrambleGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goFastTypeGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'fastTypeGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goHangmanGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'hangmanGame',
-      quote,
-      setNumber: prev.setNumber,
-      lessonNumber: prev.lessonNumber,
-    }));
-  };
-  const goFillBlankGame = (quote) => {
-    markGamePlayed();
-    setNav(prev => ({
-      screen: 'fillBlankGame',
+      screen: gameId,
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
@@ -475,30 +185,8 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     }
     if (gameId === 'practice') {
       goPractice(content);
-    } else if (gameId === 'tapGame') {
-      goTapGame(content);
-    } else if (gameId === 'scrambleGame') {
-      goScrambleGame(content);
-    } else if (gameId === 'nextWordGame') {
-      goNextWordGame(content);
-    } else if (gameId === 'memoryGame') {
-      goMemoryGame(content);
-    } else if (gameId === 'flashGame') {
-      goFlashGame(content);
-    } else if (gameId === 'revealGame') {
-      goRevealGame(content);
-    } else if (gameId === 'firstLetterGame') {
-      goFirstLetterGame(content);
-    } else if (gameId === 'letterScrambleGame') {
-      goLetterScrambleGame(content);
-    } else if (gameId === 'fastTypeGame') {
-      goFastTypeGame(content);
-    } else if (gameId === 'hangmanGame') {
-      goHangmanGame(content);
-    } else if (gameId === 'fillBlankGame') {
-      goFillBlankGame(content);
     } else {
-      goPractice(content);
+      goGame(gameId, content);
     }
   };
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
@@ -630,31 +318,8 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     const gameId = pickRandomGame();
     if (gameId === 'practice') {
       goPractice(content);
-    } else if (gameId === 'tapGame') {
-      goTapGame(content);
-    } else if (gameId === 'scrambleGame') {
-      goScrambleGame(content);
-    } else if (gameId === 'nextWordGame') {
-      goNextWordGame(content);
-    } else if (gameId === 'memoryGame') {
-      goMemoryGame(content);
-    } else if (gameId === 'flashGame') {
-      goFlashGame(content);
-    } else if (gameId === 'revealGame') {
-      goRevealGame(content);
-    } else if (gameId === 'firstLetterGame') {
-      goFirstLetterGame(content);
-    } else if (gameId === 'letterScrambleGame') {
-      goLetterScrambleGame(content);
-    } else if (gameId === 'fastTypeGame') {
-      goFastTypeGame(content);
-    } else if (gameId === 'hangmanGame') {
-      goHangmanGame(content);
-    } else if (gameId === 'fillBlankGame') {
-      goFillBlankGame(content);
     } else {
-      // Fallback: use practice
-      goPractice(content);
+      goGame(gameId, content);
     }
   };
 
@@ -687,35 +352,21 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     // Grade 1 screens: set and lesson
     if (nav.screen === 'grade1') return <Grade1SetScreen onBack={goHome} onLessonSelect={goGrade1Lesson} />;
     if (nav.screen === 'grade1Lesson') return <Grade1LessonScreen lessonNumber={nav.lessonNumber} onBack={goBackToGrade1Set} />;
-    if (nav.screen === 'grade2Lesson') return <Grade2LessonScreen setNumber={nav.setNumber} lessonNumber={nav.lessonNumber} onBack={goBackToGrade2Set} onComplete={completeLesson} onPractice={goPractice} onPlayGame={goTapGame} />;
-    if (nav.screen === 'practice')
+    if (nav.screen === 'grade2Lesson')
       return (
-        <QuotePracticeScreen
-          quote={nav.quote}
-          onBack={goBackToLesson}
+        <Grade2LessonScreen
+          setNumber={nav.setNumber}
+          lessonNumber={nav.lessonNumber}
+          onBack={goBackToGrade2Set}
+          onComplete={completeLesson}
+          onPractice={goPractice}
+          onPlayGame={(q) => goGame('tapGame', q)}
         />
       );
-    if (nav.screen === 'tapGame') return <TapMissingWordsGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'scrambleGame')
-      return <TapScrambledGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'nextWordGame')
-      return <NextWordQuizGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'memoryGame')
-      return <MemoryMatchGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'flashGame')
-      return <FlashCardRecallGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'revealGame')
-      return <RevealWordGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'firstLetterGame')
-      return <FirstLetterQuizGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'letterScrambleGame')
-      return <LetterScrambleGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'fastTypeGame')
-      return <FastTypeGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'hangmanGame')
-      return <HangmanGame quote={nav.quote} onBack={goBackToLesson} />;
-    if (nav.screen === 'fillBlankGame')
-      return <FillBlankTypingGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (gameScreens[nav.screen]) {
+      const GameComponent = gameScreens[nav.screen];
+      return <GameComponent quote={nav.quote} onBack={goBackToLesson} />;
+    }
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
