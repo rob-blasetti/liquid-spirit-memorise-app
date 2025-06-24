@@ -9,6 +9,6 @@ module.exports = {
   transformIgnorePatterns: [
     // Transform these modules by Babel
     // Transform these external modules by Babel
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|react-native-vector-icons|@fortawesome/react-native-fontawesome|react-native-image-picker|@flipxyz/react-native-boring-avatars)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|react-native-vector-icons|@fortawesome/react-native-fontawesome|react-native-image-picker|@flipxyz/react-native-boring-avatars|react-native-tab-view)/)',
   ],
 };

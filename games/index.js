@@ -13,6 +13,8 @@ export const gameIds = [
   'firstLetterGame',
   'letterScrambleGame',
   'fastTypeGame',
+  'hangmanGame',
+  'fillBlankGame',
 ];
 
 /**

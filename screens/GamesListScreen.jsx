@@ -13,6 +13,8 @@ const titles = {
   firstLetterGame: 'First Letter',
   letterScrambleGame: 'Letter Scramble',
   fastTypeGame: 'Fast Type',
+  hangmanGame: 'Hangman',
+  fillBlankGame: 'Fill in the Blank',
 };
 
 const GamesListScreen = ({ onSelect }) => (
