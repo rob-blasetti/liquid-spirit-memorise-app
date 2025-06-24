@@ -19,7 +19,7 @@ const TapScrambledGame = ({ quote, onBack }) => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const w = quote.split(/\s+/);
+    const w = quote.split(/\s+/).slice(0, 8);
     setWords(w);
     setScrambled(shuffle(w));
     setIndex(0);
@@ -44,6 +44,7 @@ const TapScrambledGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Rebuild the quote</Text>
+      <Text style={styles.description}>Tap the words in the correct order.</Text>
       <View style={styles.wordBank}>
         {scrambled.map((w, i) => (
           <TouchableOpacity key={`${w}-${i}`} style={styles.wordButton} onPress={() => handlePress(w, i)}>
@@ -70,6 +71,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   wordBank: {

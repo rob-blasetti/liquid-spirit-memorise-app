@@ -12,7 +12,7 @@ const MemoryMatchGame = ({ quote, onBack }) => {
 
   useEffect(() => {
     const words = quote.split(/\s+/);
-    const unique = Array.from(new Set(words)).slice(0, 8);
+    const unique = Array.from(new Set(words)).slice(0, 6);
     const pairs = shuffle(
       unique.flatMap((w) => [
         { id: `${w}-1`, word: w, matched: false },
@@ -50,6 +50,7 @@ const MemoryMatchGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Memory Match</Text>
+      <Text style={styles.description}>Find the matching word pairs.</Text>
       <View style={styles.grid}>
         {cards.map((card) => (
           <TouchableOpacity
@@ -80,6 +81,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   grid: {

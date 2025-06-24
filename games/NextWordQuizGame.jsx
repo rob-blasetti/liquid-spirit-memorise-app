@@ -26,7 +26,7 @@ const NextWordQuizGame = ({ quote, onBack }) => {
     }
     const remaining = w.slice(idx + 1);
     const distractors = [];
-    while (distractors.length < 2 && remaining.length > 0) {
+    while (distractors.length < 1 && remaining.length > 0) {
       const cand = remaining[Math.floor(Math.random() * remaining.length)];
       if (!distractors.includes(cand)) distractors.push(cand);
     }
@@ -52,6 +52,7 @@ const NextWordQuizGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Pick the next word</Text>
+      <Text style={styles.description}>Tap the word that comes next.</Text>
       <Text style={styles.quote}>{words.slice(0, index).join(' ')}</Text>
       <View style={styles.options}>
         {options.map((o, i) => (
@@ -79,6 +80,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   quote: {

@@ -13,7 +13,7 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
 
   useEffect(() => {
     const words = quote.split(' ');
-    const numBlanks = Math.min(4, Math.max(1, Math.floor(words.length / 6)));
+    const numBlanks = Math.min(3, Math.max(1, Math.floor(words.length / 8)));
     const indices = [];
     while (indices.length < numBlanks) {
       const idx = Math.floor(Math.random() * words.length);
@@ -55,6 +55,7 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Fill in the missing words</Text>
+      <Text style={styles.description}>Tap the blanks in the right order.</Text>
       <Text style={styles.quote}>{displayWords.join(' ')}</Text>
       <View style={styles.wordBank}>
         {wordBank.map(word => (
@@ -86,6 +87,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   quote: {

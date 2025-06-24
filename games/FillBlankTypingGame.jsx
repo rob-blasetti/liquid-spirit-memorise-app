@@ -12,7 +12,7 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
 
   useEffect(() => {
     const arr = quote.split(' ');
-    const num = Math.min(4, Math.max(1, Math.floor(arr.length / 6)));
+    const num = Math.min(3, Math.max(1, Math.floor(arr.length / 8)));
     const indices = [];
     while (indices.length < num) {
       const idx = Math.floor(Math.random() * arr.length);
@@ -47,6 +47,8 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Fill in the Blank</Text>
+      <Text style={styles.description}>Type the missing words in the spaces.</Text>
       <Text style={styles.quote}>{display}</Text>
       {current < missing.length && (
         <View style={styles.inputRow}>
@@ -71,6 +73,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
+  },
+  title: {
+    fontSize: 28,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 24,

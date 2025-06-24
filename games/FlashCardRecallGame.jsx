@@ -12,7 +12,7 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
     setShowQuote(true);
     setInput('');
     setMessage('');
-    const timer = setTimeout(() => setShowQuote(false), 4000);
+    const timer = setTimeout(() => setShowQuote(false), 6000);
     return () => clearTimeout(timer);
   }, [quote]);
 
@@ -27,6 +27,7 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Flash Card Recall</Text>
+      <Text style={styles.description}>Look at the quote, then write it from memory.</Text>
       {showQuote ? (
         <Text style={styles.quote}>{quote}</Text>
       ) : (
@@ -60,6 +61,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 20,

@@ -32,7 +32,7 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
         return w;
       } else if (i === index) {
         // reveal a hint: first third of the word (at least one letter)
-        const hintLength = Math.max(1, Math.floor(base.length / 3));
+        const hintLength = Math.max(1, Math.floor(base.length / 2));
         const hint = base.substring(0, hintLength);
         const blanks = '_'.repeat(base.length - hintLength);
         return hint + blanks + punct;
@@ -50,6 +50,7 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Practice Quote</Text>
+      <Text style={styles.description}>Try to type the quote one word at a time.</Text>
       {/* Hint snippet to jog memory */}
       <Text style={styles.hint}>Hint: {snippet}...</Text>
       <Text style={styles.quote}>{displayedQuote}</Text>
@@ -85,6 +86,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   hint: {
     fontStyle: 'italic',
