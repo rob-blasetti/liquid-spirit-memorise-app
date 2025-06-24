@@ -185,11 +185,8 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     } else if (profile?.grade === 2) {
       content = quoteMap[`${setNumber}-${lessonNumber}`] || '';
     }
-    if (gameId === 'practice') {
-      goPractice(content);
-    } else {
-      goGame(gameId, content, true);
-    }
+    // Navigate to the selected game; treat all games (including practice) uniformly
+    goGame(gameId, content, true);
   };
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
 

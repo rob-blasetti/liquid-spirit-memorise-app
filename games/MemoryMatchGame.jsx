@@ -94,7 +94,9 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   card: {
-    backgroundColor: themeVariables.secondaryLightColor,
+    backgroundColor: themeVariables.whiteColor,
+    borderWidth: 1,
+    borderColor: themeVariables.primaryColor,
     width: 60,
     height: 60,
     alignItems: 'center',
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
   },
   cardText: {
     fontSize: 18,
-    color: themeVariables.whiteColor,
+    color: themeVariables.primaryColor,
     fontWeight: 'bold',
   },
   message: {

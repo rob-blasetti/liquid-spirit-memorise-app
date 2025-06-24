@@ -98,7 +98,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionButton: {
-    backgroundColor: themeVariables.secondaryLightColor,
+    backgroundColor: themeVariables.whiteColor,
+    borderWidth: 1,
+    borderColor: themeVariables.primaryColor,
     paddingVertical: 8,
     paddingHorizontal: 12,
     margin: 4,
@@ -106,7 +108,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 18,
-    color: themeVariables.whiteColor,
+    color: themeVariables.primaryColor,
     fontWeight: 'bold',
   },
   message: {
