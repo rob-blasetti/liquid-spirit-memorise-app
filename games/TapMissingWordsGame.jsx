@@ -39,7 +39,14 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
       const newDisplay = [...displayWords];
       newDisplay[missingIndices[currentIndex]] = word;
       setDisplayWords(newDisplay);
-      setWordBank(prev => prev.filter(w => w !== word));
+      setWordBank(prev => {
+        const copy = [...prev];
+        const removeIndex = copy.indexOf(word);
+        if (removeIndex !== -1) {
+          copy.splice(removeIndex, 1);
+        }
+        return copy;
+      });
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
       if (nextIndex === missingWords.length) {
@@ -58,9 +65,9 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
       <Text style={styles.description}>Tap the blanks in the right order.</Text>
       <Text style={styles.quote}>{displayWords.join(' ')}</Text>
       <View style={styles.wordBank}>
-        {wordBank.map(word => (
+        {wordBank.map((word, i) => (
           <TouchableOpacity
-            key={word}
+            key={`${word}-${i}`}
             style={styles.wordButton}
             onPress={() => handleWordPress(word)}
           >

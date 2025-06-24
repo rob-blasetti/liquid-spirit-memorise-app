@@ -24,7 +24,7 @@ const NextWordQuizGame = ({ quote, onBack }) => {
       setOptions([]);
       return;
     }
-    const remaining = w.slice(idx + 1);
+    const remaining = w.slice(idx + 1).filter(word => word !== w[idx]);
     const distractors = [];
     while (distractors.length < 1 && remaining.length > 0) {
       const cand = remaining[Math.floor(Math.random() * remaining.length)];
