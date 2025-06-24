@@ -11,20 +11,22 @@ import { faTrash, faHome, faBook, faTrophy, faCog, faGamepad } from '@fortawesom
 import Grade2Screen from './screens/Grade2Screen';
 import Grade2SetScreen from './screens/Grade2SetScreen';
 import Grade2LessonScreen from './screens/Grade2LessonScreen';
-import QuotePracticeScreen from './screens/QuotePracticeScreen';
+import QuotePracticeScreen from './games/QuotePracticeScreen';
 import Grade3Screen from './screens/Grade3Screen';
 import Grade4Screen from './screens/Grade4Screen';
 import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
-import TapMissingWordsGame from './screens/TapMissingWordsGame';
-import TapScrambledGame from './screens/TapScrambledGame';
-import NextWordQuizGame from './screens/NextWordQuizGame';
-import MemoryMatchGame from './screens/MemoryMatchGame';
-import FlashCardRecallGame from './screens/FlashCardRecallGame';
-import RevealWordGame from './screens/RevealWordGame';
-import FirstLetterQuizGame from './screens/FirstLetterQuizGame';
-import LetterScrambleGame from './screens/LetterScrambleGame';
-import FastTypeGame from './screens/FastTypeGame';
+import TapMissingWordsGame from './games/TapMissingWordsGame';
+import TapScrambledGame from './games/TapScrambledGame';
+import NextWordQuizGame from './games/NextWordQuizGame';
+import MemoryMatchGame from './games/MemoryMatchGame';
+import FlashCardRecallGame from './games/FlashCardRecallGame';
+import RevealWordGame from './games/RevealWordGame';
+import FirstLetterQuizGame from './games/FirstLetterQuizGame';
+import LetterScrambleGame from './games/LetterScrambleGame';
+import FastTypeGame from './games/FastTypeGame';
+import HangmanGame from './games/HangmanGame';
+import FillBlankTypingGame from './games/FillBlankTypingGame';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
 import HomeScreen from './screens/HomeScreen';
 import { grade1Lessons } from './data/grade1';
@@ -443,6 +445,24 @@ import { UserProvider, UserContext } from './contexts/UserContext';
       lessonNumber: prev.lessonNumber,
     }));
   };
+  const goHangmanGame = (quote) => {
+    markGamePlayed();
+    setNav(prev => ({
+      screen: 'hangmanGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  };
+  const goFillBlankGame = (quote) => {
+    markGamePlayed();
+    setNav(prev => ({
+      screen: 'fillBlankGame',
+      quote,
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
+  };
 
   const playSelectedGame = (gameId) => {
     const { setNumber, lessonNumber } = getCurrentProgress();
@@ -473,6 +493,10 @@ import { UserProvider, UserContext } from './contexts/UserContext';
       goLetterScrambleGame(content);
     } else if (gameId === 'fastTypeGame') {
       goFastTypeGame(content);
+    } else if (gameId === 'hangmanGame') {
+      goHangmanGame(content);
+    } else if (gameId === 'fillBlankGame') {
+      goFillBlankGame(content);
     } else {
       goPractice(content);
     }
@@ -624,6 +648,10 @@ import { UserProvider, UserContext } from './contexts/UserContext';
       goLetterScrambleGame(content);
     } else if (gameId === 'fastTypeGame') {
       goFastTypeGame(content);
+    } else if (gameId === 'hangmanGame') {
+      goHangmanGame(content);
+    } else if (gameId === 'fillBlankGame') {
+      goFillBlankGame(content);
     } else {
       // Fallback: use practice
       goPractice(content);
@@ -684,6 +712,10 @@ import { UserProvider, UserContext } from './contexts/UserContext';
       return <LetterScrambleGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'fastTypeGame')
       return <FastTypeGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'hangmanGame')
+      return <HangmanGame quote={nav.quote} onBack={goBackToLesson} />;
+    if (nav.screen === 'fillBlankGame')
+      return <FillBlankTypingGame quote={nav.quote} onBack={goBackToLesson} />;
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
       return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;

@@ -12,6 +12,7 @@ jest.mock(
   }),
   { virtual: true },
 );
+jest.mock('react-native-config', () => ({ DEV_API: 'http://localhost' }));
 
 import App from '../App';
 
