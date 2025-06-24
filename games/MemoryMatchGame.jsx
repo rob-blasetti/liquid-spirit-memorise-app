@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
@@ -49,6 +50,7 @@ const MemoryMatchGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Memory Match</Text>
       <Text style={styles.description}>Find the matching word pairs.</Text>
       <View style={styles.grid}>

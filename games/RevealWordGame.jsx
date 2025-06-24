@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const RevealWordGame = ({ quote, onBack }) => {
@@ -20,6 +21,7 @@ const RevealWordGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Reveal the Quote</Text>
       <Text style={styles.description}>Press the button to show more words.</Text>
       <Text style={styles.quote}>{displayed}</Text>

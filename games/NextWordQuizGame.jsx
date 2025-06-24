@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
@@ -51,6 +52,7 @@ const NextWordQuizGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Pick the next word</Text>
       <Text style={styles.description}>Tap the word that comes next.</Text>
       <Text style={styles.quote}>{words.slice(0, index).join(' ')}</Text>

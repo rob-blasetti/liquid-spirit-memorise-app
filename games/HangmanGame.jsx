@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const MAX_WRONG = 8;
@@ -35,6 +36,7 @@ const HangmanGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Hangman</Text>
       <Text style={styles.description}>Guess letters to reveal the quote.</Text>
       <Text style={styles.quote}>{masked}</Text>

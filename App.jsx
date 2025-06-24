@@ -165,13 +165,14 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     lessonNumber: prev.lessonNumber,
   }));
 
-  const goGame = (gameId, quote) => {
+  const goGame = (gameId, quote, fromGames = false) => {
     markGamePlayed();
     setNav(prev => ({
       screen: gameId,
       quote,
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
+      fromGames,
     }));
   };
 
@@ -187,7 +188,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     if (gameId === 'practice') {
       goPractice(content);
     } else {
-      goGame(gameId, content);
+      goGame(gameId, content, true);
     }
   };
   const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
@@ -366,7 +367,8 @@ import { UserProvider, UserContext } from './contexts/UserContext';
       );
     if (gameScreens[nav.screen]) {
       const GameComponent = gameScreens[nav.screen];
-      return <GameComponent quote={nav.quote} onBack={goBackToLesson} />;
+      const backHandler = nav.fromGames ? goGames : goBackToLesson;
+      return <GameComponent quote={nav.quote} onBack={backHandler} />;
     }
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;

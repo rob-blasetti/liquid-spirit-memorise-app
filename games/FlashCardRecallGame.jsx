@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faChevronLeft } from '@fortawesome/free-solid-svg-icons';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const FlashCardRecallGame = ({ quote, onBack }) => {
@@ -43,12 +42,8 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.headerIcon}>
-          <FontAwesomeIcon icon={faChevronLeft} size={24} color={themeVariables.primaryColor} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Flash Card Recall</Text>
-      </View>
+      <GameTopBar onBack={onBack} />
+      <Text style={styles.title}>Flash Card Recall</Text>
       <Text style={styles.description}>Look at the quote, then write it from memory.</Text>
       {showQuote ? (
         <Text style={styles.quote}>{quote}</Text>
@@ -127,17 +122,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginTop: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  headerIcon: {
-    marginRight: 12,
   },
   buttonContainer: {
     width: '80%',

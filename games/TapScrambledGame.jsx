@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => {
@@ -43,6 +44,7 @@ const TapScrambledGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Rebuild the quote</Text>
       <Text style={styles.description}>Tap the words in the correct order.</Text>
       <View style={styles.wordBank}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const FirstLetterQuizGame = ({ quote, onBack }) => {
@@ -26,6 +27,7 @@ const FirstLetterQuizGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>First Letter Quiz</Text>
       <Text style={styles.description}>Guess each word using the first letters.</Text>
       <Text style={styles.quote}>{display}</Text>
