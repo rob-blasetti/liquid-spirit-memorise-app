@@ -13,6 +13,7 @@ const ProfileSetupScreen = ({ onSave }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [avatarSeed, setAvatarSeed] = useState(Math.random().toString());
   const [avatarUri, setAvatarUri] = useState(null);
+  const [avatarData, setAvatarData] = useState(null);
   const grades = ['1', '2', '3', '4'];
 
   const save = () => {
@@ -21,13 +22,20 @@ const ProfileSetupScreen = ({ onSave }) => {
     const gradeNum = parseInt(grade, 10);
     const fullName = `${firstName} ${lastName}`;
     // Pass both names and combined name for compatibility
-    onSave({ name: fullName, firstName, lastName, grade: isNaN(gradeNum) ? '' : gradeNum });
+    onSave({
+      name: fullName,
+      firstName,
+      lastName,
+      grade: isNaN(gradeNum) ? '' : gradeNum,
+      avatar: avatarData,
+    });
   };
 
   const pickImage = async () => {
     const result = await launchImageLibrary({
       mediaType: 'photo',
       quality: 1,
+      includeBase64: true,
     });
 
     if (result.didCancel) return;
@@ -38,6 +46,10 @@ const ProfileSetupScreen = ({ onSave }) => {
     const asset = result.assets && result.assets[0];
     if (asset && asset.uri) {
       setAvatarUri(asset.uri);
+      if (asset.base64) {
+        const type = asset.type || 'image/jpeg';
+        setAvatarData(`data:${type};base64,${asset.base64}`);
+      }
     }
   };
 
