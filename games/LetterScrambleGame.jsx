@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => {
@@ -58,6 +59,7 @@ const LetterScrambleGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Unscramble Letters</Text>
       <Text style={styles.description}>Unscramble each word. The first letter stays in place.</Text>
       {index < words.length ? (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const FillBlankTypingGame = ({ quote, onBack }) => {
@@ -47,6 +48,7 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Fill in the Blank</Text>
       <Text style={styles.description}>Type the missing words in the spaces.</Text>
       <Text style={styles.quote}>{display}</Text>

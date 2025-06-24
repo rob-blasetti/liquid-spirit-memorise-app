@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const FastTypeGame = ({ quote, onBack }) => {
@@ -34,6 +35,7 @@ const FastTypeGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Type It Fast</Text>
       <Text style={styles.description}>Type the quote before time runs out!</Text>
       <Text style={styles.timer}>Time: {time}</Text>

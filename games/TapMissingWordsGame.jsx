@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const TapMissingWordsGame = ({ quote, onBack }) => {
@@ -54,6 +55,7 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Fill in the missing words</Text>
       <Text style={styles.description}>Tap the blanks in the right order.</Text>
       <Text style={styles.quote}>{displayWords.join(' ')}</Text>
