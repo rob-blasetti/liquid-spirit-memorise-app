@@ -99,7 +99,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const data = await AsyncStorage.getItem('user');
+        const data = await AsyncStorage.getItem('profile');
         if (data) setProfile(JSON.parse(data));
       } catch (e) {
         // ignore errors

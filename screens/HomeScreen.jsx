@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
@@ -14,7 +14,11 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson
       {/* Header: avatar and points */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.profileContainer} onPress={onProfilePress}>
-          <Avatar size={60} name={profile.name} variant="beam" />
+          {profile.avatar ? (
+            <Image source={{ uri: profile.avatar }} style={styles.profileAvatar} />
+          ) : (
+            <Avatar size={60} name={profile.name} variant="beam" />
+          )}
           <View style={styles.profileTextContainer}>
             <Text style={styles.profileName}>{profile.name}</Text>
             <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
@@ -81,6 +85,11 @@ const styles = StyleSheet.create({
   },
   profileTextContainer: {
     marginLeft: 12,
+  },
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   profileName: {
     fontSize: 20,
