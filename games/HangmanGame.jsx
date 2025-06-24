@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import themeVariables from '../styles/theme';
 
-const MAX_WRONG = 6;
+const MAX_WRONG = 8;
 
 const HangmanGame = ({ quote, onBack }) => {
   const normalized = quote.toLowerCase();
@@ -35,6 +35,8 @@ const HangmanGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Hangman</Text>
+      <Text style={styles.description}>Guess letters to reveal the quote.</Text>
       <Text style={styles.quote}>{masked}</Text>
       <Text style={styles.status}>{`Wrong guesses: ${wrong}/${MAX_WRONG}`}</Text>
       {won && <Text style={styles.message}>Great job!</Text>}
@@ -62,6 +64,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
+  },
+  title: {
+    fontSize: 28,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 24,

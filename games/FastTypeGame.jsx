@@ -4,12 +4,12 @@ import ThemedButton from '../components/ThemedButton';
 import themeVariables from '../styles/theme';
 
 const FastTypeGame = ({ quote, onBack }) => {
-  const [time, setTime] = useState(15);
+  const [time, setTime] = useState(30);
   const [input, setInput] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    setTime(15);
+    setTime(30);
     setInput('');
     setMessage('');
     const timer = setInterval(() => {
@@ -35,6 +35,7 @@ const FastTypeGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Type It Fast</Text>
+      <Text style={styles.description}>Type the quote before time runs out!</Text>
       <Text style={styles.timer}>Time: {time}</Text>
       <TextInput
         style={styles.input}
@@ -63,6 +64,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   timer: {
     fontSize: 18,

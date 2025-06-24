@@ -12,6 +12,13 @@ const shuffle = (arr) => {
   return copy;
 };
 
+const scrambleWord = (word) => {
+  if (word.length <= 1) return word;
+  const letters = word.split('');
+  const first = letters.shift();
+  return first + shuffle(letters).join('');
+};
+
 const LetterScrambleGame = ({ quote, onBack }) => {
   const words = quote.split(/\s+/);
   const [index, setIndex] = useState(0);
@@ -23,13 +30,13 @@ const LetterScrambleGame = ({ quote, onBack }) => {
     setIndex(0);
     setInput('');
     setMessage('');
-    setScrambled(shuffle(words[0].split('')).join(''));
+    setScrambled(scrambleWord(words[0]));
   }, [quote]);
 
   const next = () => {
     const nextIndex = index + 1;
     if (nextIndex < words.length) {
-      setScrambled(shuffle(words[nextIndex].split('')).join(''));
+      setScrambled(scrambleWord(words[nextIndex]));
     }
     setIndex(nextIndex);
     setInput('');
@@ -52,6 +59,7 @@ const LetterScrambleGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Unscramble Letters</Text>
+      <Text style={styles.description}>Unscramble each word. The first letter stays in place.</Text>
       {index < words.length ? (
         <>
           <Text style={styles.quote}>{scrambled}</Text>
@@ -85,6 +93,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 28,

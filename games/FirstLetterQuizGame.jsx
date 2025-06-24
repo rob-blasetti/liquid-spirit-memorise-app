@@ -21,12 +21,13 @@ const FirstLetterQuizGame = ({ quote, onBack }) => {
   };
 
   const display = words
-    .map((w, i) => (i < index ? w : w[0]))
+    .map((w, i) => (i < index ? w : w.slice(0, 2)))
     .join(' ');
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>First Letter Quiz</Text>
+      <Text style={styles.description}>Guess each word using the first letters.</Text>
       <Text style={styles.quote}>{display}</Text>
       {index < words.length ? (
         <>
@@ -60,6 +61,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 20,

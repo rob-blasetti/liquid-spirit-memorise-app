@@ -9,7 +9,8 @@ const RevealWordGame = ({ quote, onBack }) => {
 
   const revealNext = () => {
     if (index < words.length) {
-      setIndex(index + 1);
+      const nextIndex = Math.min(index + 2, words.length);
+      setIndex(nextIndex);
     }
   };
 
@@ -20,6 +21,7 @@ const RevealWordGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Reveal the Quote</Text>
+      <Text style={styles.description}>Press the button to show more words.</Text>
       <Text style={styles.quote}>{displayed}</Text>
       {index < words.length && (
         <ThemedButton title="Reveal Word" onPress={revealNext} />
@@ -43,6 +45,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   quote: {
     fontSize: 20,
