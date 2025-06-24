@@ -16,8 +16,8 @@ const ProfileSetupScreen = ({ onSave }) => {
   const grades = ['1', '2', '3', '4'];
 
   const save = () => {
-    // Require both first and last name
-    if (!firstName || !lastName) return;
+    // Require first name, last name, and grade
+    if (!firstName || !lastName || !grade) return;
     const gradeNum = parseInt(grade, 10);
     const fullName = `${firstName} ${lastName}`;
     // Pass both names and combined name for compatibility
@@ -108,7 +108,11 @@ const ProfileSetupScreen = ({ onSave }) => {
       )}
 
       <View style={styles.buttonContainer}>
-        <ThemedButton title="Save" onPress={save} disabled={!firstName || !lastName} />
+      <ThemedButton
+        title="Save"
+        onPress={save}
+        disabled={!firstName || !lastName || !grade}
+      />
       </View>
     </View>
   );

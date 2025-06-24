@@ -29,6 +29,7 @@ import GamesListScreen from './screens/GamesListScreen';
 import ClassScreen from './screens/ClassScreen';
 import { useUser } from './contexts/UserContext';
 // Game registry for daily challenge
+import theme from './styles/theme';
 import { pickRandomGame } from './games';
 import { API_URL } from './config';
 
@@ -535,6 +536,7 @@ const styles = StyleSheet.create({
     // Horizontal padding can be managed within individual screens as needed
     paddingVertical: 16,
     paddingHorizontal: 16,
+    backgroundColor: theme.greyColor, // Using redColor as the background
   },
   title: {
     fontSize: 24,
@@ -578,6 +580,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     borderTopWidth: 1,
     borderColor: '#ddd',
+    backgroundColor: '#fff',
     paddingVertical: 8,
   },
   navItem: {

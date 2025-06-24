@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
   faBookOpen,
@@ -49,7 +49,7 @@ const iconMap = {
 };
 
 const GamesListScreen = ({ onSelect }) => (
-  <View style={styles.container}>
+  <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
     <Text style={styles.title}>Games</Text>
     <View style={styles.tileContainer}>
       {gameIds.map(id => (
@@ -61,12 +61,16 @@ const GamesListScreen = ({ onSelect }) => (
         </TouchableOpacity>
       ))}
     </View>
-  </View>
+  </ScrollView>
 );
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // offset parent container's horizontal padding for full-width
+    marginHorizontal: -16,
+  },
+  contentContainer: {
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
