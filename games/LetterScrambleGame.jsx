@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
@@ -24,14 +23,15 @@ const LetterScrambleGame = ({ quote, onBack }) => {
   const words = quote.split(/\s+/);
   const [index, setIndex] = useState(0);
   const [scrambled, setScrambled] = useState('');
-  const [input, setInput] = useState('');
+  const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setIndex(0);
-    setInput('');
     setMessage('');
     setScrambled(scrambleWord(words[0]));
+    generateOptions(words[0]);
   }, [quote]);
 
   const next = () => {
@@ -40,14 +40,28 @@ const LetterScrambleGame = ({ quote, onBack }) => {
       setScrambled(scrambleWord(words[nextIndex]));
     }
     setIndex(nextIndex);
-    setInput('');
+    generateOptions(words[nextIndex]);
   };
 
-  const check = () => {
-    if (input.trim().toLowerCase() === words[index].toLowerCase()) {
+  const generateOptions = (word) => {
+    const remaining = words.filter(w => w !== word);
+    const distractors = [];
+    while (distractors.length < 3 && remaining.length > 0) {
+      const cand = remaining[Math.floor(Math.random() * remaining.length)];
+      if (!distractors.includes(cand)) distractors.push(cand);
+    }
+    while (distractors.length < 3) {
+      distractors.push(words[Math.floor(Math.random() * words.length)]);
+    }
+    setOptions(shuffle([word, ...distractors]));
+  };
+
+  const handleSelect = (choice) => {
+    if (choice.toLowerCase() === words[index].toLowerCase()) {
       if (index + 1 === words.length) {
         setIndex(index + 1);
         setMessage('Great job!');
+        setOptions([]);
       } else {
         setMessage('');
         next();
@@ -65,13 +79,13 @@ const LetterScrambleGame = ({ quote, onBack }) => {
       {index < words.length ? (
         <>
           <Text style={styles.quote}>{scrambled}</Text>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Word"
-          />
-          <ThemedButton title="Submit" onPress={check} />
+          <View style={styles.options}>
+            {options.map((o, i) => (
+              <TouchableOpacity key={`${o}-${i}`} style={styles.optionButton} onPress={() => handleSelect(o)}>
+                <Text style={styles.optionText}>{o}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           {message !== '' && <Text style={styles.message}>{message}</Text>}
         </>
       ) : (
@@ -103,22 +117,29 @@ const styles = StyleSheet.create({
     marginVertical: 24,
     textAlign: 'center',
   },
-  input: {
+  options: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  optionButton: {
+    backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginBottom: 8,
-    width: '80%',
+    borderColor: themeVariables.primaryColor,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
+    borderRadius: themeVariables.borderRadiusPill,
+  },
+  optionText: {
     fontSize: 18,
+    color: themeVariables.primaryColor,
+    fontWeight: 'bold',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginVertical: 8,
-  },
-  buttonContainer: {
-    width: '80%',
-    marginTop: 16,
   },
 });
 

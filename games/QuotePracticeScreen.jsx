@@ -1,23 +1,50 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+
+const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const QuotePracticeScreen = ({ quote, onBack }) => {
   const words = quote.split(/\s+/);
   const [index, setIndex] = useState(0);
-  const [input, setInput] = useState('');
+  const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
 
   const cleanWord = (w) => w.replace(/[.,!?;:]/g, '').toLowerCase();
 
-  const checkAnswer = () => {
-    if (cleanWord(input) === cleanWord(words[index])) {
+  const generateOptions = (idx) => {
+    const correct = words[idx];
+    const remaining = words.filter((_, i) => i !== idx);
+    const distractors = [];
+    while (distractors.length < 3 && remaining.length > 0) {
+      const cand = remaining[Math.floor(Math.random() * remaining.length)];
+      if (!distractors.includes(cand)) distractors.push(cand);
+    }
+    while (distractors.length < 3) {
+      distractors.push(words[Math.floor(Math.random() * words.length)]);
+    }
+    setOptions(shuffle([correct, ...distractors]));
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setIndex(0);
+    setMessage('');
+    generateOptions(0);
+  }, [quote]);
+
+  const handleSelect = (word) => {
+    if (cleanWord(word) === cleanWord(words[index])) {
       const nextIndex = index + 1;
       setIndex(nextIndex);
-      setInput('');
-      setMessage('');
+      if (nextIndex === words.length) {
+        setMessage('Great job!');
+        setOptions([]);
+      } else {
+        setMessage('');
+        generateOptions(nextIndex);
+      }
     } else {
       setMessage('Try again');
     }
@@ -57,19 +84,17 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
       <Text style={styles.hint}>Hint: {snippet}...</Text>
       <Text style={styles.quote}>{displayedQuote}</Text>
       {index < words.length ? (
-        <>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Next word"
-          />
-          <ThemedButton title="Submit" onPress={checkAnswer} />
-          {message !== '' && <Text style={styles.message}>{message}</Text>}
-        </>
+        <View style={styles.options}>
+          {options.map((o, i) => (
+            <TouchableOpacity key={`${o}-${i}`} style={styles.optionButton} onPress={() => handleSelect(o)}>
+              <Text style={styles.optionText}>{o}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       ) : (
         <Text style={styles.message}>Great job! You finished.</Text>
       )}
+      {message !== '' && <Text style={styles.message}>{message}</Text>}
     </View>
   );
 };
@@ -103,22 +128,29 @@ const styles = StyleSheet.create({
     marginVertical: 24,
     textAlign: 'center',
   },
-  input: {
+  options: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  optionButton: {
+    backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginBottom: 8,
-    width: '80%',
+    borderColor: themeVariables.primaryColor,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
+    borderRadius: themeVariables.borderRadiusPill,
+  },
+  optionText: {
     fontSize: 18,
+    color: themeVariables.primaryColor,
+    fontWeight: 'bold',
   },
   message: {
     marginTop: 8,
     fontSize: 18,
     color: themeVariables.primaryColor,
-  },
-  buttonContainer: {
-    marginTop: 16,
-    width: '80%',
   },
 });
 
