@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import GameTile from '../components/GameTile';
 import {
   faBookOpen,
   faHandPointer,
@@ -16,7 +16,6 @@ import {
   faPen,
 } from '@fortawesome/free-solid-svg-icons';
 import { gameIds } from '../games';
-import theme from '../styles/theme';
 
 const titles = {
   practice: 'Practice',
@@ -53,12 +52,12 @@ const GamesListScreen = ({ onSelect }) => (
     <Text style={styles.title}>Games</Text>
     <View style={styles.tileContainer}>
       {gameIds.map(id => (
-        <TouchableOpacity key={id} style={styles.tile} onPress={() => onSelect(id)}>
-          <View style={styles.iconContainer}>
-            <FontAwesomeIcon icon={iconMap[id]} size={28} color={theme.primaryColor} />
-          </View>
-          <Text style={styles.tileText}>{titles[id] || id}</Text>
-        </TouchableOpacity>
+        <GameTile
+          key={id}
+          title={titles[id] || id}
+          icon={iconMap[id]}
+          onPress={() => onSelect(id)}
+        />
       ))}
     </View>
   </ScrollView>
@@ -84,36 +83,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     width: '100%',
-  },
-  tile: {
-    backgroundColor: '#fff',
-    width: '48%',
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.borderColor,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  iconContainer: {
-    backgroundColor: theme.neutralLight,
-    borderRadius: 30,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: theme.borderColor,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileText: {
-    fontSize: 16,
-    textAlign: 'center',
   },
 });
 
