@@ -15,6 +15,14 @@ export const gameIds = [
   'fastTypeGame',
   'hangmanGame',
   'fillBlankGame',
+  'shapeBuilderGame',
+  'colorSwitchGame',
+  'rhythmRepeatGame',
+  'silhouetteSearchGame',
+  'memoryMazeGame',
+  'sceneChangeGame',
+  'wordSwapGame',
+  'buildRecallGame',
 ];
 
 /**

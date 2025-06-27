@@ -10,6 +10,14 @@ import LetterScrambleGame from './LetterScrambleGame';
 import FastTypeGame from './FastTypeGame';
 import HangmanGame from './HangmanGame';
 import FillBlankTypingGame from './FillBlankTypingGame';
+import ShapeBuilderGame from './ShapeBuilderGame';
+import ColorSwitchGame from './ColorSwitchGame';
+import RhythmRepeatGame from './RhythmRepeatGame';
+import SilhouetteSearchGame from './SilhouetteSearchGame';
+import MemoryMazeGame from './MemoryMazeGame';
+import SceneChangeGame from './SceneChangeGame';
+import WordSwapGame from './WordSwapGame';
+import BuildRecallGame from './BuildRecallGame';
 
 export const gameScreens = {
   practice: QuotePracticeScreen,
@@ -24,4 +32,12 @@ export const gameScreens = {
   fastTypeGame: FastTypeGame,
   hangmanGame: HangmanGame,
   fillBlankGame: FillBlankTypingGame,
+  shapeBuilderGame: ShapeBuilderGame,
+  colorSwitchGame: ColorSwitchGame,
+  rhythmRepeatGame: RhythmRepeatGame,
+  silhouetteSearchGame: SilhouetteSearchGame,
+  memoryMazeGame: MemoryMazeGame,
+  sceneChangeGame: SceneChangeGame,
+  wordSwapGame: WordSwapGame,
+  buildRecallGame: BuildRecallGame,
 };
