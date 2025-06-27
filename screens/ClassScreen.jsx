@@ -1,74 +1,106 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, SectionList, TouchableOpacity, StyleSheet, Image, useWindowDimensions } from 'react-native';
+import React, { useState } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ScrollView,
+  ImageBackground,
+  useWindowDimensions,
+} from 'react-native';
 import { TabView, TabBar } from 'react-native-tab-view';
 import Avatar from '@flipxyz/react-native-boring-avatars';
-import themeVariables from '../styles/theme';
+import theme from '../styles/theme';
 
-const ClassScreen = ({ classes, onBack }) => {
+const ClassScreen = ({ childEntries = [], onBack }) => {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
-  // Debug: log classes prop on mount/update
-  useEffect(() => {
-    console.log('ClassScreen props classes:', classes);
-  }, [classes]);
-  // Debug: log tab index changes
-  useEffect(() => {
-    const current = routes[index] || {};
-    console.log('ClassScreen tab index changed:', index, 'route:', current);
-  }, [index]);
-  const [routes] = useState(
-    classes.map((cls, idx) => ({ key: (cls.id ?? idx).toString(), title: cls.name }))
-  );
+
+  const routes = childEntries.map((entry, i) => ({
+    key: entry.child._id || i.toString(),
+    title: `${entry.child.firstName} ${entry.child.lastName}`,
+  }));
 
   const renderScene = ({ route }) => {
-    const cls = classes.find((c, idx) => (c.id ?? idx).toString() === route.key) || {};
-    console.log('ClassScreen renderScene for route:', route);
-    const sections = [
-      { title: 'Teachers', data: cls.teachers || [] },
-      { title: 'Students', data: cls.students || [] },
-    ];
-    console.log('ClassScreen sections for route', route.title, sections);
+    const entry = childEntries.find(e => (e.child._id || '').toString() === route.key) || {
+      child: {},
+      classes: [],
+    };
+    const { classes = [] } = entry;
+
     return (
-      <SectionList
-        style={styles.scene}
-        contentContainerStyle={styles.list}
-        sections={sections}
-        keyExtractor={(item, index) => (item.id ?? item.name ?? index).toString()}
-        renderItem={({ item }) => (
-          <View style={styles.personContainer}>
-            {console.log('ClassScreen renderItem:', item)}
-            {item.profilePicture ? (
-              <Image source={{ uri: item.profilePicture }} style={styles.profileImage} />
-            ) : (
-              <Avatar size={50} name={item.name} variant="beam" />
+      <ScrollView style={styles.scene}>
+        {classes.map(cls => (
+          <View key={cls.id} style={styles.card}>
+            {cls.imageUrl && (
+              <ImageBackground
+                source={{ uri: cls.imageUrl }}
+                style={styles.banner}
+                imageStyle={styles.bannerImage}
+              >
+                <Text style={styles.classTitle}>{cls.title}</Text>
+              </ImageBackground>
             )}
-            <Text style={styles.personName}>{item.name}</Text>
+            <Text style={styles.curriculumLesson}>
+              {cls.curriculumLesson
+                ? `Grade: ${cls.curriculumLesson.grade}, Lesson: ${cls.curriculumLesson.lessonNumber}`
+                : ''}
+            </Text>
+            {cls.groupDetails && (
+              <View style={styles.group}>
+                <Text style={styles.groupText}>Day: {cls.groupDetails.day}</Text>
+                <Text style={styles.groupText}>Time: {cls.groupDetails.time}</Text>
+                <Text style={styles.groupText}>Freq: {cls.groupDetails.frequency}</Text>
+              </View>
+            )}
+
+            <Text style={styles.sectionTitle}>Teachers</Text>
+            {cls.facilitators?.map(f => (
+              <View key={f.id} style={styles.personContainer}>
+                {f.profilePicture ? (
+                  <Image source={{ uri: f.profilePicture }} style={styles.profileImage} />
+                ) : (
+                  <Avatar
+                    size={40}
+                    name={`${f.firstName} ${f.lastName}`}
+                    variant="beam"
+                  />
+                )}
+                <Text style={styles.personName}>
+                  {f.firstName} {f.lastName}
+                </Text>
+              </View>
+            ))}
+
+            <Text style={styles.sectionTitle}>Students</Text>
+            {cls.participants?.map(p => (
+              <View key={p.id} style={styles.personContainer}>
+                {p.profilePicture ? (
+                  <Image source={{ uri: p.profilePicture }} style={styles.profileImage} />
+                ) : (
+                  <Avatar
+                    size={40}
+                    name={`${p.firstName} ${p.lastName}`}
+                    variant="beam"
+                  />
+                )}
+                <Text style={styles.personName}>
+                  {p.firstName} {p.lastName}
+                </Text>
+              </View>
+            ))}
           </View>
-        )}
-        renderSectionHeader={({ section: { title } }) => (
-          <>
-            {console.log('ClassScreen renderSectionHeader:', title)}
-            <Text style={styles.sectionTitle}>{title}</Text>
-          </>
-        )}
-        ListHeaderComponent={() => (
-          <>
-            <Text style={styles.activityTitle}>{cls.activityTitle || cls.name}</Text>
-            {cls.activityImage && <Image source={{ uri: cls.activityImage }} style={styles.banner} />}
-          </>
-        )}
-      />
+        ))}
+      </ScrollView>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with back button */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Classes</Text>
+        <Text style={styles.title}>Your Childrens Classes</Text>
       </View>
 
       <TabView
@@ -81,17 +113,9 @@ const ClassScreen = ({ classes, onBack }) => {
             {...props}
             indicatorStyle={styles.indicator}
             style={styles.tabBar}
-            // Custom label rendering to ensure visibility
-            renderLabel={({ route, focused }) => (
-              <Text
-                style={[
-                  styles.tabLabel,
-                  { color: focused ? themeVariables.primaryColor : '#333' },
-                ]}
-              >
-                {route.title}
-              </Text>
-            )}
+            activeColor={theme.primaryColor}
+            inactiveColor="#333"
+            labelStyle={styles.tabLabel}
           />
         )}
       />
@@ -100,21 +124,18 @@ const ClassScreen = ({ classes, onBack }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    padding: 16,
   },
   backButton: {
     padding: 8,
   },
   backButtonText: {
-    color: themeVariables.primaryColor,
+    color: theme.primaryColor,
     fontSize: 16,
   },
   title: {
@@ -123,84 +144,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  tabContainer: {
-    paddingVertical: 8,
-  },
-  tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-  },
-  activeTab: {
-    backgroundColor: themeVariables.primaryColor,
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  activeTabText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  banner: {
-    width: '100%',
-    height: 150,
+  scene: { flex: 1, padding: 16 },
+  card: {
+    marginBottom: 24,
+    backgroundColor: '#fafafa',
     borderRadius: 8,
-    marginVertical: 12,
+    overflow: 'hidden',
+    elevation: 2,
   },
-  sectionTitle: {
+  banner: { height: 120, justifyContent: 'flex-end' },
+  bannerImage: { opacity: 0.8 },
+  classTitle: {
+    color: '#fff',
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: 'bold',
+    padding: 8,
   },
-  list: {
-    paddingBottom: 16,
-  },
-  studentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  studentName: {
-    marginLeft: 12,
-    fontSize: 16,
-  },
-  // New styles for TabView scenes
-  scene: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginVertical: 8,
-  },
-  personContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  personName: {
-    marginLeft: 12,
-    fontSize: 16,
-  },
-  tabBar: {
-    backgroundColor: '#fff',
-  },
-  tabLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  indicator: {
-    backgroundColor: themeVariables.primaryColor,
-  },
+  curriculumLesson: { margin: 12, fontSize: 16 },
+  group: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 },
+  groupText: { fontSize: 14 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', marginHorizontal: 12, marginTop: 12 },
+  personContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 8, marginHorizontal: 12 },
+  profileImage: { width: 40, height: 40, borderRadius: 20 },
+  personName: { marginLeft: 8, fontSize: 14 },
+  tabBar: { backgroundColor: '#fff' },
+  tabLabel: { fontSize: 14, fontWeight: '600' },
+  indicator: { backgroundColor: theme.primaryColor },
 });
 
 export default ClassScreen;

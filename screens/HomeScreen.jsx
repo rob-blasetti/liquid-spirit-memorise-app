@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
+import { Button } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
 
 const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson, content, onProfilePress }) => {
@@ -42,22 +43,17 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson
 
       {/* Bottom action buttons */}
       <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity style={styles.bottomButton} onPress={onDailyChallenge}>
-          <Text style={styles.bottomButtonText}>Daily Challenge</Text>
-        </TouchableOpacity>
+        <Button label="Daily Challenge" onPress={onDailyChallenge} />
         {/* Only show See Class if there are classes */}
         {onSeeClass && (
-          <TouchableOpacity style={styles.bottomButton} onPress={onSeeClass}>
-            <Text style={styles.bottomButtonText}>See Class</Text>
-          </TouchableOpacity>
+          <Button label="See Class" onPress={onSeeClass} />
         )}
-        <TouchableOpacity style={styles.bottomButton} onPress={onGoSet}>
-          <Text style={styles.bottomButtonText}>Go To Set</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomButton} onPress={onGoCurrentLesson}>
-          <Text style={styles.bottomButtonText}>Current Lesson</Text>
-        </TouchableOpacity>
       </View>
+      <View style={styles.bottomButtonContainer}>
+        <Button label="Go To Set" onPress={onGoSet} />
+        <Button label="Current Lesson" onPress={onGoCurrentLesson} />
+      </View>
+
     </View>
   );
 };

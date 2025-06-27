@@ -40,6 +40,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   const { user, classes, children, setUser } = useUser();
   useEffect(() => {
     console.log('API_URL:', API_URL);
+    console.log('classes:', classes);
   }, []);
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
@@ -146,7 +147,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   const goGrade1 = () => { visitGrade(1); setNav({ screen: 'grade1' }); };
   const goGrade2 = () => { visitGrade(2); setNav({ screen: 'grade2' }); };
   const goGrades = () => setNav({ screen: 'grades' });
-  const goClass = () => setNav({ screen: 'class' });
+  const goClass = () => setNav({ screen: 'class', classes: classes || [] });
   const goGrade3 = () => { visitGrade(3); setNav({ screen: 'grade3' }); };
   const goGrade4 = () => { visitGrade(4); setNav({ screen: 'grade4' }); };
   const goSettings = () => setNav({ screen: 'settings' });
@@ -403,7 +404,7 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     // Class page
     if (nav.screen === 'class') {
       // Pass aggregated classes from user context
-      return <ClassScreen classes={classes || []} onBack={goHome} />;
+      return <ClassScreen childEntries={children || []} onBack={goHome} />;
     }
     // Grades pick screen
     if (nav.screen === 'grades') {

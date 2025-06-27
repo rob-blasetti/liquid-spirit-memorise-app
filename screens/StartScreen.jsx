@@ -29,6 +29,7 @@ const StartScreen = ({ onSignIn, onGuest }) => {
           }
           return acc;
         }, []);
+        console.log('classes to set in setClasses:', allClasses);
         setClasses(allClasses);
       } else {
         // no children: clear

@@ -1,20 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
 import themeVariables from '../styles/theme';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
+import { Button } from 'liquid-spirit-styleguide';
 
-/**
- * Settings screen: allows user to override current set and lesson for progress.
- * Props:
- *  - profile: { grade }
- *  - currentProgress: { setNumber, lessonNumber }
- *  - overrideProgress: { setNumber, lessonNumber } | null
- *  - onSaveOverride: (progress | null) => void
- *  - onBack: () => void
- *  - onReset: () => void (reset profile data)
- */
 const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset }) => {
   const [selectedSet, setSelectedSet] = useState(
     overrideProgress?.setNumber ?? currentProgress.setNumber
@@ -42,7 +32,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       <View style={styles.container}>
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.subtitle}>No profile loaded</Text>
-        <ThemedButton title="Back" onPress={onBack} />
+        <Button label="Back" onPress={onBack} />
       </View>
     );
   }
@@ -69,16 +59,11 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           </View>
         </View>
         <View style={styles.buttonContainer}>
-          <ThemedButton
-            title="Save"
-            onPress={() => onSaveOverride({ setNumber: 1, lessonNumber: selectedLesson })}
-          />
-          <ThemedButton title="Auto Progress" onPress={clearOverride} />
-          <ThemedButton title="Back" onPress={onBack} />
-        </View>
-        <TouchableOpacity style={styles.resetRow} onPress={onReset}>
-          <Text style={styles.resetRowText}>Wipe User Details</Text>
-        </TouchableOpacity>
+          <Button label="Save" onPress={() => onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson })} />
+          <Button label="Auto Progress" onPress={clearOverride} />
+          <Button secondary label="Back" onPress={onBack} />
+          <Button label="Wipe User Details" onPress={onReset} />
+        </View>        
       </ScrollView>
     );
   }
@@ -125,16 +110,11 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           </View>
         </View>
         <View style={styles.buttonContainer}>
-          <ThemedButton
-            title="Save"
-            onPress={() => onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson })}
-          />
-          <ThemedButton title="Auto Progress" onPress={clearOverride} />
-          <ThemedButton title="Back" onPress={onBack} />
+          <Button label="Save" onPress={() => onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson })} />
+          <Button label="Auto Progress" onPress={clearOverride} />
+          <Button secondary label="Back" onPress={onBack} />
+          <Button label="Wipe User Details" onPress={onReset} />
         </View>
-        <TouchableOpacity style={styles.resetRow} onPress={onReset}>
-          <Text style={styles.resetRowText}>Wipe User Details</Text>
-        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -145,8 +125,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.subtitle}>Settings for Grade {profile.grade} not available</Text>
       <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-        <ThemedButton title="Reset" onPress={onReset} />
+        <Button secondary label="Back" onPress={onBack} />
+        <Button label="Reset" onPress={onReset} />        
       </View>
     </View>
   );
