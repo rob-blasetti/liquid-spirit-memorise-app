@@ -1,42 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
+const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+
 const FlashCardRecallGame = ({ quote, onBack }) => {
   const [showQuote, setShowQuote] = useState(true);
-  const [input, setInput] = useState('');
+  const [words, setWords] = useState([]);
+  const [scrambled, setScrambled] = useState([]);
+  const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
-  // number of hints used (max 3)
-  const [hintCount, setHintCount] = useState(0);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setShowQuote(true);
-    setInput('');
+    const w = quote.split(/\s+/);
+    setWords(w);
+    setScrambled(shuffle(w));
+    setIndex(0);
     setMessage('');
-    // reset hint count when a new quote is loaded
-    setHintCount(0);
     const timer = setTimeout(() => setShowQuote(false), 6000);
     return () => clearTimeout(timer);
   }, [quote]);
 
-  const checkAnswer = () => {
-    if (input.trim().toLowerCase() === quote.trim().toLowerCase()) {
-      setMessage('Great job!');
+  const handlePress = (word, idx) => {
+    if (word === words[index]) {
+      setScrambled((prev) => prev.filter((_, i) => i !== idx));
+      const next = index + 1;
+      setIndex(next);
+      if (next === words.length) {
+        setMessage('Great job!');
+      } else {
+        setMessage('');
+      }
     } else {
       setMessage('Try again');
-    }
-  };
-  // reveal next word in the input as a hint, up to 3 times
-  const handleHint = () => {
-    if (hintCount < 3) {
-      const newCount = hintCount + 1;
-      setHintCount(newCount);
-      // put next words into input field
-      const wordsArr = quote.split(' ');
-      const newInput = wordsArr.slice(0, newCount).join(' ');
-      setInput(newInput);
     }
   };
 
@@ -44,29 +43,19 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
     <View style={styles.container}>
       <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Flash Card Recall</Text>
-      <Text style={styles.description}>Look at the quote, then write it from memory.</Text>
+      <Text style={styles.description}>Look at the quote, then tap the words in order.</Text>
       {showQuote ? (
         <Text style={styles.quote}>{quote}</Text>
       ) : (
         <>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Type the quote"
-            multiline
-          />
-          <ThemedButton title="Submit" onPress={checkAnswer} />
-          {message !== '' && <Text style={styles.message}>{message}</Text>}
-          {/* Hint button and counter */}
-          <View style={styles.hintContainer}>
-            <ThemedButton
-              title="Hint"
-              onPress={handleHint}
-              disabled={hintCount >= 3}
-            />
-            <Text style={styles.hintCount}>Hints used: {hintCount}/3</Text>
+          <View style={styles.wordBank}>
+            {scrambled.map((w, i) => (
+              <TouchableOpacity key={`${w}-${i}`} style={styles.wordButton} onPress={() => handlePress(w, i)}>
+                <Text style={styles.wordText}>{w}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
+          {message !== '' && <Text style={styles.message}>{message}</Text>}
         </>
       )}
       {/* back handled via header icon */}
@@ -96,32 +85,29 @@ const styles = StyleSheet.create({
     marginVertical: 24,
     textAlign: 'center',
   },
-  input: {
+  wordBank: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  wordButton: {
+    backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginBottom: 8,
-    width: '80%',
+    borderColor: themeVariables.primaryColor,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
+    borderRadius: themeVariables.borderRadiusPill,
+  },
+  wordText: {
     fontSize: 18,
+    color: themeVariables.primaryColor,
+    fontWeight: 'bold',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginVertical: 8,
-  },
-  hintContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  hintCount: {
-    fontSize: 14,
-    color: '#666',
-    marginVertical: 4,
-  },
-  hintText: {
-    fontSize: 18,
-    color: themeVariables.primaryColor,
-    marginTop: 8,
   },
   buttonContainer: {
     width: '80%',

@@ -1,21 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+
+const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const FirstLetterQuizGame = ({ quote, onBack }) => {
   const words = quote.split(/\s+/);
   const [index, setIndex] = useState(0);
-  const [input, setInput] = useState('');
+  const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
 
-  const check = () => {
-    if (input.trim().toLowerCase() === words[index].toLowerCase()) {
+  // prepare options on mount and when quote changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setIndex(0);
+    setMessage('');
+    generateOptions(0);
+  }, [quote]);
+
+  const generateOptions = (idx) => {
+    if (idx >= words.length) {
+      setOptions([]);
+      return;
+    }
+    const remaining = words.filter((_, i) => i !== idx);
+    const distractors = [];
+    while (distractors.length < 3 && remaining.length > 0) {
+      const cand = remaining[Math.floor(Math.random() * remaining.length)];
+      if (!distractors.includes(cand)) distractors.push(cand);
+    }
+    while (distractors.length < 3) {
+      distractors.push(words[Math.floor(Math.random() * words.length)]);
+    }
+    setOptions(shuffle([words[idx], ...distractors]));
+  };
+
+  const handleSelect = (word) => {
+    if (word === words[index]) {
       const next = index + 1;
       setIndex(next);
-      setInput('');
-      setMessage('');
+      if (next === words.length) {
+        setMessage('Great job!');
+        setOptions([]);
+      } else {
+        setMessage('');
+        generateOptions(next);
+      }
     } else {
       setMessage('Try again');
     }
@@ -32,19 +64,17 @@ const FirstLetterQuizGame = ({ quote, onBack }) => {
       <Text style={styles.description}>Guess each word using the first letters.</Text>
       <Text style={styles.quote}>{display}</Text>
       {index < words.length ? (
-        <>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Next word"
-          />
-          <ThemedButton title="Submit" onPress={check} />
-          {message !== '' && <Text style={styles.message}>{message}</Text>}
-        </>
+        <View style={styles.options}>
+          {options.map((o, i) => (
+            <TouchableOpacity key={`${o}-${i}`} style={styles.optionButton} onPress={() => handleSelect(o)}>
+              <Text style={styles.optionText}>{o}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       ) : (
         <Text style={styles.message}>Great job!</Text>
       )}
+      {message !== '' && <Text style={styles.message}>{message}</Text>}
     </View>
   );
 };
@@ -71,22 +101,29 @@ const styles = StyleSheet.create({
     marginVertical: 24,
     textAlign: 'center',
   },
-  input: {
+  options: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  optionButton: {
+    backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginBottom: 8,
-    width: '80%',
+    borderColor: themeVariables.primaryColor,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
+    borderRadius: themeVariables.borderRadiusPill,
+  },
+  optionText: {
     fontSize: 18,
+    color: themeVariables.primaryColor,
+    fontWeight: 'bold',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginVertical: 8,
-  },
-  buttonContainer: {
-    width: '80%',
-    marginTop: 16,
   },
 });
 
