@@ -5,15 +5,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
   ScrollView,
-  ImageBackground,
   useWindowDimensions,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import { TabView, TabBar } from 'react-native-tab-view';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import theme from '../styles/theme';
-
 const ClassScreen = ({ childEntries = [], onBack }) => {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
@@ -32,16 +30,17 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
 
     return (
       <ScrollView style={styles.scene}>
-        {classes.map(cls => (
-          <View key={cls.id} style={styles.card}>
+        {classes.map((cls, classIndex) => (
+          <View key={cls.id || cls._id || classIndex} style={styles.card}>
             {cls.imageUrl && (
-              <ImageBackground
-                source={{ uri: cls.imageUrl }}
-                style={styles.banner}
-                imageStyle={styles.bannerImage}
-              >
+              <View style={styles.banner}>
+                <FastImage
+                  source={{ uri: cls.imageUrl, priority: FastImage.priority.normal, cache: FastImage.cacheControl.immutable }}
+                  style={styles.bannerImage}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
                 <Text style={styles.classTitle}>{cls.title}</Text>
-              </ImageBackground>
+              </View>
             )}
             <Text style={styles.curriculumLesson}>
               {cls.curriculumLesson
@@ -57,10 +56,14 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
             )}
 
             <Text style={styles.sectionTitle}>Teachers</Text>
-            {cls.facilitators?.map(f => (
-              <View key={f.id} style={styles.personContainer}>
+            {cls.facilitators?.map((f, facIndex) => (
+              <View key={f.id || f._id || facIndex} style={styles.personContainer}>
                 {f.profilePicture ? (
-                  <Image source={{ uri: f.profilePicture }} style={styles.profileImage} />
+                  <FastImage
+                    source={{ uri: f.profilePicture, priority: FastImage.priority.normal, cache: FastImage.cacheControl.immutable }}
+                    style={styles.profileImage}
+                    resizeMode={FastImage.resizeMode.cover}
+                  />
                 ) : (
                   <Avatar
                     size={40}
@@ -75,10 +78,14 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
             ))}
 
             <Text style={styles.sectionTitle}>Students</Text>
-            {cls.participants?.map(p => (
-              <View key={p.id} style={styles.personContainer}>
+            {cls.participants?.map((p, partIndex) => (
+              <View key={p.id || p._id || partIndex} style={styles.personContainer}>
                 {p.profilePicture ? (
-                  <Image source={{ uri: p.profilePicture }} style={styles.profileImage} />
+                  <FastImage
+                    source={{ uri: p.profilePicture, priority: FastImage.priority.normal, cache: FastImage.cacheControl.immutable }}
+                    style={styles.profileImage}
+                    resizeMode={FastImage.resizeMode.cover}
+                  />
                 ) : (
                   <Avatar
                     size={40}
@@ -152,8 +159,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     elevation: 2,
   },
-  banner: { height: 120, justifyContent: 'flex-end' },
-  bannerImage: { opacity: 0.8 },
+  banner: {
+    height: 120,
+    width: '100%',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  bannerImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.8,
+  },
   classTitle: {
     color: '#fff',
     fontSize: 18,
