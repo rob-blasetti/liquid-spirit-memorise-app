@@ -446,8 +446,6 @@ import { UserProvider, UserContext } from './contexts/UserContext';
           achievements={achievements}
           content={content}
           onDailyChallenge={handleDailyChallenge}
-          onGoCurrentLesson={handleGoCurrentLesson}
-          onGoSet={handleGoSet}
           // show class button only if there are any classes in context
           onSeeClass={classes?.length > 0 ? goClass : undefined}
           currentSet={setNumber}
@@ -534,9 +532,8 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     justifyContent: 'flex-start',
     // Horizontal padding can be managed within individual screens as needed
-    paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: theme.greyColor, // Using redColor as the background
+    backgroundColor: theme.whiteColor, // Using redColor as the background
   },
   title: {
     fontSize: 24,

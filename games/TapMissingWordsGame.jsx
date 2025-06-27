@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -11,6 +11,9 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
   const [wordBank, setWordBank] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
+  const [guessesLeft, setGuessesLeft] = useState(3);
+  const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
+  const starAnimsRef = useRef([]);
 
   useEffect(() => {
     const words = quote.split(' ');
@@ -25,7 +28,18 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
     indices.sort((a, b) => a - b);
     const missing = indices.map(i => words[i]);
     const display = words.map((w, i) => (indices.includes(i) ? '____' : w));
-    const bank = [...missing].sort(() => Math.random() - 0.5);
+    // prepare word bank with four choices (missing words + distractors)
+    const allWords = words.filter((_, i) => !indices.includes(i));
+    const distractCount = Math.max(0, 4 - missing.length);
+    const distractors = [];
+    const pool = [...allWords];
+    while (distractors.length < distractCount && pool.length > 0) {
+      const r = Math.floor(Math.random() * pool.length);
+      distractors.push(pool.splice(r, 1)[0]);
+    }
+    const bank = [...missing, ...distractors].sort(() => Math.random() - 0.5);
+    // initialize star animations
+    starAnimsRef.current = [new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)];
 
     setDisplayWords(display);
     setMissingWords(missing);
@@ -33,9 +47,12 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
     setWordBank(bank);
     setCurrentIndex(0);
     setMessage('');
+    setGuessesLeft(3);
+    setStatus('playing');
   }, [quote]);
 
   const handleWordPress = word => {
+    if (status !== 'playing') return;
     if (word === missingWords[currentIndex]) {
       const newDisplay = [...displayWords];
       newDisplay[missingIndices[currentIndex]] = word;
@@ -51,12 +68,20 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
       if (nextIndex === missingWords.length) {
-        setMessage('Well done!');
+        setStatus('won');
+        setMessage('');
       } else {
         setMessage('');
       }
     } else {
-      setMessage('Try again');
+      const left = guessesLeft - 1;
+      setGuessesLeft(left);
+      if (left <= 0) {
+        setStatus('lost');
+        setMessage('Try again');
+      } else {
+        setMessage(`Try again (${left} left)`);
+      }
     }
   };
 
@@ -66,18 +91,38 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
       <Text style={styles.title}>Fill in the missing words</Text>
       <Text style={styles.description}>Tap the blanks in the right order.</Text>
       <Text style={styles.quote}>{displayWords.join(' ')}</Text>
-      <View style={styles.wordBank}>
-        {wordBank.map((word, i) => (
-          <TouchableOpacity
-            key={`${word}-${i}`}
-            style={styles.wordButton}
-            onPress={() => handleWordPress(word)}
-          >
-            <Text style={styles.wordText}>{word}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+      {status === 'playing' && (
+        <>
+          <View style={styles.wordBank}>
+            {wordBank.map((word, i) => (
+              <TouchableOpacity
+                key={`${word}-${i}`}
+                style={styles.wordButton}
+                onPress={() => handleWordPress(word)}
+              >
+                <Text style={styles.wordText}>{word}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {message ? <Text style={styles.message}>{message}</Text> : null}
+        </>
+      )}
+      {status === 'won' && (
+        <View style={styles.starsContainer}>
+          {starAnimsRef.current.map((anim, i) => (
+            <Animated.Text
+              key={i}
+              style={[
+                styles.star,
+                { opacity: anim, transform: [{ scale: anim }] },
+              ]}
+            >
+              ⭐
+            </Animated.Text>
+          ))}
+        </View>
+      )}
+      {status === 'lost' && <Text style={styles.message}>Try again</Text>}
     </View>
   );
 };
@@ -129,6 +174,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginVertical: 8,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  star: {
+    fontSize: 48,
+    marginHorizontal: 8,
   },
   buttonContainer: {
     width: '80%',

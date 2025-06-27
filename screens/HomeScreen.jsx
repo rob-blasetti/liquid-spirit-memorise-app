@@ -6,7 +6,7 @@ import Avatar from '@flipxyz/react-native-boring-avatars';
 import { Button } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
 
-const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson, onGoSet, onSeeClass, currentSet, currentLesson, content, onProfilePress }) => {
+const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, currentSet, currentLesson, content, onProfilePress }) => {
   const totalPoints = achievements
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
@@ -49,11 +49,6 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onGoCurrentLesson
           <Button label="See Class" onPress={onSeeClass} />
         )}
       </View>
-      <View style={styles.bottomButtonContainer}>
-        <Button label="Go To Set" onPress={onGoSet} />
-        <Button label="Current Lesson" onPress={onGoCurrentLesson} />
-      </View>
-
     </View>
   );
 };
