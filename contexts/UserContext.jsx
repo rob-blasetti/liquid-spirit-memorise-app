@@ -13,6 +13,10 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const loadUserData = async () => {
       try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const allData = await AsyncStorage.multiGet(allKeys);
+        console.log('Full AsyncStorage:', Object.fromEntries(allData));
+
         const storedUser = await AsyncStorage.getItem('user');
         const storedFamily = await AsyncStorage.getItem('family');
         const storedChildren = await AsyncStorage.getItem('children');

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -32,7 +32,15 @@ const AchievementItem = ({ icon, title, description, points, earned }) => (
   </View>
 );
 
-const AchievementsScreen = ({ achievements }) => {
+const AchievementsScreen = ({ achievements, highlightId }) => {
+  const scrollRef = useRef();
+  const offsetMap = useRef({});
+
+  useEffect(() => {
+    if (highlightId && scrollRef.current && offsetMap.current[highlightId] != null) {
+      scrollRef.current.scrollTo({ y: offsetMap.current[highlightId] - 64, animated: true });
+    }
+  }, [highlightId]);
   // Only show achievements when prerequisites are met
   const visible = achievements.filter(
     (ach) => !ach.prereq || achievements.find(a => a.id === ach.prereq)?.earned
@@ -61,7 +69,11 @@ const AchievementsScreen = ({ achievements }) => {
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Achievements</Text>
       </View>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         {order.map((section) => {
           const items = grouped[section];
           if (!items) return null;
@@ -69,14 +81,22 @@ const AchievementsScreen = ({ achievements }) => {
             <View key={section} style={styles.section}>
               <Text style={styles.sectionHeader}>{section}</Text>
               {items.map((ach) => (
-                <AchievementItem
+                <View
                   key={ach.id}
-                  icon={ach.icon}
-                  title={ach.title}
-                  description={ach.description}
-                  points={ach.points}
-                  earned={ach.earned}
-                />
+                  onLayout={e => { offsetMap.current[ach.id] = e.nativeEvent.layout.y; }}
+                  style={[
+                    styles.item,
+                    highlightId === ach.id && styles.highlight,
+                  ]}
+                >
+                  <AchievementItem
+                    icon={ach.icon}
+                    title={ach.title}
+                    description={ach.description}
+                    points={ach.points}
+                    earned={ach.earned}
+                  />
+                </View>
               ))}
             </View>
           );
@@ -151,6 +171,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
+  },
+  // Highlighted achievement
+  highlight: {
+    backgroundColor: theme.neutralLight,
+    borderColor: theme.primaryColor,
+    borderWidth: 2,
+    borderRadius: 8,
   },
 });
 

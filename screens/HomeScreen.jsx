@@ -1,30 +1,35 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faStar } from '@fortawesome/free-solid-svg-icons';
+import { faStar, faCamera } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import { Button } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
 
-const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, currentSet, currentLesson, content, onProfilePress }) => {
+const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, currentSet, currentLesson, content, onProfilePress, onAvatarPress }) => {
   const totalPoints = achievements
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
   return (
     <View style={styles.container}>
-      {/* Header: avatar and points */}
+      {/* Header: avatar (change pic) and points */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.profileContainer} onPress={onProfilePress}>
-          {profile.avatar ? (
-            <Image source={{ uri: profile.avatar }} style={styles.profileAvatar} />
-          ) : (
-            <Avatar size={60} name={profile.name} variant="beam" />
-          )}
-          <View style={styles.profileTextContainer}>
+        <View style={styles.profileContainer}>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={onAvatarPress}>
+            {profile.avatar ? (
+              <Image source={{ uri: profile.avatar }} style={styles.profileAvatar} />
+            ) : (
+              <Avatar size={60} name={profile.name} variant="beam" />
+            )}
+            <View style={styles.avatarOverlay}>
+              <FontAwesomeIcon icon={faCamera} size={14} color={themeVariables.whiteColor} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
             <Text style={styles.profileName}>{profile.name}</Text>
             <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
         <View style={styles.pointsContainer}>
           <FontAwesomeIcon icon={faStar} size={20} color="#f1c40f" />
           <Text style={styles.pointsText}>{totalPoints}</Text>

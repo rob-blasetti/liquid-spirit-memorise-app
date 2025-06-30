@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, View, Text, Button, StyleSheet, TouchableOpacity, Modal, FlatList, Image } from 'react-native';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import ThemedButton from './components/ThemedButton';
@@ -17,6 +17,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import { gameScreens } from './games/gameRoutes';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import { launchImageLibrary } from 'react-native-image-picker';
 import HomeScreen from './screens/HomeScreen';
 import { grade1Lessons } from './data/grade1';
 import { quoteMap } from './data/grade2';
@@ -35,6 +36,36 @@ import { API_URL } from './config';
 
 import { UserProvider, UserContext } from './contexts/UserContext';
 
+// Notification banner shown when an achievement is earned, auto-dismisses after a delay
+import { Animated } from 'react-native';
+const NotificationBanner = ({ title, onPress, onHide }) => {
+  const translateY = useRef(new Animated.Value(-80)).current;
+  useEffect(() => {
+    // Slide down into view
+    Animated.timing(translateY, {
+      toValue: 20,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    // Auto-hide after 3 seconds
+    const timeout = setTimeout(() => {
+      Animated.timing(translateY, {
+        toValue: -80,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => onHide && onHide());
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, []);
+  return (
+    <Animated.View style={[styles.notification, { transform: [{ translateY }] }]}>  
+      <TouchableOpacity onPress={onPress}>
+        <Text style={styles.notificationText}>Achievement unlocked: {title}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
  const MainApp = () => {
   // access user context (user, family, children, classes)
   const { user, classes, children, setUser } = useUser();
@@ -45,6 +76,35 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
+  // Handler to change profile image
+  const changeAvatar = async () => {
+    try {
+      const result = await launchImageLibrary({ mediaType: 'photo', quality: 1, includeBase64: true });
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        console.warn('ImagePicker Error: ', result.errorMessage);
+        return;
+      }
+      const asset = result.assets && result.assets[0];
+      if (asset && asset.base64) {
+        const type = asset.type || 'image/jpeg';
+        const newAvatar = `data:${type};base64,${asset.base64}`;
+        const updatedProfile = { ...profile, avatar: newAvatar };
+        // Update profile state and persist to storage
+        setProfile(updatedProfile);
+        // Persist to profile storage
+        try {
+          await AsyncStorage.setItem('profile', JSON.stringify(updatedProfile));
+        } catch (e) {
+          console.error('Error saving profile:', e);
+        }
+        // Also update user context
+        setUser(updatedProfile);
+      }
+    } catch (e) {
+      console.error('Failed to pick image:', e);
+    }
+  };
   // when profile loads, if multiple children, ask the user to pick a default child
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
   useEffect(() => {
@@ -62,6 +122,26 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     }
   }, [profile]);
   const [showSetup, setShowSetup] = useState(false);
+  const [notification, setNotification] = useState(null);
+  // Persisted guest profile
+  const [guestProfile, setGuestProfile] = useState(null);
+  // Delete guest account handler
+  const deleteGuestAccount = async () => {
+    try {
+      // Remove persisted guest profile
+      await AsyncStorage.removeItem('guestProfile');
+    } catch (e) {
+      console.error('Error deleting guest profile:', e);
+    }
+    setGuestProfile(null);
+    // If currently using guest profile, clear active profile state and reset achievements
+    if (profile && profile.guest) {
+      setProfile(null);
+      setShowSetup(false);
+      setAchievements(defaultAchievements);
+    }
+    setChooseChildVisible(false);
+  };
   const [achievements, setAchievements] = useState(defaultAchievements);
   const [completedLessons, setCompletedLessons] = useState({});
   const [overrideProgress, setOverrideProgress] = useState(null);
@@ -98,15 +178,35 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   }, []);
   // Load saved profile
   useEffect(() => {
+    // Load last active profile
     const loadProfile = async () => {
       try {
         const data = await AsyncStorage.getItem('profile');
-        if (data) setProfile(JSON.parse(data));
+        if (data) {
+          const loaded = JSON.parse(data);
+          setProfile(loaded);
+          // Restore achievements if persisted
+          if (loaded.achievements) {
+            setAchievements(loaded.achievements);
+          }
+        }
       } catch (e) {
-        // ignore errors
+        console.error('Error loading profile:', e);
+      }
+    };
+    const loadGuestProfile = async () => {
+      try {
+        const data = await AsyncStorage.getItem('guestProfile');
+        if (data) {
+          const loadedGuest = JSON.parse(data);
+          setGuestProfile(loadedGuest);
+        }
+      } catch (e) {
+        console.error('Error loading guest profile:', e);
       }
     };
     loadProfile();
+    loadGuestProfile();
   }, []);
 
   
@@ -115,7 +215,10 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     return <Splash />;
   }
   const handleStartSignIn = (user) => {
-    saveProfile(user);
+    // Save authenticated user profile
+    saveProfile({ ...user, guest: false });
+    // Award initial profile achievement
+    awardAchievement('profile');
   };
   
   // Save override progress (or clear if null)
@@ -197,13 +300,23 @@ import { UserProvider, UserContext } from './contexts/UserContext';
 
 
   const saveProfile = async (p) => {
-    setProfile(p);
-    try {
-      await AsyncStorage.setItem('profile', JSON.stringify(p));
-    } catch (e) {
-      // ignore errors
+    // Merge with current achievements if not provided
+    const newProfile = { ...p };
+    if (!newProfile.achievements) {
+      newProfile.achievements = achievements;
     }
-    awardAchievement('profile');
+    setProfile(newProfile);
+    try {
+      // Persist active profile
+      await AsyncStorage.setItem('profile', JSON.stringify(newProfile));
+      // Persist guest profile separately
+      if (newProfile.guest) {
+        await AsyncStorage.setItem('guestProfile', JSON.stringify(newProfile));
+        setGuestProfile(newProfile);
+      }
+    } catch (e) {
+      console.error('Error saving profile:', e);
+    }
   };
 
   const addScore = async (value) => {
@@ -222,13 +335,19 @@ import { UserProvider, UserContext } from './contexts/UserContext';
   };
 
   const awardAchievement = (id) => {
-    setAchievements(a => a.map(ach => {
-      if (ach.id === id && !ach.earned) {
-        addScore(ach.points || 0);
-        return { ...ach, earned: true };
-      }
-      return ach;
-    }));
+    if (!profile) return;
+    setAchievements(prev => {
+      // Mark achievement as earned
+      const updated = prev.map(a => a.id === id && !a.earned ? { ...a, earned: true } : a);
+      // Recalculate total score from earned achievements
+      const newScore = updated.reduce((sum, a) => sum + (a.earned && a.points ? a.points : 0), 0);
+      // Persist updated profile (score + achievements)
+      saveProfile({ ...profile, achievements: updated, score: newScore });
+      // Show notification
+      const achObj = updated.find(a => a.id === id);
+      setNotification({ id, title: achObj?.title || 'Achievement' });
+      return updated;
+    });
   };
 
   const markDaily = () => {
@@ -347,7 +466,12 @@ import { UserProvider, UserContext } from './contexts/UserContext';
           />
         );
       }
-      return <ProfileSetupScreen onSave={saveProfile} />;
+      // Guest profile creation
+      const handleGuestSave = (p) => {
+        saveProfile({ ...p, guest: true });
+        awardAchievement('profile');
+      };
+      return <ProfileSetupScreen onSave={handleGuestSave} />;
     }
     // Grade 1 screens: set and lesson
     if (nav.screen === 'grade1') return <Grade1SetScreen onBack={goHome} onLessonSelect={goGrade1Lesson} />;
@@ -387,7 +511,14 @@ import { UserProvider, UserContext } from './contexts/UserContext';
     }
     if (nav.screen === 'grade3') return <Grade3Screen onBack={goHome} />;
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
-    if (nav.screen === 'achievements') return <AchievementsScreen achievements={achievements} />;
+    if (nav.screen === 'achievements') {
+      return (
+        <AchievementsScreen
+          achievements={achievements}
+          highlightId={nav.highlight}
+        />
+      );
+    }
     if (nav.screen === 'games') return <GamesListScreen onSelect={playSelectedGame} />;
     if (nav.screen === 'settings') {
       return (
@@ -451,18 +582,68 @@ import { UserProvider, UserContext } from './contexts/UserContext';
           currentSet={setNumber}
           currentLesson={lessonNumber}
           onProfilePress={() => setChooseChildVisible(true)}
+          onAvatarPress={changeAvatar}
         />
       );
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Notification banner */}
+      {notification && (
+        <NotificationBanner
+          title={notification.title}
+          onPress={() => {
+            setNav({ screen: 'achievements', highlight: notification.id });
+            setNotification(null);
+          }}
+          onHide={() => setNotification(null)}
+        />
+      )}
       {/* if multiple children, show chooser modal */}
       {chooseChildVisible && (
         <Modal visible transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Who are you?</Text>
+              <Text style={styles.modalTitle}>Change Account</Text>
+              {/* Guest account */}
+              {guestProfile && (
+                <>
+                  <TouchableOpacity
+                    style={styles.childButton}
+                    onPress={() => {
+                      // Switch to guest account
+                      const gp = guestProfile;
+                      const guestAch = gp.achievements || defaultAchievements;
+                      const guestScore = gp.score || 0;
+                      setAchievements(guestAch);
+                      saveProfile({
+                        ...gp,
+                        guest: true,
+                        achievements: guestAch,
+                        score: guestScore,
+                      });
+                      setUser({
+                        ...gp,
+                        achievements: guestAch,
+                        score: guestScore,
+                      });
+                      setChooseChildVisible(false);
+                    }}
+                  >
+                    {guestProfile.avatar ? (
+                      <Image source={{ uri: guestProfile.avatar }} style={styles.childAvatar} />
+                    ) : (
+                      <Avatar size={40} name={guestProfile.name} variant="beam" />
+                    )}
+                    <Text style={styles.childText}>{guestProfile.name} (Guest)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteButton} onPress={deleteGuestAccount}>
+                    <Text style={styles.deleteButtonText}>Delete Guest Account</Text>
+                  </TouchableOpacity>
+                  <View style={styles.divider} />
+                </>
+              )}
               <FlatList
                 data={children}
                 keyExtractor={item => item.child._id}
@@ -475,12 +656,27 @@ import { UserProvider, UserContext } from './contexts/UserContext';
                     <TouchableOpacity
                       style={styles.childButton}
                       onPress={() => {
-                        setProfile(selected);
-                        setUser(selected);
+                        // Switch to selected child account, restoring achievements and score
+                        const childAchievements = selected.achievements || defaultAchievements;
+                        const childScore = selected.score || 0;
+                        setAchievements(childAchievements);
+                        saveProfile({
+                          ...selected,
+                          guest: false,
+                          achievements: childAchievements,
+                          score: childScore,
+                        });
+                        setUser({
+                          ...selected,
+                          achievements: childAchievements,
+                          score: childScore,
+                        });
                         setChooseChildVisible(false);
                       }}
                     >
-                      <Avatar size={40} name={fullName} variant="beam" />
+                {childObj.avatar
+                  ? <Image source={{ uri: childObj.avatar }} style={styles.childAvatar} />
+                  : <Avatar size={40} name={fullName} variant="beam" />}
                       <Text style={styles.childText}>{fullName}</Text>
                     </TouchableOpacity>
                   );
@@ -646,6 +842,36 @@ const styles = StyleSheet.create({
   childText: {
     fontSize: 16,
     marginLeft: 12,
+  },
+  deleteButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#ccc',
+    marginVertical: 8,
+  },
+  // Notification banner styling
+  notification: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: theme.primaryColor,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    zIndex: 1000,
+    alignItems: 'center',
+  },
+  notificationText: {
+    color: theme.whiteColor || '#fff',
+    fontSize: 16,
   },
 });
 

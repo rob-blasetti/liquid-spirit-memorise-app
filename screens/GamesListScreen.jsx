@@ -14,6 +14,15 @@ import {
   faKeyboard,
   faUserNinja,
   faPen,
+  faGamepad,
+  faPuzzlePiece,
+  faPalette,
+  faMusic,
+  faBinoculars,
+  faMap,
+  faImages,
+  faExchangeAlt,
+  faTools,
 } from '@fortawesome/free-solid-svg-icons';
 import { gameIds } from '../games';
 
@@ -45,6 +54,14 @@ const iconMap = {
   fastTypeGame: faKeyboard,
   hangmanGame: faUserNinja,
   fillBlankGame: faPen,
+  shapeBuilderGame: faPuzzlePiece,
+  colorSwitchGame: faPalette,
+  rhythmRepeatGame: faMusic,
+  silhouetteSearchGame: faBinoculars,
+  memoryMazeGame: faMap,
+  sceneChangeGame: faImages,
+  wordSwapGame: faExchangeAlt,
+  buildRecallGame: faTools,
 };
 
 const GamesListScreen = ({ onSelect }) => (
@@ -55,7 +72,7 @@ const GamesListScreen = ({ onSelect }) => (
         <GameTile
           key={id}
           title={titles[id] || id}
-          icon={iconMap[id]}
+          icon={iconMap[id] || faGamepad}
           onPress={() => onSelect(id)}
         />
       ))}
