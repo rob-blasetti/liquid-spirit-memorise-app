@@ -5,11 +5,16 @@ import { faStar, faCamera } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import { Button } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
+import QuoteBlock from '../components/QuoteBlock';
 
 const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, currentSet, currentLesson, content, onProfilePress, onAvatarPress }) => {
   const totalPoints = achievements
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
+  const defaultReferences = [
+    { word: 'love', examples: ['I love my family.', 'Love conquers all.'] },
+    { word: 'heart', examples: ['My heart is joyful.', 'He spoke from the heart.'] },
+  ];
   return (
     <View style={styles.container}>
       {/* Header: avatar (change pic) and points */}
@@ -43,7 +48,7 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, curre
 
       {/* Current quote or prayer */}
       <View style={styles.contentContainer}>
-        <Text style={styles.contentText}>{content}</Text>
+        <QuoteBlock quote={content} references={defaultReferences} />
       </View>
 
       {/* Bottom action buttons */}
@@ -108,10 +113,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
-  },
-  contentText: {
-    fontSize: 18,
-    textAlign: 'center',
   },
   // Bottom action buttons
   bottomButtonContainer: {
