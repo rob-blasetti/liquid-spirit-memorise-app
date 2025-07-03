@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import themeVariables from '../styles/theme';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { Button } from 'liquid-spirit-styleguide';
@@ -24,8 +26,16 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       }
     }
   }, [selectedSet]);
+  // Auto-save override when selection changes (skip initial mount)
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson });
+  }, [selectedSet, selectedLesson]);
 
-  const clearOverride = () => onSaveOverride(null);
 
   if (!profile) {
     return (
@@ -42,28 +52,23 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     return (
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Lesson</Text>
-          <View style={styles.rowOptions}>
-            {grade1Lessons.map(l => (
-              <TouchableOpacity
-                key={l.lesson}
-                style={[styles.cell, selectedLesson === l.lesson && styles.cellSelected]}
-                onPress={() => setSelectedLesson(l.lesson)}
-              >
-                <Text style={[styles.cellText, selectedLesson === l.lesson && styles.cellTextSelected]}>
-                  {l.lesson}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        <View style={styles.buttonContainer}>
-          <Button label="Save" onPress={() => onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson })} />
-          <Button label="Auto Progress" onPress={clearOverride} />
-          <Button secondary label="Back" onPress={onBack} />
-          <Button label="Wipe User Details" onPress={onReset} />
-        </View>        
+        <Text style={styles.sectionTitle}>Lesson</Text>
+        {grade1Lessons.map(l => (
+          <TouchableOpacity
+            key={l.lesson}
+            style={[styles.listItem, selectedLesson === l.lesson && styles.listItemSelected]}
+            onPress={() => setSelectedLesson(l.lesson)}
+          >
+            <Text style={[styles.listItemText, selectedLesson === l.lesson && styles.listItemTextSelected]}>
+              Lesson {l.lesson}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <Text style={styles.sectionTitle}>Account</Text>
+        <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
+          <FontAwesomeIcon icon={faTrash} size={16} color={themeVariables.redColor} style={styles.accountIcon} />
+          <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -77,44 +82,35 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     return (
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Set</Text>
-          <View style={styles.rowOptions}>
-            {[1, 2, 3].map(setNum => (
-              <TouchableOpacity
-                key={setNum}
-                style={[styles.cell, selectedSet === setNum && styles.cellSelected]}
-                onPress={() => setSelectedSet(setNum)}
-              >
-                <Text style={[styles.cellText, selectedSet === setNum && styles.cellTextSelected]}>
-                  {setNum}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Lesson</Text>
-          <View style={styles.rowOptions}>
-            {lessons.map(ln => (
-              <TouchableOpacity
-                key={ln}
-                style={[styles.cell, selectedLesson === ln && styles.cellSelected]}
-                onPress={() => setSelectedLesson(ln)}
-              >
-                <Text style={[styles.cellText, selectedLesson === ln && styles.cellTextSelected]}>
-                  {ln}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        <View style={styles.buttonContainer}>
-          <Button label="Save" onPress={() => onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson })} />
-          <Button label="Auto Progress" onPress={clearOverride} />
-          <Button secondary label="Back" onPress={onBack} />
-          <Button label="Wipe User Details" onPress={onReset} />
-        </View>
+        <Text style={styles.sectionTitle}>Set</Text>
+        {[1, 2, 3].map(setNum => (
+          <TouchableOpacity
+            key={setNum}
+            style={[styles.listItem, selectedSet === setNum && styles.listItemSelected]}
+            onPress={() => setSelectedSet(setNum)}
+          >
+            <Text style={[styles.listItemText, selectedSet === setNum && styles.listItemTextSelected]}>
+              Set {setNum}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <Text style={styles.sectionTitle}>Lesson</Text>
+        {lessons.map(ln => (
+          <TouchableOpacity
+            key={ln}
+            style={[styles.listItem, selectedLesson === ln && styles.listItemSelected]}
+            onPress={() => setSelectedLesson(ln)}
+          >
+            <Text style={[styles.listItemText, selectedLesson === ln && styles.listItemTextSelected]}>
+              Lesson {ln}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <Text style={styles.sectionTitle}>Account</Text>
+        <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
+          <FontAwesomeIcon icon={faTrash} size={16} color={themeVariables.redColor} style={styles.accountIcon} />
+          <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -230,6 +226,44 @@ const styles = StyleSheet.create({
   resetRowText: {
     color: themeVariables.redColor,
     fontSize: 16,
+  },
+  // New list-style settings
+  sectionTitle: {
+    width: '100%',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+    color: themeVariables.primaryColor,
+  },
+  listItem: {
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: themeVariables.whiteColor,
+  },
+  listItemSelected: {
+    backgroundColor: themeVariables.primaryColor,
+  },
+  listItemText: {
+    fontSize: 16,
+    color: themeVariables.primaryColor,
+  },
+  listItemTextSelected: {
+    color: themeVariables.whiteColor,
+  },
+  // Account section items
+  accountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  accountIcon: {
+    marginRight: 12,
+  },
+  accountText: {
+    color: themeVariables.redColor,
   },
 });
 

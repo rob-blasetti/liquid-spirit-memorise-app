@@ -6,7 +6,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    paddingHorizontal: 16,
     backgroundColor: theme.whiteColor,
   },
   title: {
