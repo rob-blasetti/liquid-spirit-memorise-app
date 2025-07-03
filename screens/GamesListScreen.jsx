@@ -83,8 +83,6 @@ const GamesListScreen = ({ onSelect }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // offset parent container's horizontal padding for full-width
-    marginHorizontal: -16,
   },
   contentContainer: {
     alignItems: 'center',

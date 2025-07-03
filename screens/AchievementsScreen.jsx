@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignSelf: 'stretch',
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 24,
