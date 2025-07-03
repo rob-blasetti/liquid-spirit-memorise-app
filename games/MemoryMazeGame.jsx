@@ -9,7 +9,8 @@ const path = ['R', 'D', 'D', 'R'];
 // During the preview, highlight the path across a grid of words from the quote.
 // The player then moves along the grid from memory using the arrow buttons.
 const MemoryMazeGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, size * size);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, size * size);
   const [preview, setPreview] = useState(true);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [step, setStep] = useState(0);

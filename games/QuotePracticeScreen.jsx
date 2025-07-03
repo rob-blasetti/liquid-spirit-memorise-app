@@ -6,7 +6,8 @@ import themeVariables from '../styles/theme';
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const QuotePracticeScreen = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');

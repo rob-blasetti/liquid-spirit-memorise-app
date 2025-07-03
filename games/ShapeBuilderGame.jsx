@@ -14,7 +14,8 @@ const colors = [
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const ShapeBuilderGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 4);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 4);
   const [showPreview, setShowPreview] = useState(true);
   const [grid, setGrid] = useState(Array(4).fill(null)); // placed indices
   const [pieces, setPieces] = useState([]); // shuffled piece indices

@@ -12,7 +12,8 @@ const palette = [
 
 // Display a line of words; one word changes colour.
 const SceneChangeGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 4);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 4);
   const [colors, setColors] = useState([]);
   const [changed, setChanged] = useState(0);
   const [message, setMessage] = useState('');

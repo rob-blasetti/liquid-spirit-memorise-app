@@ -6,6 +6,7 @@ import themeVariables from '../styles/theme';
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const FastTypeGame = ({ quote, onBack }) => {
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [time, setTime] = useState(30);
   const [words, setWords] = useState([]);
   const [index, setIndex] = useState(0);
@@ -14,7 +15,7 @@ const FastTypeGame = ({ quote, onBack }) => {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const w = quote.split(/\s+/);
+    const w = text.split(/\s+/);
     setWords(w);
     setIndex(0);
     setMessage('');

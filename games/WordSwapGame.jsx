@@ -4,7 +4,8 @@ import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const WordSwapGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 8);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 8);
   const [showOriginal, setShowOriginal] = useState(true);
   const [changedIndex, setChangedIndex] = useState(0);
   const [modified, setModified] = useState([]);

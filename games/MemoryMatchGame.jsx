@@ -7,12 +7,13 @@ import themeVariables from '../styles/theme';
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const MemoryMatchGame = ({ quote, onBack }) => {
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [cards, setCards] = useState([]);
   const [selected, setSelected] = useState([]);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const words = quote.split(/\s+/);
+    const words = text.split(/\s+/);
     const unique = Array.from(new Set(words)).slice(0, 6);
     const pairs = shuffle(
       unique.flatMap((w) => [

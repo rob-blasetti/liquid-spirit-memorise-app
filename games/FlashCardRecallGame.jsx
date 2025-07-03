@@ -6,6 +6,7 @@ import themeVariables from '../styles/theme';
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const FlashCardRecallGame = ({ quote, onBack }) => {
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [showQuote, setShowQuote] = useState(true);
   const [words, setWords] = useState([]);
   const [scrambled, setScrambled] = useState([]);
@@ -15,7 +16,7 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setShowQuote(true);
-    const w = quote.split(/\s+/);
+    const w = text.split(/\s+/);
     setWords(w);
     setScrambled(shuffle(w));
     setIndex(0);
@@ -45,7 +46,7 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
       <Text style={styles.title}>Flash Card Recall</Text>
       <Text style={styles.description}>Look at the quote, then tap the words in order.</Text>
       {showQuote ? (
-        <Text style={styles.quote}>{quote}</Text>
+        <Text style={styles.quote}>{text}</Text>
       ) : (
         <>
           <View style={styles.wordBank}>
