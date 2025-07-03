@@ -23,15 +23,38 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
     return acc;
   }, {});
 
-  const tokens = displayText.split(/(\s+)/).map((tok, idx) => {
-    if (/^\s+$/.test(tok)) {
-      return { text: tok, key: `space-${idx}` };
+  // Build tokens, handling multi-word references and single-word references
+  const tokens = [];
+  // Sort reference keys by length (longest first) to match multi-word phrases before substrings
+  const refKeys = Object.keys(refMap).sort((a, b) => b.length - a.length);
+  // Escape regex metacharacters in keys
+  const escapeRegExp = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const pattern = refKeys.length > 0 ? refKeys.map(escapeRegExp).join('|') : null;
+  const refRegex = pattern ? new RegExp(`(${pattern})`, 'gi') : null;
+  const segments = refRegex ? displayText.split(refRegex) : [displayText];
+  let tokenIndex = 0;
+  segments.forEach((segment) => {
+    const lowerSeg = segment.toLowerCase();
+    // If segment exactly matches a reference key (phrase or word)
+    if (refRegex && refMap[lowerSeg]) {
+      tokens.push({ text: segment, underline: true, key: `tok-${tokenIndex++}`, examples: refMap[lowerSeg] });
+    } else {
+      // Otherwise split into words and spaces
+      const parts = segment.split(/(\s+)/);
+      parts.forEach((part) => {
+        if (part === '') return;
+        if (/^\s+$/.test(part)) {
+          tokens.push({ text: part, key: `tok-${tokenIndex++}` });
+        } else {
+          const clean = stripPunctuation(part);
+          if (refMap[clean]) {
+            tokens.push({ text: part, underline: true, key: `tok-${tokenIndex++}`, examples: refMap[clean] });
+          } else {
+            tokens.push({ text: part, key: `tok-${tokenIndex++}` });
+          }
+        }
+      });
     }
-    const clean = stripPunctuation(tok);
-    if (refMap[clean]) {
-      return { text: tok, underline: true, key: `w-${idx}`, examples: refMap[clean] };
-    }
-    return { text: tok, key: `w-${idx}` };
   });
 
   return (
