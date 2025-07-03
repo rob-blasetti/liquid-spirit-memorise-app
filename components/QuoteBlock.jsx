@@ -5,14 +5,28 @@ import themeVariables from '../styles/theme';
 const stripPunctuation = (str) => str.replace(/[.,!?;:'"“”‘’]/g, '').toLowerCase();
 
 const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor = themeVariables.neutralLight }) => {
+  // quote may be a string or an object with { text, references }
   const [activeRef, setActiveRef] = useState(null);
-  const refMap = references.reduce((acc, r) => {
-    acc[r.word.toLowerCase()] = r.examples;
+  let displayText = '';
+  let refList = [];
+  if (quote && typeof quote === 'object' && 'text' in quote) {
+    displayText = quote.text;
+    refList = Array.isArray(quote.references) ? quote.references : [];
+  } else {
+    displayText = typeof quote === 'string' ? quote : '';
+    refList = references;
+  }
+  const refMap = refList.reduce((acc, r) => {
+    if (r && r.word) {
+      acc[r.word.toLowerCase()] = Array.isArray(r.examples) ? r.examples : [];
+    }
     return acc;
   }, {});
 
-  const tokens = quote.split(/(\s+)/).map((tok, idx) => {
-    if (/^\s+$/.test(tok)) return { text: tok, key: `space-${idx}` };
+  const tokens = displayText.split(/(\s+)/).map((tok, idx) => {
+    if (/^\s+$/.test(tok)) {
+      return { text: tok, key: `space-${idx}` };
+    }
     const clean = stripPunctuation(tok);
     if (refMap[clean]) {
       return { text: tok, underline: true, key: `w-${idx}`, examples: refMap[clean] };

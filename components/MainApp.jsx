@@ -6,7 +6,7 @@ import GradesScreen from '../screens/GradesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faTrash, faHome, faBook, faTrophy, faCog, faGamepad } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faHome, faBook, faTrophy, faCog, faGamepad, faChalkboardTeacher } from '@fortawesome/free-solid-svg-icons';
 // import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from '../screens/Grade2Screen';
 import Grade2SetScreen from '../screens/Grade2SetScreen';
@@ -522,8 +522,6 @@ import NotificationBanner from './NotificationBanner';
           achievements={achievements}
           content={content}
           onDailyChallenge={handleDailyChallenge}
-          // show class button only if there are any classes in context
-          onSeeClass={classes?.length > 0 ? goClass : undefined}
           currentSet={setNumber}
           currentLesson={lessonNumber}
           onProfilePress={() => setChooseChildVisible(true)}
@@ -642,6 +640,10 @@ import NotificationBanner from './NotificationBanner';
         <TouchableOpacity style={styles.navItem} onPress={goGrades}>
           <FontAwesomeIcon icon={faBook} size={24} color="#333" />
           <Text style={styles.navText}>Grade</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={goClass}>
+          <FontAwesomeIcon icon={faChalkboardTeacher} size={24} color="#333" />
+          <Text style={styles.navText}>Classes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goGames}>
           <FontAwesomeIcon icon={faGamepad} size={24} color="#333" />
