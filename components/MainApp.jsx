@@ -45,6 +45,7 @@ import {
 
 // Notification banner shown when an achievement is earned, auto-dismisses after a delay
 import NotificationBanner from './NotificationBanner';
+import DifficultyFAB from './DifficultyFAB';
 
  const MainApp = () => {
   // access user context (user, family, children, classes)
@@ -458,7 +459,12 @@ import NotificationBanner from './NotificationBanner';
     if (gameScreens[nav.screen]) {
       const GameComponent = gameScreens[nav.screen];
       const backHandler = nav.fromGames ? goGames : goBackToLesson;
-      return <GameComponent quote={nav.quote} onBack={backHandler} />;
+      return (
+        <View style={{ flex: 1 }}>
+          <GameComponent quote={nav.quote} onBack={backHandler} />
+          <DifficultyFAB />
+        </View>
+      );
     }
     if (nav.screen === 'grade2Set') {
       const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;

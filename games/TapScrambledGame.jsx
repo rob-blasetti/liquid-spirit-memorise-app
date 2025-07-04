@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
+import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => {
@@ -14,6 +15,7 @@ const shuffle = (arr) => {
 };
 
 const TapScrambledGame = ({ quote, onBack }) => {
+  const { level } = useDifficulty();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [words, setWords] = useState([]);
   const [scrambled, setScrambled] = useState([]);
@@ -21,12 +23,13 @@ const TapScrambledGame = ({ quote, onBack }) => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const w = text.split(/\s+/).slice(0, 8);
+    const limit = level === 1 ? 8 : level === 2 ? 12 : 16;
+    const w = text.split(/\s+/).slice(0, limit);
     setWords(w);
     setScrambled(shuffle(w));
     setIndex(0);
     setMessage('');
-  }, [quote]);
+  }, [quote, level]);
 
   const handlePress = (word, idx) => {
     if (word === words[index]) {
