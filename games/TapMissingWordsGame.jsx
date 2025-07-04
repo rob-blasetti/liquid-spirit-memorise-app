@@ -5,6 +5,7 @@ import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const TapMissingWordsGame = ({ quote, onBack }) => {
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [displayWords, setDisplayWords] = useState([]);
   const [missingWords, setMissingWords] = useState([]);
   const [missingIndices, setMissingIndices] = useState([]);
@@ -16,7 +17,7 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
   const starAnimsRef = useRef([]);
 
   useEffect(() => {
-    const words = quote.split(' ');
+    const words = text.split(' ');
     const numBlanks = Math.min(3, Math.max(1, Math.floor(words.length / 8)));
     const indices = [];
     while (indices.length < numBlanks) {

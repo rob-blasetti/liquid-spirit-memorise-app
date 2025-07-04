@@ -14,13 +14,14 @@ const shuffle = (arr) => {
 };
 
 const TapScrambledGame = ({ quote, onBack }) => {
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [words, setWords] = useState([]);
   const [scrambled, setScrambled] = useState([]);
   const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const w = quote.split(/\s+/).slice(0, 8);
+    const w = text.split(/\s+/).slice(0, 8);
     setWords(w);
     setScrambled(shuffle(w));
     setIndex(0);

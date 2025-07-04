@@ -20,7 +20,8 @@ const scrambleWord = (word) => {
 };
 
 const LetterScrambleGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/);
   const [index, setIndex] = useState(0);
   const [scrambled, setScrambled] = useState('');
   const [options, setOptions] = useState([]);

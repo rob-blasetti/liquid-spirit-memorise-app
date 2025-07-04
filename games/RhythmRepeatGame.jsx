@@ -7,7 +7,8 @@ import themeVariables from '../styles/theme';
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const RhythmRepeatGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 3);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 3);
   const [sequence, setSequence] = useState([]); // playback order
   const [playIndex, setPlayIndex] = useState(0);
   const [userIndex, setUserIndex] = useState(0);

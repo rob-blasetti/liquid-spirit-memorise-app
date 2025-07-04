@@ -6,6 +6,7 @@ import themeVariables from '../styles/theme';
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const FillBlankTypingGame = ({ quote, onBack }) => {
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [words, setWords] = useState([]);
   const [missing, setMissing] = useState([]);
   const [current, setCurrent] = useState(0);
@@ -14,7 +15,7 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const arr = quote.split(' ');
+    const arr = text.split(' ');
     const num = Math.min(3, Math.max(1, Math.floor(arr.length / 8)));
     const indices = [];
     while (indices.length < num) {

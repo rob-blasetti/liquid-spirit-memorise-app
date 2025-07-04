@@ -13,7 +13,8 @@ const palette = [
 ];
 
 const ColorSwitchGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 4);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 4);
   const [colors, setColors] = useState([]);
   const [changedIndex, setChangedIndex] = useState(0);
   const [message, setMessage] = useState('');

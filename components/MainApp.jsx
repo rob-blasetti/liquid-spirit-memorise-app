@@ -243,7 +243,8 @@ import NotificationBanner from './NotificationBanner';
       const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
       content = lesson ? lesson.quote : '';
     } else if (profile?.grade === 2) {
-      content = quoteMap[`${setNumber}-${lessonNumber}`] || '';
+      const qObj = quoteMap[`${setNumber}-${lessonNumber}`];
+      content = qObj || '';
     }
     // Navigate to the selected game; treat all games (including practice) uniformly
     goGame(gameId, content, true);
@@ -380,7 +381,8 @@ import NotificationBanner from './NotificationBanner';
       content = lesson ? lesson.quote : '';
     } else if (profile.grade === 2) {
       // Grade 2 quotes from data/grade2
-      content = quoteMap[`${setNumber}-${lessonNumber}`] || '';
+      const qObj = quoteMap[`${setNumber}-${lessonNumber}`];
+      content = qObj || '';
     }
     // Pick a random game and navigate accordingly
     const gameId = pickRandomGame();

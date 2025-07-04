@@ -4,7 +4,8 @@ import ThemedButton from '../components/ThemedButton';
 import { quoteMap } from '../data/grade2';
 
 const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onComplete, onPlayGame }) => {
-  const quote = quoteMap[`${setNumber}-${lessonNumber}`] ||
+  const quoteObj = quoteMap[`${setNumber}-${lessonNumber}`];
+  const quote = quoteObj?.text ||
     `This is a dummy quote for Lesson ${lessonNumber} of Set ${setNumber}.`;
   return (
     <View style={styles.container}>
@@ -12,8 +13,8 @@ const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onCom
       <Text style={styles.quote}>{quote}</Text>
       <View style={styles.buttonContainer}>
         <ThemedButton title="Complete Lesson" onPress={() => onComplete(setNumber, lessonNumber)} />
-        <ThemedButton title="Practice" onPress={() => onPractice(quote)} />
-        <ThemedButton title="Play Game" onPress={() => onPlayGame(quote)} />
+        <ThemedButton title="Practice" onPress={() => onPractice(quoteObj)} />
+        <ThemedButton title="Play Game" onPress={() => onPlayGame(quoteObj)} />
       </View>
       <View style={styles.buttonContainer}>
         <ThemedButton title="Back" onPress={onBack} />

@@ -6,7 +6,8 @@ import themeVariables from '../styles/theme';
 // Show two target words in silhouette, then let the player select them from a list.
 
 const SilhouetteSearchGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 4);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 4);
   const [targets, setTargets] = useState([]);
   const [found, setFound] = useState([]);
   const [showPreview, setShowPreview] = useState(true);

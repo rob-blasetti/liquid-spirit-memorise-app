@@ -8,7 +8,8 @@ const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 // Show a short sequence of words from the quote. After the preview,
 // players tap the words in the same order to reinforce recall.
 const BuildRecallGame = ({ quote, onBack }) => {
-  const words = quote.split(/\s+/).slice(0, 3);
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const words = text.split(/\s+/).slice(0, 3);
   const [sequence, setSequence] = useState([]); // order to memorize
   const [showIndex, setShowIndex] = useState(0); // playback index
   const [userIndex, setUserIndex] = useState(0); // player progress

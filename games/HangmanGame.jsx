@@ -7,7 +7,8 @@ import themeVariables from '../styles/theme';
 const MAX_WRONG = 8;
 
 const HangmanGame = ({ quote, onBack }) => {
-  const normalized = quote.toLowerCase();
+  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const normalized = text.toLowerCase();
   const [guessed, setGuessed] = useState([]);
   const [wrong, setWrong] = useState(0);
   const [letterChoices, setLetterChoices] = useState([]);
