@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
+import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 
 // Show a line of words. After a short delay one word changes colour.
@@ -13,7 +14,9 @@ const palette = [
 ];
 
 const ColorSwitchGame = ({ quote, onBack }) => {
+  const { level } = useDifficulty();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const delay = level === 1 ? 2000 : level === 2 ? 1500 : 1000;
   const words = text.split(/\s+/).slice(0, 4);
   const [colors, setColors] = useState([]);
   const [changedIndex, setChangedIndex] = useState(0);
@@ -21,7 +24,7 @@ const ColorSwitchGame = ({ quote, onBack }) => {
 
   useEffect(() => {
     startRound();
-  }, []);
+  }, [level]);
 
   const startRound = () => {
     const base = palette.map((c) => c);
@@ -34,7 +37,7 @@ const ColorSwitchGame = ({ quote, onBack }) => {
       const other = (idx + 1) % base.length;
       newCols[idx] = palette[other];
       setColors(newCols);
-    }, 2000);
+    }, delay);
   };
 
   const handlePress = (idx) => {
