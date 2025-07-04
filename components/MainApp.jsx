@@ -287,15 +287,20 @@ import NotificationBanner from './NotificationBanner';
   const awardAchievement = (id) => {
     if (!profile) return;
     setAchievements(prev => {
+      // Find the achievement by id
+      const ach = prev.find(a => a.id === id);
+      // If not found or already earned, do nothing
+      if (!ach || ach.earned) {
+        return prev;
+      }
       // Mark achievement as earned
-      const updated = prev.map(a => a.id === id && !a.earned ? { ...a, earned: true } : a);
+      const updated = prev.map(a => a.id === id ? { ...a, earned: true } : a);
       // Recalculate total score from earned achievements
       const newScore = updated.reduce((sum, a) => sum + (a.earned && a.points ? a.points : 0), 0);
       // Persist updated profile (score + achievements)
       saveProfile({ ...profile, achievements: updated, score: newScore });
-      // Show notification
-      const achObj = updated.find(a => a.id === id);
-      setNotification({ id, title: achObj?.title || 'Achievement' });
+      // Show notification for newly earned achievement
+      setNotification({ id, title: ach.title });
       return updated;
     });
   };
@@ -400,6 +405,8 @@ import NotificationBanner from './NotificationBanner';
     await clearProfile();
     setProfile(null);
     setShowSetup(false);
+    // Reset achievements to defaults when wiping profile
+    setAchievements(defaultAchievements);
   };
 
   // Render the appropriate screen
@@ -414,8 +421,16 @@ import NotificationBanner from './NotificationBanner';
         );
       }
       // Guest profile creation
+      // Handler for creating a new guest profile: initialize fresh achievements and score
       const handleGuestSave = (p) => {
-        saveProfile({ ...p, guest: true });
+        // Deep copy default achievements to reset state
+        const initAch = defaultAchievements.map(a => ({ ...a }));
+        setAchievements(initAch);
+        // New guest starts with fresh achievements and zero score
+        const newProfile = { ...p, guest: true, achievements: initAch, score: 0 };
+        // Save and persist profile
+        saveProfile(newProfile);
+        // Award initial 'profile' achievement
         awardAchievement('profile');
       };
       return <ProfileSetupScreen onSave={handleGuestSave} />;
