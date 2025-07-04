@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 // Use FontAwesome via @fortawesome/react-native-fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCalendarCheck, faTrophy, faStar } from '@fortawesome/free-solid-svg-icons';
-import theme from '../styles/theme';
+import themeVariables from '../styles/theme';
 
 // Map icon name strings to FontAwesome icons
 const iconMap = {
@@ -15,7 +15,7 @@ const AchievementItem = ({ icon, title, description, points, earned }) => (
     <FontAwesomeIcon
       icon={iconMap[icon]}
       size={32}
-      color={earned ? theme.secondaryColor : '#ccc'}
+      color={earned ? themeVariables.secondaryColor : '#ccc'}
     />
     <View style={styles.itemText}>
       <Text style={styles.itemTitle}>{title}</Text>
@@ -26,7 +26,7 @@ const AchievementItem = ({ icon, title, description, points, earned }) => (
       <FontAwesomeIcon
         icon={faStar}
         size={24}
-        color={earned ? theme.secondaryColor : '#ccc'}
+        color={earned ? themeVariables.secondaryColor : '#ccc'}
       />
     </View>
   </View>
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
     paddingHorizontal: 16,
+    backgroundColor: themeVariables.darkGreyColor,
   },
   title: {
     fontSize: 24,
@@ -175,8 +176,8 @@ const styles = StyleSheet.create({
   },
   // Highlighted achievement
   highlight: {
-    backgroundColor: theme.neutralLight,
-    borderColor: theme.primaryColor,
+    backgroundColor: themeVariables.neutralLight,
+    borderColor: themeVariables.primaryColor,
     borderWidth: 2,
     borderRadius: 8,
   },

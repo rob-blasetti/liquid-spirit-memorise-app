@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
+import RewardBanner from '../components/RewardBanner';
 import themeVariables from '../styles/theme';
 
 const TapMissingWordsGame = ({ quote, onBack }) => {
@@ -14,6 +15,13 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
   const [message, setMessage] = useState('');
   const [guessesLeft, setGuessesLeft] = useState(3);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
+  const [showBanner, setShowBanner] = useState(false);
+  // show reward banner on win
+  useEffect(() => {
+    if (status === 'won') {
+      setShowBanner(true);
+    }
+  }, [status]);
   const starAnimsRef = useRef([]);
 
   useEffect(() => {
@@ -108,22 +116,8 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
           {message ? <Text style={styles.message}>{message}</Text> : null}
         </>
       )}
-      {status === 'won' && (
-        <View style={styles.starsContainer}>
-          {starAnimsRef.current.map((anim, i) => (
-            <Animated.Text
-              key={i}
-              style={[
-                styles.star,
-                { opacity: anim, transform: [{ scale: anim }] },
-              ]}
-            >
-              ⭐
-            </Animated.Text>
-          ))}
-        </View>
-      )}
       {status === 'lost' && <Text style={styles.message}>Try again</Text>}
+      {showBanner && <RewardBanner onAnimationEnd={() => setShowBanner(false)} />}
     </View>
   );
 };

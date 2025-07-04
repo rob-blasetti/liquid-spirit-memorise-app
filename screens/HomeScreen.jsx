@@ -7,7 +7,7 @@ import { Button } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
 import QuoteBlock from '../components/QuoteBlock';
 
-const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, currentSet, currentLesson, content, onProfilePress, onAvatarPress }) => {
+const HomeScreen = ({ profile, achievements, onDailyChallenge, onTestMemory, onSeeClass, currentSet, currentLesson, content, onProfilePress, onAvatarPress }) => {
   const totalPoints = achievements
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
@@ -27,12 +27,13 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, curre
               <Avatar size={60} name={profile.name} variant="beam" />
             )}
             <View style={styles.avatarOverlay}>
-              <FontAwesomeIcon icon={faCamera} size={14} color={themeVariables.whiteColor} />
+              <FontAwesomeIcon icon={faCamera} size={14} color={themeVariables.blackColor} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
             <Text style={styles.profileName}>{profile.name}</Text>
             <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+            <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.pointsContainer}>
@@ -41,10 +42,6 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, curre
         </View>
       </View>
 
-      {/* Current progress */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
-      </View>
 
       {/* Current quote or prayer */}
       <View style={styles.contentContainer}>
@@ -54,6 +51,10 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onSeeClass, curre
       {/* Bottom action buttons */}
       <View style={styles.bottomButtonContainer}>
         <Button label="Daily Challenge" onPress={onDailyChallenge} />
+        {/* Test My Memory button */}
+        {onTestMemory && (
+          <Button label="Test My Memory" onPress={onTestMemory} />
+        )}
         {/* Only show See Class if there are classes */}
         {onSeeClass && (
           <Button label="See Class" onPress={onSeeClass} />
@@ -69,7 +70,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    paddingVertical: 16,
+    padding: 16,
+    borderRadius: themeVariables.borderRadiusPill,
+    backgroundColor: themeVariables.greyColor,
   },
   pointsContainer: {
     flexDirection: 'row',
@@ -82,7 +85,7 @@ const styles = StyleSheet.create({
   },
   profileContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   profileTextContainer: {
     marginLeft: 12,
@@ -99,6 +102,17 @@ const styles = StyleSheet.create({
   profileGrade: {
     fontSize: 16,
   },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: themeVariables.whiteColor,
+    borderRadius: 12,
+    padding: 4,
+  },
   // Main container
   container: {
     flex: 1,
@@ -106,6 +120,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
+    backgroundColor: themeVariables.darkGreyColor,
   },
   // Content display
   contentContainer: {

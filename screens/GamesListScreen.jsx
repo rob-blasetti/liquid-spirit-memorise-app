@@ -25,6 +25,7 @@ import {
   faTools,
 } from '@fortawesome/free-solid-svg-icons';
 import { gameIds } from '../games';
+import themeVariables from '../styles/theme';
 
 const titles = {
   practice: 'Practice',
@@ -83,6 +84,7 @@ const GamesListScreen = ({ onSelect }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: themeVariables.darkGreyColor,
   },
   contentContainer: {
     alignItems: 'center',

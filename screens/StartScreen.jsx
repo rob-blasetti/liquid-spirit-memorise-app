@@ -4,6 +4,7 @@ import ThemedButton from '../components/ThemedButton';
 import { signInWithLiquidSpirit } from '../services/authService';
 import { useUser } from '../contexts/UserContext';
 import splashLogo from '../assets/img/Nuri_Splash.png';
+import themeVariables from '../styles/theme';
 
 const StartScreen = ({ onSignIn, onGuest }) => {
   // Local state for user credentials
@@ -94,6 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: themeVariables.darkGreyColor,
   },
   heading: {
     fontSize: 32,

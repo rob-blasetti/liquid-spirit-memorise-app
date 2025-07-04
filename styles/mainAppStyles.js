@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform, StatusBar } from 'react-native';
 import theme from './theme';
 
 const styles = StyleSheet.create({
@@ -134,7 +134,8 @@ const styles = StyleSheet.create({
   },
   notification: {
     position: 'absolute',
-    top: 0,
+    // offset to avoid status bar / notch
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 44,
     left: 0,
     right: 0,
     backgroundColor: theme.primaryColor,

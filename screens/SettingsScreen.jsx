@@ -136,6 +136,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
+    backgroundColor: themeVariables.darkGreyColor,
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,

@@ -11,7 +11,8 @@ import {
 import FastImage from 'react-native-fast-image';
 import { TabView, TabBar } from 'react-native-tab-view';
 import Avatar from '@flipxyz/react-native-boring-avatars';
-import theme from '../styles/theme';
+import themeVariables from '../styles/theme';
+
 const ClassScreen = ({ childEntries = [], onBack }) => {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
@@ -27,6 +28,7 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
       classes: [],
     };
     const { classes = [] } = entry;
+    console.log(classes);
 
     return (
       <ScrollView style={styles.scene}>
@@ -47,14 +49,6 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
                 ? `Grade: ${cls.curriculumLesson.grade}, Lesson: ${cls.curriculumLesson.lessonNumber}`
                 : ''}
             </Text>
-            {cls.groupDetails && (
-              <View style={styles.group}>
-                <Text style={styles.groupText}>Day: {cls.groupDetails.day}</Text>
-                <Text style={styles.groupText}>Time: {cls.groupDetails.time}</Text>
-                <Text style={styles.groupText}>Freq: {cls.groupDetails.frequency}</Text>
-              </View>
-            )}
-
             <Text style={styles.sectionTitle}>Teachers</Text>
             {cls.facilitators?.map((f, facIndex) => (
               <View key={f.id || f._id || facIndex} style={styles.personContainer}>
@@ -120,7 +114,7 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
             {...props}
             indicatorStyle={styles.indicator}
             style={styles.tabBar}
-            activeColor={theme.primaryColor}
+            activeColor={themeVariables.primaryColor}
             inactiveColor="#333"
             labelStyle={styles.tabLabel}
           />
@@ -131,18 +125,19 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: themeVariables.darkGreyColor, },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     padding: 16,
+    backgroundColor: themeVariables.darkGreyColor,
   },
   backButton: {
     padding: 8,
   },
   backButtonText: {
-    color: theme.primaryColor,
+    color: themeVariables.primaryColor,
     fontSize: 16,
   },
   title: {
@@ -150,6 +145,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 20,
     fontWeight: 'bold',
+    backgroundColor: themeVariables.darkGreyColor,
   },
   scene: { flex: 1, padding: 16 },
   card: {
@@ -184,7 +180,7 @@ const styles = StyleSheet.create({
   personName: { marginLeft: 8, fontSize: 14 },
   tabBar: { backgroundColor: '#fff' },
   tabLabel: { fontSize: 14, fontWeight: '600' },
-  indicator: { backgroundColor: theme.primaryColor },
+  indicator: { backgroundColor: themeVariables.primaryColor },
 });
 
 export default ClassScreen;

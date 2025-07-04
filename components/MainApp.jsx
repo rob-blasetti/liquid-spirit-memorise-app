@@ -524,6 +524,7 @@ import NotificationBanner from './NotificationBanner';
           achievements={achievements}
           content={content}
           onDailyChallenge={handleDailyChallenge}
+          onTestMemory={() => goGame('memoryGame', content)}
           currentSet={setNumber}
           currentLesson={lessonNumber}
           onProfilePress={() => setChooseChildVisible(true)}
