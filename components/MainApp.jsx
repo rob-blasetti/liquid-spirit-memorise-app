@@ -153,6 +153,8 @@ import NotificationBanner from './NotificationBanner';
       const prof = await loadProfile();
       if (prof) {
         setProfile(prof);
+        // Sync context user with loaded profile
+        setUser({ ...prof });
         if (prof.achievements) {
           setAchievements(prof.achievements);
         }
@@ -428,6 +430,10 @@ import NotificationBanner from './NotificationBanner';
         setAchievements(initAch);
         // New guest starts with fresh achievements and zero score
         const newProfile = { ...p, guest: true, achievements: initAch, score: 0 };
+        // Update profile state and user context
+        setProfile(newProfile);
+        setUser(newProfile);
+        setShowSetup(false);
         // Save and persist profile
         saveProfile(newProfile);
         // Award initial 'profile' achievement

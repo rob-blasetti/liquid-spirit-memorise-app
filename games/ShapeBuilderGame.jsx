@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
+import RewardBanner from '../components/RewardBanner';
+import ThemedButton from '../components/ThemedButton';
+import { useUser } from '../contexts/UserContext';
 import themeVariables from '../styles/theme';
 
 // Dimensions and sizes
@@ -11,14 +14,24 @@ const SLOT_SIZE = PIECE_SIZE;
 const MARGIN = 10;
 
 const ShapeBuilderGame = ({ quote, onBack }) => {
-  // Prepare words (use first 16 for a 4x4 puzzle grid)
+  // Get current user for personalized messages
+  const { user } = useUser();
+  // Difficulty settings: number of pieces and pre-completed count
+  const [difficulty, setDifficulty] = useState(1);
+  const pieceCounts = { 1: 8, 2: 16, 3: 24 };
+  const prePlacedCounts = { 1: 2, 2: 4, 3: 6 };
+  const pieceCount = pieceCounts[difficulty] || 8;
+  const prePlaced = prePlacedCounts[difficulty] || 2;
+  // Prepare words (slice according to difficulty)
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const allWords = text.split(/\s+/).filter(w => w.length > 0);
-  const puzzleWords = allWords.slice(0, 16);
-  const count = puzzleWords.length;  // up to 16 pieces
+  const puzzleWords = allWords.slice(0, pieceCount);
+  const count = puzzleWords.length;
 
   // Compute outline slot positions in 4x4 grid centered
-  const cols = 4, rows = 4;
+  const cols = 4;
+  // Compute number of rows based on piece count (4 columns)
+  const rows = Math.ceil(count / cols);
   const totalW = cols * SLOT_SIZE + (cols - 1) * MARGIN;
   const totalH = rows * SLOT_SIZE + (rows - 1) * MARGIN;
   const startX = (width - totalW) / 2;
@@ -86,11 +99,25 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
 
   // Refs for each piece: pan position, placed flag, and PanResponder
   // Refs for each piece: pan position, placed flag, and PanResponder
-  const piecesRef = useRef(
-    puzzleWords.map((_, i) => {
-      const pan = new Animated.ValueXY({ x: initialPositions[i].x, y: initialPositions[i].y });
-      const piece = { pan, placed: false, panResponder: null };
-      // Immediately create panResponder so panHandlers are available
+  // Track number of placed pieces (start with pre-placed count)
+  const [placedCount, setPlacedCount] = useState(prePlaced);
+  // Show reward banner when puzzle completes
+  const [showReward, setShowReward] = useState(false);
+  useEffect(() => {
+    if (placedCount === count) {
+      setShowReward(true);
+    }
+  }, [placedCount, count]);
+  // Reset placedCount when difficulty changes
+  useEffect(() => {
+    setPlacedCount(prePlaced);
+  }, [prePlaced]);
+  // Generate piece data (pan, placement flag, panResponder) per difficulty
+  const pieces = useMemo(() => {
+    return puzzleWords.map((_, i) => {
+      const startPos = i < prePlaced ? slots[i] : initialPositions[i];
+      const pan = new Animated.ValueXY({ x: startPos.x, y: startPos.y });
+      const piece = { pan, placed: i < prePlaced, panResponder: null };
       piece.panResponder = PanResponder.create({
         onStartShouldSetPanResponder: () => !piece.placed,
         onMoveShouldSetPanResponder: () => !piece.placed,
@@ -104,13 +131,11 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
           { useNativeDriver: false }
         ),
         onPanResponderRelease: () => {
-          // Finalize drag
           pan.flattenOffset();
           const { x: px, y: py } = pan.__getValue();
           const cx = px + PIECE_SIZE / 2;
           const cy = py + PIECE_SIZE / 2;
           const slot = slots[i];
-          // If piece center is within slot rectangle, snap into place
           if (
             cx >= slot.x && cx <= slot.x + SLOT_SIZE &&
             cy >= slot.y && cy <= slot.y + SLOT_SIZE
@@ -122,9 +147,8 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
         },
       });
       return piece;
-    })
-  );
-  const [placedCount, setPlacedCount] = useState(0);
+    });
+  }, [difficulty]);
 
 
   return (
@@ -144,7 +168,7 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
       ))}
       {/* Draggable puzzle pieces */}
       {puzzleWords.map((word, i) => {
-        const { pan, panResponder, placed } = piecesRef.current[i];
+        const { pan, panResponder, placed } = pieces[i];
         // Jigsaw connector types for each side
         const { top: topType, right: rightType, bottom: bottomType, left: leftType } = connectors[i];
         const bump = PIECE_SIZE / 3;
@@ -185,7 +209,33 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
           </Animated.View>
         );
       })}
-      {placedCount === count && <Text style={styles.message}>Well done!</Text>}
+      {/* Reward banner on win */}
+      {showReward && (
+        <RewardBanner
+          text={`Well Done${user?.firstName ? `, ${user.firstName}` : ''}!`}
+          onAnimationEnd={() => setShowReward(false)}
+        />
+      )}
+      {/* Difficulty selection buttons */}
+      <View style={styles.buttonsContainer}>
+        <ThemedButton
+          title="Level 1"
+          onPress={() => setDifficulty(1)}
+          disabled={difficulty === 1}
+          style={styles.buttonMargin}
+        />
+        <ThemedButton
+          title="Level 2"
+          onPress={() => setDifficulty(2)}
+          disabled={difficulty === 2}
+          style={styles.buttonMargin}
+        />
+        <ThemedButton
+          title="Level 3"
+          onPress={() => setDifficulty(3)}
+          disabled={difficulty === 3}
+        />
+      </View>
     </View>
   );
 };
@@ -252,6 +302,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 20,
     color: themeVariables.primaryColor,
+  },
+  // Buttons container at bottom for difficulty selection
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  buttonMargin: {
+    marginHorizontal: 8,
   },
 });
 
