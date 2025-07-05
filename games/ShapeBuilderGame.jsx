@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'reac
 import GameTopBar from '../components/GameTopBar';
 import RewardBanner from '../components/RewardBanner';
 import ThemedButton from '../components/ThemedButton';
+import PuzzlePiece from '../components/PuzzlePiece';
 import { useUser } from '../contexts/UserContext';
 import themeVariables from '../styles/theme';
 
@@ -169,44 +170,16 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
       {/* Draggable puzzle pieces */}
       {puzzleWords.map((word, i) => {
         const { pan, panResponder, placed } = pieces[i];
-        // Jigsaw connector types for each side
-        const { top: topType, right: rightType, bottom: bottomType, left: leftType } = connectors[i];
-        const bump = PIECE_SIZE / 3;
         return (
-          <Animated.View
+          <PuzzlePiece
             key={i}
-            {...(panResponder && panResponder.panHandlers)}
-            style={[
-              styles.piece,
-              {
-                width: PIECE_SIZE,
-                height: PIECE_SIZE,
-                borderRadius: PIECE_SIZE / 10,
-                transform: pan.getTranslateTransform(),
-              },
-              placed && { backgroundColor: themeVariables.primaryColor },
-            ]}
-          >
-            {/* Render bumps only when not placed */}
-            {!placed && (
-              <>
-                {/* Convex bumps */}
-                {topType === 'convex' && <View style={[styles.bump, { top: -bump/2, left: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {bottomType === 'convex' && <View style={[styles.bump, { bottom: -bump/2, left: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {leftType === 'convex' && <View style={[styles.bump, { left: -bump/2, top: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {rightType === 'convex' && <View style={[styles.bump, { right: -bump/2, top: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {/* Concave cut-outs */}
-                {topType === 'concave' && <View style={[styles.cut, { top: bump/2, left: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {bottomType === 'concave' && <View style={[styles.cut, { bottom: bump/2, left: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {leftType === 'concave' && <View style={[styles.cut, { left: bump/2, top: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-                {rightType === 'concave' && <View style={[styles.cut, { right: bump/2, top: PIECE_SIZE/2 - bump/2, width: bump, height: bump }]} />}
-              </>
-            )}
-            {/* Always render word; use white text when placed */}
-            <Text style={[styles.word, placed && styles.placedWord]}>
-              {word}
-            </Text>
-          </Animated.View>
+            word={word}
+            connectors={connectors[i]}
+            pan={pan}
+            panResponder={panResponder}
+            placed={placed}
+            size={PIECE_SIZE}
+          />
         );
       })}
       {/* Reward banner on win */}
@@ -263,37 +236,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  piece: {
-    position: 'absolute',
-    // Unplaced pieces have white background with primary-color outline
-    backgroundColor: themeVariables.whiteColor,
-    borderWidth: 1,
-    borderColor: themeVariables.primaryColor,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  word: {
-    fontSize: 14,
-    padding: 4,
-    // Unplaced pieces use primary-color text
-    color: themeVariables.primaryColor,
-    textAlign: 'center',
-  },
-  bump: {
-    position: 'absolute',
-    backgroundColor: themeVariables.primaryColorLight,
-    borderColor: themeVariables.primaryColor,
-    borderWidth: 1,
-    borderRadius: 999,
-  },
-  placedWord: {
-    color: themeVariables.whiteColor,
-  },
-  cut: {
-    position: 'absolute',
-    backgroundColor: themeVariables.neutralLight,
-    borderRadius: 999,
   },
   message: {
     position: 'absolute',
