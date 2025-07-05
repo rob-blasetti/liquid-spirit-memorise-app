@@ -2,37 +2,15 @@ import React from 'react';
 import { Animated, View, Text, StyleSheet } from 'react-native';
 import themeVariables from '../styles/theme';
 
-const PuzzlePiece = ({
-  word,
-  connectors,
-  pan,
-  panResponder,
-  placed,
-  size,
-}) => {
+const PuzzlePiece = ({ word, connectors, pan, panResponder, placed, size }) => {
   const pieceColor = placed ? themeVariables.primaryColor : themeVariables.whiteColor;
+  const boardColor = themeVariables.neutralLight;
   const bump = size / 3;
+  // Semicircle dimensions
+  const semiW = bump;
+  const semiH = bump / 2;
+  const semiR = bump / 2;
   const { top, right, bottom, left } = connectors;
-
-  const bumpProps = {
-    width: bump,
-    height: bump,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: themeVariables.primaryColor,
-    borderStyle: 'dashed',
-    backgroundColor: pieceColor,
-  };
-
-  const cutProps = {
-    width: bump,
-    height: bump,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: themeVariables.primaryColor,
-    borderStyle: 'dashed',
-    backgroundColor: pieceColor,
-  };
 
   return (
     <Animated.View
@@ -47,30 +25,134 @@ const PuzzlePiece = ({
         },
       ]}
     >
+      {/* Top connector */}
       {top === 'convex' && (
-        <View style={[styles.bump, bumpProps, { top: -bump / 2, left: size / 2 - bump / 2 }]} />
-      )}
-      {bottom === 'convex' && (
-        <View style={[styles.bump, bumpProps, { bottom: -bump / 2, left: size / 2 - bump / 2 }]} />
-      )}
-      {left === 'convex' && (
-        <View style={[styles.bump, bumpProps, { left: -bump / 2, top: size / 2 - bump / 2 }]} />
-      )}
-      {right === 'convex' && (
-        <View style={[styles.bump, bumpProps, { right: -bump / 2, top: size / 2 - bump / 2 }]} />
+        <View style={[styles.conn, {
+          top: -semiH,
+          left: size / 2 - semiW / 2,
+          width: semiW,
+          height: semiH,
+          backgroundColor: pieceColor,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderBottomWidth: 1,
+          borderTopWidth: 0,
+          borderBottomLeftRadius: semiR,
+          borderBottomRightRadius: semiR,
+        }]} />
       )}
       {top === 'concave' && (
-        <View style={[styles.cut, cutProps, { top: bump / 2, left: size / 2 - bump / 2 }]} />
+        <View style={[styles.conn, {
+          top: -semiH,
+          left: size / 2 - semiW / 2,
+          width: semiW,
+          height: semiH,
+          backgroundColor: boardColor,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderTopWidth: 1,
+          borderBottomWidth: 0,
+          borderTopLeftRadius: semiR,
+          borderTopRightRadius: semiR,
+        }]} />
+      )}
+
+      {/* Bottom connector */}
+      {bottom === 'convex' && (
+        <View style={[styles.conn, {
+          bottom: -semiH,
+          left: size / 2 - semiW / 2,
+          width: semiW,
+          height: semiH,
+          backgroundColor: pieceColor,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderTopWidth: 1,
+          borderBottomWidth: 0,
+          borderTopLeftRadius: semiR,
+          borderTopRightRadius: semiR,
+        }]} />
       )}
       {bottom === 'concave' && (
-        <View style={[styles.cut, cutProps, { bottom: bump / 2, left: size / 2 - bump / 2 }]} />
+        <View style={[styles.conn, {
+          bottom: -semiH,
+          left: size / 2 - semiW / 2,
+          width: semiW,
+          height: semiH,
+          backgroundColor: boardColor,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderBottomWidth: 1,
+          borderTopWidth: 0,
+          borderBottomLeftRadius: semiR,
+          borderBottomRightRadius: semiR,
+        }]} />
+      )}
+
+      {/* Left connector */}
+      {left === 'convex' && (
+        <View style={[styles.conn, {
+          left: -semiH,
+          top: size / 2 - semiW / 2,
+          width: semiH,
+          height: semiW,
+          backgroundColor: pieceColor,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderRightWidth: 1,
+          borderLeftWidth: 0,
+          borderTopRightRadius: semiR,
+          borderBottomRightRadius: semiR,
+        }]} />
       )}
       {left === 'concave' && (
-        <View style={[styles.cut, cutProps, { left: bump / 2, top: size / 2 - bump / 2 }]} />
+        <View style={[styles.conn, {
+          left: -semiH,
+          top: size / 2 - semiW / 2,
+          width: semiH,
+          height: semiW,
+          backgroundColor: boardColor,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderLeftWidth: 1,
+          borderRightWidth: 0,
+          borderTopLeftRadius: semiR,
+          borderBottomLeftRadius: semiR,
+        }]} />
+      )}
+
+      {/* Right connector */}
+      {right === 'convex' && (
+        <View style={[styles.conn, {
+          right: -semiH,
+          top: size / 2 - semiW / 2,
+          width: semiH,
+          height: semiW,
+          backgroundColor: pieceColor,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderLeftWidth: 1,
+          borderRightWidth: 0,
+          borderTopLeftRadius: semiR,
+          borderBottomLeftRadius: semiR,
+        }]} />
       )}
       {right === 'concave' && (
-        <View style={[styles.cut, cutProps, { right: bump / 2, top: size / 2 - bump / 2 }]} />
+        <View style={[styles.conn, {
+          right: -semiH,
+          top: size / 2 - semiW / 2,
+          width: semiH,
+          height: semiW,
+          backgroundColor: boardColor,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderLeftWidth: 0,
+          borderRightWidth: 1,
+          borderTopRightRadius: semiR,
+          borderBottomRightRadius: semiR,
+        }]} />
       )}
+
       <Text style={[styles.word, placed && styles.placedWord]}>{word}</Text>
     </Animated.View>
   );
@@ -81,14 +163,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: themeVariables.primaryColor,
-    borderStyle: 'dashed',
+    borderStyle: 'solid',
   },
-  bump: {
-    position: 'absolute',
-  },
-  cut: {
+  conn: {
     position: 'absolute',
   },
   word: {
