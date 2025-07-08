@@ -14,7 +14,7 @@ const Badge = ({ name, score, isTeacher }) => {
         </Text>
         {!isTeacher && (
           <View style={styles.scoreContainer}>
-          <Ionicons name="star" size={16} color={themeVariables.primaryColor} />
+            <Ionicons name="star" size={16} color={themeVariables.primaryColor} />
             <Text style={styles.scoreText}>{score}</Text>
           </View>
         )}

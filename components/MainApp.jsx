@@ -166,8 +166,6 @@ import DifficultyFAB from './DifficultyFAB';
     fetchProfiles();
   }, []);
 
-  
-
   if (showSplash) {
     return <Splash />;
   }

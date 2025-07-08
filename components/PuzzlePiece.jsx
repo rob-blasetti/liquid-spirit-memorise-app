@@ -43,17 +43,17 @@ const PuzzlePiece = ({ word, connectors, pan, panResponder, placed, size }) => {
       )}
       {top === 'concave' && (
         <View style={[styles.conn, {
-          top: -semiH,
+          top: 0,
           left: size / 2 - semiW / 2,
           width: semiW,
           height: semiH,
           backgroundColor: boardColor,
           borderLeftWidth: 1,
           borderRightWidth: 1,
-          borderTopWidth: 1,
-          borderBottomWidth: 0,
-          borderTopLeftRadius: semiR,
-          borderTopRightRadius: semiR,
+          borderTopWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomLeftRadius: semiR,
+          borderBottomRightRadius: semiR,
         }]} />
       )}
 
@@ -75,17 +75,17 @@ const PuzzlePiece = ({ word, connectors, pan, panResponder, placed, size }) => {
       )}
       {bottom === 'concave' && (
         <View style={[styles.conn, {
-          bottom: -semiH,
+          bottom: 0,
           left: size / 2 - semiW / 2,
           width: semiW,
           height: semiH,
           backgroundColor: boardColor,
           borderLeftWidth: 1,
           borderRightWidth: 1,
-          borderBottomWidth: 1,
-          borderTopWidth: 0,
-          borderBottomLeftRadius: semiR,
-          borderBottomRightRadius: semiR,
+          borderTopWidth: 1,
+          borderBottomWidth: 0,
+          borderTopLeftRadius: semiR,
+          borderTopRightRadius: semiR,
         }]} />
       )}
 
@@ -107,17 +107,17 @@ const PuzzlePiece = ({ word, connectors, pan, panResponder, placed, size }) => {
       )}
       {left === 'concave' && (
         <View style={[styles.conn, {
-          left: -semiH,
+          left: 0,
           top: size / 2 - semiW / 2,
           width: semiH,
           height: semiW,
           backgroundColor: boardColor,
           borderTopWidth: 1,
           borderBottomWidth: 1,
-          borderLeftWidth: 1,
-          borderRightWidth: 0,
-          borderTopLeftRadius: semiR,
-          borderBottomLeftRadius: semiR,
+          borderLeftWidth: 0,
+          borderRightWidth: 1,
+          borderTopRightRadius: semiR,
+          borderBottomRightRadius: semiR,
         }]} />
       )}
 
@@ -139,17 +139,17 @@ const PuzzlePiece = ({ word, connectors, pan, panResponder, placed, size }) => {
       )}
       {right === 'concave' && (
         <View style={[styles.conn, {
-          right: -semiH,
+          right: 0,
           top: size / 2 - semiW / 2,
           width: semiH,
           height: semiW,
           backgroundColor: boardColor,
           borderTopWidth: 1,
           borderBottomWidth: 1,
-          borderLeftWidth: 0,
-          borderRightWidth: 1,
-          borderTopRightRadius: semiR,
-          borderBottomRightRadius: semiR,
+          borderLeftWidth: 1,
+          borderRightWidth: 0,
+          borderTopLeftRadius: semiR,
+          borderBottomLeftRadius: semiR,
         }]} />
       )}
 
