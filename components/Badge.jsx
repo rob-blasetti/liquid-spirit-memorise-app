@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Avatar from '@flipxyz/react-native-boring-avatars';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faStar } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 
 const Badge = ({ name, score, isTeacher }) => {
@@ -15,7 +14,7 @@ const Badge = ({ name, score, isTeacher }) => {
         </Text>
         {!isTeacher && (
           <View style={styles.scoreContainer}>
-            <FontAwesomeIcon icon={faStar} size={16} color={themeVariables.primaryColor} />
+          <Ionicons name="star" size={16} color={themeVariables.primaryColor} />
             <Text style={styles.scoreText}>{score}</Text>
           </View>
         )}

@@ -1,14 +1,13 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faChevronLeft } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 
 const GameTopBar = ({ onBack }) => (
   <View style={styles.container}>
     <TouchableOpacity onPress={onBack} style={styles.iconButton}>
-      <FontAwesomeIcon
-        icon={faChevronLeft}
+      <Ionicons
+        name="chevron-back"
         size={24}
         color={themeVariables.primaryColor}
       />

@@ -4,9 +4,7 @@ import Avatar from '@flipxyz/react-native-boring-avatars';
 import ThemedButton from './ThemedButton';
 import GradesScreen from '../screens/GradesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Use FontAwesome via @fortawesome/react-native-fontawesome
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faTrash, faHome, faBook, faTrophy, faCog, faGamepad, faChalkboardTeacher } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 // import Grade1Screen from './screens/Grade1Screen';
 import Grade2Screen from '../screens/Grade2Screen';
 import Grade2SetScreen from '../screens/Grade2SetScreen';
@@ -664,27 +662,27 @@ import DifficultyFAB from './DifficultyFAB';
       </View>
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={goHome}>
-          <FontAwesomeIcon icon={faHome} size={24} color="#333" />
+          <Ionicons name="home" size={24} color="#333" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goGrades}>
-          <FontAwesomeIcon icon={faBook} size={24} color="#333" />
+          <Ionicons name="book" size={24} color="#333" />
           <Text style={styles.navText}>Grade</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goClass}>
-          <FontAwesomeIcon icon={faChalkboardTeacher} size={24} color="#333" />
+          <Ionicons name="school" size={24} color="#333" />
           <Text style={styles.navText}>Classes</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goGames}>
-          <FontAwesomeIcon icon={faGamepad} size={24} color="#333" />
+          <Ionicons name="game-controller" size={24} color="#333" />
           <Text style={styles.navText}>Game</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
-          <FontAwesomeIcon icon={faTrophy} size={24} color="#333" />
+          <Ionicons name="trophy" size={24} color="#333" />
           <Text style={styles.navText}>Badges</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={goSettings}>
-          <FontAwesomeIcon icon={faCog} size={24} color="#333" />
+          <Ionicons name="settings" size={24} color="#333" />
           <Text style={styles.navText}>Settings</Text>
         </TouchableOpacity>
       </View>

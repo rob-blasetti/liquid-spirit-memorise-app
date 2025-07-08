@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faSliders } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import theme from '../styles/theme';
 
@@ -31,7 +30,7 @@ const DifficultyFAB = () => {
         </View>
       )}
       <TouchableOpacity style={styles.fab} onPress={() => setOpen(!open)}>
-        <FontAwesomeIcon icon={faSliders} size={24} color={theme.whiteColor} />
+        <Ionicons name="options-outline" size={24} color={theme.whiteColor} />
       </TouchableOpacity>
     </View>
   );

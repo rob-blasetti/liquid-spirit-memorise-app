@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faStar, faCamera } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import { Button } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
@@ -27,7 +26,7 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onTestMemory, onS
               <Avatar size={60} name={profile.name} variant="beam" />
             )}
             <View style={styles.avatarOverlay}>
-              <FontAwesomeIcon icon={faCamera} size={14} color={themeVariables.blackColor} />
+              <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
@@ -37,7 +36,7 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onTestMemory, onS
           </TouchableOpacity>
         </View>
         <View style={styles.pointsContainer}>
-          <FontAwesomeIcon icon={faStar} size={20} color="#f1c40f" />
+          <Ionicons name="star" size={20} color="#f1c40f" />
           <Text style={styles.pointsText}>{totalPoints}</Text>
         </View>
       </View>

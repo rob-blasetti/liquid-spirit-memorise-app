@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import themeVariables from '../styles/theme';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { Button } from 'liquid-spirit-styleguide';
@@ -66,7 +65,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
         ))}
         <Text style={styles.sectionTitle}>Account</Text>
         <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
-          <FontAwesomeIcon icon={faTrash} size={16} color={themeVariables.redColor} style={styles.accountIcon} />
+          <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
           <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -108,7 +107,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
         ))}
         <Text style={styles.sectionTitle}>Account</Text>
         <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
-          <FontAwesomeIcon icon={faTrash} size={16} color={themeVariables.redColor} style={styles.accountIcon} />
+          <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
           <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
         </TouchableOpacity>
       </ScrollView>
