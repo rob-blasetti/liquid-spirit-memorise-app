@@ -1,19 +1,17 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-// Use FontAwesome via @fortawesome/react-native-fontawesome
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faCalendarCheck, faTrophy, faStar } from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 
-// Map icon name strings to FontAwesome icons
+// Map icon name strings to Ionicons names
 const iconMap = {
-  'calendar-check-o': faCalendarCheck,
-  'trophy': faTrophy,
+  'calendar-check-o': 'calendar',
+  'trophy': 'trophy',
 };
 const AchievementItem = ({ icon, title, description, points, earned }) => (
   <View style={styles.item}>
-    <FontAwesomeIcon
-      icon={iconMap[icon]}
+    <Ionicons
+      name={iconMap[icon]}
       size={32}
       color={earned ? themeVariables.secondaryColor : '#ccc'}
     />
@@ -23,8 +21,8 @@ const AchievementItem = ({ icon, title, description, points, earned }) => (
     </View>
     <View style={styles.pointsContainer}>
       <Text style={styles.pointsText}>{points}</Text>
-      <FontAwesomeIcon
-        icon={faStar}
+      <Ionicons
+        name="star"
         size={24}
         color={earned ? themeVariables.secondaryColor : '#ccc'}
       />

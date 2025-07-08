@@ -1,29 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import GameTile from '../components/GameTile';
-import {
-  faBookOpen,
-  faHandPointer,
-  faRandom,
-  faArrowRight,
-  faBrain,
-  faBolt,
-  faEye,
-  faFont,
-  faSortAlphaDown,
-  faKeyboard,
-  faUserNinja,
-  faPen,
-  faGamepad,
-  faPuzzlePiece,
-  faPalette,
-  faMusic,
-  faBinoculars,
-  faMap,
-  faImages,
-  faExchangeAlt,
-  faTools,
-} from '@fortawesome/free-solid-svg-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { gameIds } from '../games';
 import themeVariables from '../styles/theme';
 
@@ -43,26 +21,26 @@ const titles = {
 };
 
 const iconMap = {
-  practice: faBookOpen,
-  tapGame: faHandPointer,
-  scrambleGame: faRandom,
-  nextWordGame: faArrowRight,
-  memoryGame: faBrain,
-  flashGame: faBolt,
-  revealGame: faEye,
-  firstLetterGame: faFont,
-  letterScrambleGame: faSortAlphaDown,
-  fastTypeGame: faKeyboard,
-  hangmanGame: faUserNinja,
-  fillBlankGame: faPen,
-  shapeBuilderGame: faPuzzlePiece,
-  colorSwitchGame: faPalette,
-  rhythmRepeatGame: faMusic,
-  silhouetteSearchGame: faBinoculars,
-  memoryMazeGame: faMap,
-  sceneChangeGame: faImages,
-  wordSwapGame: faExchangeAlt,
-  buildRecallGame: faTools,
+  practice: 'book-outline',
+  tapGame: 'hand-left',
+  scrambleGame: 'shuffle',
+  nextWordGame: 'arrow-forward',
+  memoryGame: 'analytics',
+  flashGame: 'flash',
+  revealGame: 'eye',
+  firstLetterGame: 'text',
+  letterScrambleGame: 'reorder-four',
+  fastTypeGame: 'keypad',
+  hangmanGame: 'body',
+  fillBlankGame: 'pencil',
+  shapeBuilderGame: 'extension-puzzle',
+  colorSwitchGame: 'color-palette',
+  rhythmRepeatGame: 'musical-notes',
+  silhouetteSearchGame: 'search',
+  memoryMazeGame: 'map',
+  sceneChangeGame: 'images',
+  wordSwapGame: 'swap-horizontal',
+  buildRecallGame: 'build',
 };
 
 const GamesListScreen = ({ onSelect }) => (
@@ -73,7 +51,7 @@ const GamesListScreen = ({ onSelect }) => (
         <GameTile
           key={id}
           title={titles[id] || id}
-          icon={iconMap[id] || faGamepad}
+          icon={iconMap[id] || 'game-controller'}
           onPress={() => onSelect(id)}
         />
       ))}

@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import theme from '../styles/theme';
 
 const GameTile = ({ title, icon, onPress }) => (
   <TouchableOpacity style={styles.tile} onPress={onPress}>
     <View style={styles.iconContainer}>
-      <FontAwesomeIcon icon={icon} size={28} color={theme.primaryColor} />
+      <Ionicons name={icon} size={28} color={theme.primaryColor} />
     </View>
     <Text style={styles.tileText}>{title}</Text>
   </TouchableOpacity>
