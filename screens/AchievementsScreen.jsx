@@ -116,14 +116,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   headerContainer: {
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 6,
     alignItems: 'center',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: 6,
     width: '100%',
   },
   itemText: {
@@ -160,17 +160,17 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   scrollContent: {
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionHeader: {
     fontSize: 20,
     fontWeight: 'bold',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+    /* align with container's horizontal padding */
+    paddingTop: 6,
+    paddingBottom: 2,
   },
   // Highlighted achievement
   highlight: {
