@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ImageBackground, ScrollView } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import speechService from '../services/speechService';
@@ -9,6 +9,14 @@ const stripPunctuation = (str) => str.replace(/[.,!?;:'"“”‘’]/g, '').toL
 const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor = themeVariables.neutralLight }) => {
   // quote may be a string or an object with { text, references }
   const [activeRef, setActiveRef] = useState(null);
+
+  // Stop any ongoing speech when this component unmounts to avoid
+  // lingering audio or recursive loops on re-renders.
+  useEffect(() => {
+    return () => {
+      speechService.stop();
+    };
+  }, []);
   let displayText = '';
   let refList = [];
   if (quote && typeof quote === 'object' && 'text' in quote) {
@@ -90,7 +98,7 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
       {/* Read aloud button */}
       <TouchableOpacity
         style={styles.audioButton}
-        onPress={() => speechService.readQuote(displayText)}
+        onPress={() => speechService.readQuote(displayText.trim())}
       >
         <Ionicons
           name="play-circle-outline"
