@@ -63,10 +63,7 @@ export const readQuote = async (text) => {
     return;
   }
   
-  try {
-    isSpeaking = true;
-    
-    // Check if TTS is available
+  try {    
     if (!Tts || typeof Tts.speak !== 'function') {
       console.warn('TTS speak function is unavailable');
       return;
@@ -90,35 +87,32 @@ export const readQuote = async (text) => {
     }
     
     // Speak the text
-    Tts.speak(cleanText);
+    await Tts.speak(cleanText);
     
   } catch (error) {
     console.error('TTS error:', error);
-  } finally {
-    // Reset flag after a delay
-    setTimeout(() => {
-      isSpeaking = false;
-    }, 1000);
   }
 };
 
-// Optional: Add TTS event listeners for better control
-export const setupTTSListeners = () => {
+export const setupTTSListeners = (onFinish) => {
   try {
-    Tts.addEventListener('tts-start', (event) => {
-      console.log('TTS Started:', event);
+    Tts.addEventListener('tts-start', () => {
+      console.log('TTS Started');
     });
-    
-    Tts.addEventListener('tts-finish', (event) => {
-      console.log('TTS Finished:', event);
+
+    Tts.addEventListener('tts-finish', () => {
+      console.log('TTS Finished');
+      onFinish?.();
     });
-    
-    Tts.addEventListener('tts-cancel', (event) => {
-      console.log('TTS Cancelled:', event);
+
+    Tts.addEventListener('tts-cancel', () => {
+      console.log('TTS Cancelled');
+      onFinish?.();
     });
-    
+
     Tts.addEventListener('tts-error', (event) => {
       console.error('TTS Error:', event);
+      onFinish?.();
     });
   } catch (error) {
     console.warn('Could not set up TTS listeners:', error);

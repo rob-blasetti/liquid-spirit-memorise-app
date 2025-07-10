@@ -88,25 +88,27 @@ const QuoteBlock = ({
   const handleAudioPress = async () => {
     if (!displayText.trim()) return;
 
-    if (isSpeaking) {
-      await speechService.stopTTS();
-      setIsSpeaking(false);
-    } else {
-      setIsSpeaking(true);
-      try {
+    try {
+      if (isSpeaking) {
+        await speechService.stopTTS();
+        setIsSpeaking(false);
+      } else {
+        setIsSpeaking(true);
         await speechService.readQuote(displayText);
-      } catch (err) {
-        console.warn('TTS failed:', err);
       }
-      // Fallback: auto-reset speaking state
-      setTimeout(() => setIsSpeaking(false), 8000);
+    } catch (err) {
+      console.warn('TTS failed:', err);
+      setIsSpeaking(false);
     }
   };
 
-  // Optional cleanup if you plan to add listeners
   useEffect(() => {
+    const onTTSFinish = () => setIsSpeaking(false);
+    speechService.setupTTSListeners(onTTSFinish);
+
     return () => {
       speechService.stopTTS();
+      speechService.cleanupTTSListeners();
     };
   }, []);
 
