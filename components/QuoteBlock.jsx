@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ImageBackground, ScrollView } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import speechService from '../services/speechService';
 import themeVariables from '../styles/theme';
 
 const stripPunctuation = (str) => str.replace(/[.,!?;:'"“”‘’]/g, '').toLowerCase();
@@ -85,6 +87,17 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
           </View>
         </View>
       </Modal>
+      {/* Read aloud button */}
+      <TouchableOpacity
+        style={styles.audioButton}
+        onPress={() => speechService.readQuote(displayText)}
+      >
+        <Ionicons
+          name="play-circle-outline"
+          size={24}
+          color={themeVariables.primaryColor}
+        />
+      </TouchableOpacity>
     </ImageBackground>
   );
 };
@@ -132,6 +145,18 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: themeVariables.whiteColor,
+  },
+  audioButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: themeVariables.whiteColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
   },
 });
 
