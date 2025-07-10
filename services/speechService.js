@@ -1,43 +1,55 @@
 /**
- * Service to read text aloud using a text-to-speech (TTS) implementation.
- * Currently a placeholder that logs the text. Integrate a TTS library
- * such as react-native-tts or expo-speech for real functionality.
+ * Simple wrapper around `react-native-tts` used throughout the app.
+ * The module is imported once and reused to avoid repeatedly attaching
+ * event listeners which can lead to memory leaks or recursive speech
+ * loops on some devices.
  */
-// Lazy require Tts to avoid NativeEventEmitter warnings at module load
-// import Tts from 'react-native-tts';
+import Tts from 'react-native-tts';
+
+let initialized = false;
 
 /**
- * Read the provided text out loud.
- * @param {string} text - The text to speak.
+ * Ensure the TTS engine is ready.  `react-native-tts` lazily initialises
+ * and will reject if called before the underlying native modules are
+ * prepared.  We cache the initialisation so subsequent calls are cheap.
  */
+const init = async () => {
+  if (initialized) return;
+  try {
+    await Tts.getInitStatus();
+    initialized = true;
+  } catch (err) {
+    console.warn('TTS initialization failed', err);
+  }
+};
+
 /**
- * Speak the given text out loud using react-native-tts.
- * @param {string} text - The text to speak.
- */
-/**
- * Speak the given text out loud using react-native-tts.
- * Lazily requires the library to avoid initialization errors.
- * @param {string} text - The text to speak.
+ * Speak the given text out loud.
+ * The engine is initialised on first use and reused afterwards.
  */
 export const readQuote = async (text) => {
-  let Tts;
-  try {
-    Tts = require('react-native-tts');
-  } catch {
-    console.warn('TTS module not available');
-    return;
-  }
-  if (!Tts || typeof Tts.speak !== 'function') {
-    console.warn('TTS speak function is unavailable');
-    return;
-  }
+  if (!text) return;
+  await init();
   try {
     await Tts.stop();
-    await Tts.speak(text);
+    // `speak` does not return a promise; no need to await
+    Tts.speak(String(text));
   } catch (e) {
     console.error('TTS error reading quote:', e);
   }
 };
 
+/**
+ * Stop any speech currently in progress.
+ */
+export const stop = async () => {
+  try {
+    await init();
+    await Tts.stop();
+  } catch (_) {
+    // ignore errors when stopping
+  }
+};
+
 // Default export for convenience
-export default { readQuote };
+export default { readQuote, stop };
