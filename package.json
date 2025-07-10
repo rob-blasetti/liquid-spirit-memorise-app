@@ -12,6 +12,7 @@
   "dependencies": {
     "@flipxyz/react-native-boring-avatars": "^1.0.1",
     "@react-native-async-storage/async-storage": "^1.21.0",
+    "expo-speech": "^13.1.7",
     "liquid-spirit-styleguide": "^0.1.16",
     "react": "19.1.0",
     "react-native": "0.80.0",

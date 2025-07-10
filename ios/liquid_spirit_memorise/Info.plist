@@ -23,7 +23,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>19</string>
+	<string>20</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -43,6 +43,8 @@
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app uses speech for accessibility features</string>
 	<key>NSCameraUsageDescription</key>
 	<string>App would like to have access to your camera in order to allow you to post realtime content to the social feed.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

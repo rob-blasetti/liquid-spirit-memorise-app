@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ImageBackground, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ImageBackground,
+  ScrollView,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import speechService from '../services/speechService';
 import themeVariables from '../styles/theme';
 
-const stripPunctuation = (str) => str.replace(/[.,!?;:'"“”‘’]/g, '').toLowerCase();
+speechService.stopTTS();
 
-const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor = themeVariables.neutralLight }) => {
-  // quote may be a string or an object with { text, references }
+const stripPunctuation = (str) =>
+  str.replace(/[.,!?;:'"“”‘’]/g, '').toLowerCase();
+
+const QuoteBlock = ({
+  quote,
+  references = [],
+  backgroundImage,
+  backgroundColor = themeVariables.neutralLight,
+}) => {
   const [activeRef, setActiveRef] = useState(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Stop any ongoing speech when this component unmounts to avoid
-  // lingering audio or recursive loops on re-renders.
-  useEffect(() => {
-    return () => {
-      speechService.stop();
-    };
-  }, []);
   let displayText = '';
   let refList = [];
+
   if (quote && typeof quote === 'object' && 'text' in quote) {
     displayText = quote.text;
     refList = Array.isArray(quote.references) ? quote.references : [];
@@ -26,6 +36,7 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
     displayText = typeof quote === 'string' ? quote : '';
     refList = references;
   }
+
   const refMap = refList.reduce((acc, r) => {
     if (r && r.word) {
       acc[r.word.toLowerCase()] = Array.isArray(r.examples) ? r.examples : [];
@@ -33,23 +44,25 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
     return acc;
   }, {});
 
-  // Build tokens, handling multi-word references and single-word references
   const tokens = [];
-  // Sort reference keys by length (longest first) to match multi-word phrases before substrings
   const refKeys = Object.keys(refMap).sort((a, b) => b.length - a.length);
-  // Escape regex metacharacters in keys
-  const escapeRegExp = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const escapeRegExp = (s) =>
+    s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
   const pattern = refKeys.length > 0 ? refKeys.map(escapeRegExp).join('|') : null;
   const refRegex = pattern ? new RegExp(`(${pattern})`, 'gi') : null;
   const segments = refRegex ? displayText.split(refRegex) : [displayText];
+
   let tokenIndex = 0;
   segments.forEach((segment) => {
     const lowerSeg = segment.toLowerCase();
-    // If segment exactly matches a reference key (phrase or word)
     if (refRegex && refMap[lowerSeg]) {
-      tokens.push({ text: segment, underline: true, key: `tok-${tokenIndex++}`, examples: refMap[lowerSeg] });
+      tokens.push({
+        text: segment,
+        underline: true,
+        key: `tok-${tokenIndex++}`,
+        examples: refMap[lowerSeg],
+      });
     } else {
-      // Otherwise split into words and spaces
       const parts = segment.split(/(\s+)/);
       parts.forEach((part) => {
         if (part === '') return;
@@ -58,7 +71,12 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
         } else {
           const clean = stripPunctuation(part);
           if (refMap[clean]) {
-            tokens.push({ text: part, underline: true, key: `tok-${tokenIndex++}`, examples: refMap[clean] });
+            tokens.push({
+              text: part,
+              underline: true,
+              key: `tok-${tokenIndex++}`,
+              examples: refMap[clean],
+            });
           } else {
             tokens.push({ text: part, key: `tok-${tokenIndex++}` });
           }
@@ -67,45 +85,92 @@ const QuoteBlock = ({ quote, references = [], backgroundImage, backgroundColor =
     }
   });
 
+  const handleAudioPress = async () => {
+    if (!displayText.trim()) return;
+
+    if (isSpeaking) {
+      await speechService.stopTTS();
+      setIsSpeaking(false);
+    } else {
+      setIsSpeaking(true);
+      try {
+        await speechService.readQuote(displayText);
+      } catch (err) {
+        console.warn('TTS failed:', err);
+      }
+      // Fallback: auto-reset speaking state
+      setTimeout(() => setIsSpeaking(false), 8000);
+    }
+  };
+
+  // Optional cleanup if you plan to add listeners
+  useEffect(() => {
+    return () => {
+      speechService.stopTTS();
+    };
+  }, []);
+
   return (
-    <ImageBackground source={backgroundImage} style={[styles.background, { backgroundColor }]}>
+    <ImageBackground
+      source={backgroundImage}
+      style={[styles.background, { backgroundColor }]}
+    >
       <Text style={styles.quoteText}>
-        {tokens.map(part => {
-          if (part.underline) {
-            return (
-              <Text key={part.key} style={styles.underline} onPress={() => setActiveRef(part.examples)}>
-                {part.text}
-              </Text>
-            );
-          }
-          return <Text key={part.key}>{part.text}</Text>;
-        })}
+        {tokens.map((part) =>
+          part.underline ? (
+            <Text
+              key={part.key}
+              style={styles.underline}
+              onPress={() => setActiveRef(part.examples)}
+            >
+              {part.text}
+            </Text>
+          ) : (
+            <Text key={part.key}>{part.text}</Text>
+          )
+        )}
       </Text>
-      <Modal visible={!!activeRef} transparent animationType="fade" onRequestClose={() => setActiveRef(null)}>
+
+      <Modal
+        visible={!!activeRef}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveRef(null)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView>
-              {activeRef && activeRef.map((ex, i) => (
-                <Text key={i} style={styles.exampleText}>• {ex}</Text>
-              ))}
+              {activeRef &&
+                activeRef.map((ex, i) => (
+                  <Text key={i} style={styles.exampleText}>
+                    • {ex}
+                  </Text>
+                ))}
             </ScrollView>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setActiveRef(null)}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setActiveRef(null)}
+            >
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      {/* Read aloud button */}
-      <TouchableOpacity
-        style={styles.audioButton}
-        onPress={() => speechService.readQuote(displayText.trim())}
-      >
-        <Ionicons
-          name="play-circle-outline"
-          size={24}
-          color={themeVariables.primaryColor}
-        />
-      </TouchableOpacity>
+
+      {displayText.trim() !== '' && (
+        <TouchableOpacity
+          style={styles.audioButton}
+          onPress={handleAudioPress}
+          accessibilityLabel="Read quote aloud"
+          accessibilityHint="Double tap to hear this quote"
+        >
+          <Ionicons
+            name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
+            size={24}
+            color={themeVariables.primaryColor}
+          />
+        </TouchableOpacity>
+      )}
     </ImageBackground>
   );
 };
