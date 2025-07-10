@@ -1,37 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, Button, TouchableOpacity, Modal, FlatList, Image } from 'react-native';
+import { SafeAreaView, View, Text, TouchableOpacity, Modal, FlatList, Image } from 'react-native';
 import Avatar from '@flipxyz/react-native-boring-avatars';
 import ThemedButton from './ThemedButton';
-import GradesScreen from '../screens/GradesScreen';
+import {
+  GradesScreen,
+  Grade1SetScreen,
+  Grade1LessonScreen,
+  Grade2Screen,
+  Grade2SetScreen,
+  Grade2LessonScreen,
+  Grade3Screen,
+  Grade4Screen,
+  SettingsScreen,
+  AchievementsScreen,
+  ProfileSetupScreen,
+  HomeScreen,
+  StartScreen,
+  Splash,
+  GamesListScreen,
+  ClassScreen,
+} from '../screens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 // import Grade1Screen from './screens/Grade1Screen';
-import Grade2Screen from '../screens/Grade2Screen';
-import Grade2SetScreen from '../screens/Grade2SetScreen';
-import Grade2LessonScreen from '../screens/Grade2LessonScreen';
-import Grade3Screen from '../screens/Grade3Screen';
-import Grade4Screen from '../screens/Grade4Screen';
-import SettingsScreen from '../screens/SettingsScreen';
-import AchievementsScreen from '../screens/AchievementsScreen';
 import { gameScreens } from '../games/gameRoutes';
-import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import { launchImageLibrary } from 'react-native-image-picker';
-import HomeScreen from '../screens/HomeScreen';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { achievements as defaultAchievements } from '../data/achievements';
-import StartScreen from '../screens/StartScreen';
-import Splash from '../screens/Splash';
-import Grade1SetScreen from '../screens/Grade1SetScreen';
-import Grade1LessonScreen from '../screens/Grade1LessonScreen';
-import GamesListScreen from '../screens/GamesListScreen';
-import ClassScreen from '../screens/ClassScreen';
 import { useUser } from '../contexts/UserContext';
-// Game registry for daily challenge
-import theme from '../styles/theme';
 import styles from '../styles/mainAppStyles';
 import { pickRandomGame } from '../games';
-import { API_URL } from '../config';
 import {
   loadProfile,
   loadGuestProfile,
@@ -39,19 +37,13 @@ import {
   deleteGuestProfile,
   clearProfile,
 } from '../services/profileService';
-
-
-// Notification banner shown when an achievement is earned, auto-dismisses after a delay
 import NotificationBanner from './NotificationBanner';
 import DifficultyFAB from './DifficultyFAB';
+import BottomNav from '../navigation/BottomNav';
 
  const MainApp = () => {
   // access user context (user, family, children, classes)
-  const { user, classes, children, setUser } = useUser();
-  useEffect(() => {
-    console.log('API_URL:', API_URL);
-    console.log('classes:', classes);
-  }, []);
+  const { classes, children, setUser } = useUser();
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
@@ -658,32 +650,14 @@ import DifficultyFAB from './DifficultyFAB';
       <View style={styles.container}>
         {renderScreen()}
       </View>
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={goHome}>
-          <Ionicons name="home" size={24} color="#333" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={goGrades}>
-          <Ionicons name="book" size={24} color="#333" />
-          <Text style={styles.navText}>Grade</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={goClass}>
-          <Ionicons name="school" size={24} color="#333" />
-          <Text style={styles.navText}>Classes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={goGames}>
-          <Ionicons name="game-controller" size={24} color="#333" />
-          <Text style={styles.navText}>Game</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
-          <Ionicons name="trophy" size={24} color="#333" />
-          <Text style={styles.navText}>Badges</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={goSettings}>
-          <Ionicons name="settings" size={24} color="#333" />
-          <Text style={styles.navText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav
+        goHome={goHome}
+        goGrades={goGrades}
+        goClass={goClass}
+        goGames={goGames}
+        goAchievements={goAchievements}
+        goSettings={goSettings}
+      />
     </SafeAreaView>
   );
 };
