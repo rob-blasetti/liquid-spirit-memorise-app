@@ -15,7 +15,6 @@ export const UserProvider = ({ children }) => {
       try {
         const allKeys = await AsyncStorage.getAllKeys();
         const allData = await AsyncStorage.multiGet(allKeys);
-        console.log('Full AsyncStorage:', Object.fromEntries(allData));
 
         const storedUser = await AsyncStorage.getItem('user');
         const storedFamily = await AsyncStorage.getItem('family');

@@ -9,16 +9,15 @@ import {
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import speechService from '../services/speechService';
+import speechService, { stopTTS } from '../services/speechService';
 import themeVariables from '../styles/theme';
-
-speechService.stopTTS();
 
 const stripPunctuation = (str) =>
   str.replace(/[.,!?;:'"“”‘’]/g, '').toLowerCase();
 
 const QuoteBlock = ({
   quote,
+  profile,
   references = [],
   backgroundImage,
   backgroundColor = themeVariables.neutralLight,
@@ -94,7 +93,7 @@ const QuoteBlock = ({
         setIsSpeaking(false);
       } else {
         setIsSpeaking(true);
-        await speechService.readQuote(displayText);
+        await speechService.readQuote(displayText, profile.ttsVoice);
       }
     } catch (err) {
       console.warn('TTS failed:', err);

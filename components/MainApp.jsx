@@ -37,6 +37,7 @@ import {
   deleteGuestProfile,
   clearProfile,
 } from '../services/profileService';
+import speechService, { stopTTS } from '../services/speechService';
 import NotificationBanner from './NotificationBanner';
 import DifficultyFAB from './DifficultyFAB';
 import BottomNav from '../navigation/BottomNav';

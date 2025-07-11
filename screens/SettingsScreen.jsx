@@ -5,6 +5,13 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { Button } from 'liquid-spirit-styleguide';
+import Tts from 'react-native-tts';
+
+const voiceOptions = [
+  { label: 'Samantha (US)', value: 'com.apple.ttsbundle.Samantha-compact' },
+  { label: 'Daniel (UK)', value: 'com.apple.ttsbundle.Daniel-compact' },
+  { label: 'Karen (AU)', value: 'com.apple.ttsbundle.Karen-compact' },
+];
 
 const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset }) => {
   const [selectedSet, setSelectedSet] = useState(
@@ -13,6 +20,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   const [selectedLesson, setSelectedLesson] = useState(
     overrideProgress?.lessonNumber ?? currentProgress.lessonNumber
   );
+  const [selectedVoice, setSelectedVoice] = useState(profile?.ttsVoice ?? null);
 
   useEffect(() => {
     if (profile?.grade === 2) {
@@ -25,7 +33,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       }
     }
   }, [selectedSet]);
-  // Auto-save override when selection changes (skip initial mount)
+
   const isFirstRun = useRef(true);
   useEffect(() => {
     if (isFirstRun.current) {
@@ -34,7 +42,6 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     }
     onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson });
   }, [selectedSet, selectedLesson]);
-
 
   if (!profile) {
     return (
@@ -45,42 +52,60 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       </View>
     );
   }
-  
-  // Grade 1: select lesson only
-  if (profile.grade === 1) {
-    return (
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.sectionTitle}>Lesson</Text>
-        {grade1Lessons.map(l => (
-          <TouchableOpacity
-            key={l.lesson}
-            style={[styles.listItem, selectedLesson === l.lesson && styles.listItemSelected]}
-            onPress={() => setSelectedLesson(l.lesson)}
+
+  const renderVoiceOptions = () => (
+    <>
+      <Text style={styles.sectionTitle}>TTS Voice</Text>
+      {voiceOptions.map((voice) => (
+        <TouchableOpacity
+          key={voice.value}
+          style={[
+            styles.listItem,
+            selectedVoice === voice.value && styles.listItemSelected,
+          ]}
+          onPress={async () => {
+            await Tts.setDefaultVoice(voice.value);
+            setSelectedVoice(voice.value);
+          }}
+        >
+          <Text
+            style={[
+              styles.listItemText,
+              selectedVoice === voice.value && styles.listItemTextSelected,
+            ]}
           >
-            <Text style={[styles.listItemText, selectedLesson === l.lesson && styles.listItemTextSelected]}>
-              Lesson {l.lesson}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <Text style={styles.sectionTitle}>Account</Text>
-        <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
-          <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
-          <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
+            {voice.label}
+          </Text>
         </TouchableOpacity>
-      </ScrollView>
-    );
-  }
-  
-  // Grade 2: select set then lesson
-  if (profile.grade === 2) {
+      ))}
+    </>
+  );
+
+  const renderGrade1Settings = () => (
+    <>
+      <Text style={styles.sectionTitle}>Lesson</Text>
+      {grade1Lessons.map(l => (
+        <TouchableOpacity
+          key={l.lesson}
+          style={[styles.listItem, selectedLesson === l.lesson && styles.listItemSelected]}
+          onPress={() => setSelectedLesson(l.lesson)}
+        >
+          <Text style={[styles.listItemText, selectedLesson === l.lesson && styles.listItemTextSelected]}>
+            Lesson {l.lesson}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </>
+  );
+
+  const renderGrade2Settings = () => {
     const lessons = Object.keys(quoteMap)
       .filter(key => key.startsWith(`${selectedSet}-`))
       .map(key => parseInt(key.split('-')[1], 10))
       .sort((a, b) => a - b);
+
     return (
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Settings</Text>
+      <>
         <Text style={styles.sectionTitle}>Set</Text>
         {[1, 2, 3].map(setNum => (
           <TouchableOpacity
@@ -105,25 +130,24 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
             </Text>
           </TouchableOpacity>
         ))}
-        <Text style={styles.sectionTitle}>Account</Text>
-        <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
-          <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
-          <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      </>
     );
-  }
-  
-  // Other grades: not implemented
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Settings for Grade {profile.grade} not available</Text>
-      <View style={styles.buttonContainer}>
-        <Button secondary label="Back" onPress={onBack} />
-        <Button label="Reset" onPress={onReset} />        
-      </View>
-    </View>
+      {profile.grade === 1 && renderGrade1Settings()}
+      {profile.grade === 2 && renderGrade2Settings()}
+
+      <Text style={styles.sectionTitle}>Account</Text>
+      <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
+        <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
+        <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
+      </TouchableOpacity>
+
+      {renderVoiceOptions()}
+    </ScrollView>
   );
 };
 
@@ -148,87 +172,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 16,
-  },
-  rowLabel: {
-    width: 80,
-    fontSize: 16,
-    color: themeVariables.primaryColor,
-  },
-  rowOptions: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  gridItem: {
-    width: '30%',
-    margin: '1.5%',
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: themeVariables.primaryColor,
-    borderRadius: themeVariables.borderRadiusPill,
-    backgroundColor: themeVariables.whiteColor,
-  },
-  gridItemSelected: {
-    backgroundColor: themeVariables.primaryColor,
-  },
-  gridItemText: {
-    fontSize: 14,
-    color: themeVariables.primaryColor,
-  },
-  gridItemTextSelected: {
-    color: themeVariables.whiteColor,
-  },
-  cell: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: themeVariables.primaryColor,
-    borderRadius: themeVariables.borderRadiusPill,
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: themeVariables.whiteColor,
-  },
-  cellSelected: {
-    backgroundColor: themeVariables.primaryColor,
-  },
-  cellText: {
-    fontSize: 14,
-    color: themeVariables.primaryColor,
-  },
-  cellTextSelected: {
-    color: themeVariables.whiteColor,
-  },
-  buttonContainer: {
-    width: '80%',
-    marginTop: 16,
-  },
-  resetRow: {
-    width: '100%',
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    marginTop: 16,
-  },
-  resetRowText: {
-    color: themeVariables.redColor,
-    fontSize: 16,
-  },
-  // New list-style settings
   sectionTitle: {
     width: '100%',
     fontSize: 18,
@@ -255,7 +198,6 @@ const styles = StyleSheet.create({
   listItemTextSelected: {
     color: themeVariables.whiteColor,
   },
-  // Account section items
   accountItem: {
     flexDirection: 'row',
     alignItems: 'center',

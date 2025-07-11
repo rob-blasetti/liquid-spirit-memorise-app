@@ -44,7 +44,7 @@ const HomeScreen = ({ profile, achievements, onDailyChallenge, onTestMemory, onS
 
       {/* Current quote or prayer */}
       <View style={styles.contentContainer}>
-        <QuoteBlock quote={content} references={defaultReferences} />
+        <QuoteBlock quote={content} profile={profile} references={defaultReferences} />
       </View>
 
       {/* Bottom action buttons */}

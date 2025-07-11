@@ -1,94 +1,49 @@
-/**
- * Service to read text aloud using a text-to-speech (TTS) implementation.
- * Uses react-native-tts for real functionality.
- */
+import Tts from 'react-native-tts';
 
-// Lazy import to prevent initialization issues
-let Tts = null;
-
-const initializeTTS = () => {
-  if (!Tts) {
-    try {
-      Tts = require('react-native-tts');
-      console.log('TTS module loaded successfully');
-    } catch (error) {
-      console.error('Failed to load TTS module:', error);
-      return false;
-    }
-  }
-  return true;
-};
-
-/**
- * Speak the given text out loud using react-native-tts.
- * @param {string} text - The text to speak.
- */
-// Flag to prevent multiple simultaneous TTS calls
-let isSpeaking = false;
-
-// Emergency stop function - call this immediately!
 export const stopTTS = async () => {
   try {
-    if (initializeTTS() && Tts) {
-      await Tts.stop();
-      isSpeaking = false;
-      console.log('TTS emergency stopped');
+    if (typeof Tts.stop === 'function') {
+      const stop = Tts.stop.bind(Tts);
+      await stop();
     }
+    console.log('TTS emergency stopped');
   } catch (error) {
-    console.error('Error stopping TTS:', error);
+    console.warn('TTS error:', error);
   }
 };
 
-export const readQuote = async (text) => {
-  // Add debug info to see where this is being called from
+export const readQuote = async (text, ttsVoice) => {
   console.log('=== readQuote called ===');
   console.log('Text:', text);
-  console.log('Call stack:', new Error().stack);
-  
-  // Prevent multiple calls
-  if (isSpeaking) {
-    console.warn('TTS already speaking, ignoring new request');
-    return;
-  }
-  
-  // Validate input
+  Tts.setDefaultVoice('com.apple.ttsbundle.Samantha-compact');
+
+  const availableVoices = await Tts.voices();
+  console.log(availableVoices);
+
   if (!text || typeof text !== 'string' || text.trim() === '') {
     console.warn('Invalid text provided to TTS');
     return;
   }
-  
-  // Initialize TTS module
-  if (!initializeTTS()) {
-    console.warn('TTS module not available');
-    return;
-  }
-  
-  try {    
-    if (!Tts || typeof Tts.speak !== 'function') {
-      console.warn('TTS speak function is unavailable');
-      return;
+
+  try {
+    // Clean the text
+    const cleanText = text.replace(/[^\w\s.,!?-]/g, '').trim();
+
+    await stopTTS();
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    if (ttsVoice) {
+      await Tts.setDefaultVoice(ttsVoice); // ✅ use selected voice
     }
 
-    // Clean the text (remove special characters that might cause issues)
-    const cleanText = text.replace(/[^\w\s.,!?-]/g, '').trim();
-    
-    // Stop any current speech first
-    await Tts.stop();
-    
-    // Wait a moment after stopping
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Set basic settings
     try {
-      Tts.setDefaultRate(0.5);
-      Tts.setDefaultPitch(1.0);
+      Tts.setDefaultRate(0.5, true); // 0.5 rate, true for iOS compatibility
+      Tts.setDefaultPitch(1.0); // 1.0 pitch is safe
     } catch (settingsError) {
       console.warn('Could not set TTS settings:', settingsError);
     }
-    
-    // Speak the text
-    await Tts.speak(cleanText);
-    
+
+    Tts.speak(cleanText);
   } catch (error) {
     console.error('TTS error:', error);
   }
@@ -96,22 +51,13 @@ export const readQuote = async (text) => {
 
 export const setupTTSListeners = (onFinish) => {
   try {
-    Tts.addEventListener('tts-start', () => {
-      console.log('TTS Started');
-    });
-
+    Tts.addEventListener('tts-start', () => console.log('TTS Started'));
     Tts.addEventListener('tts-finish', () => {
       console.log('TTS Finished');
       onFinish?.();
     });
-
     Tts.addEventListener('tts-cancel', () => {
       console.log('TTS Cancelled');
-      onFinish?.();
-    });
-
-    Tts.addEventListener('tts-error', (event) => {
-      console.error('TTS Error:', event);
       onFinish?.();
     });
   } catch (error) {
@@ -119,7 +65,6 @@ export const setupTTSListeners = (onFinish) => {
   }
 };
 
-// Clean up listeners
 export const cleanupTTSListeners = () => {
   try {
     Tts.removeEventListener('tts-start');
@@ -131,9 +76,9 @@ export const cleanupTTSListeners = () => {
   }
 };
 
-// Default export for convenience
-export default { 
-  readQuote, 
-  setupTTSListeners, 
-  cleanupTTSListeners 
+export default {
+  readQuote,
+  stopTTS,
+  setupTTSListeners,
+  cleanupTTSListeners
 };
