@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Button } from 'liquid-spirit-styleguide';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 import QuoteBlock from '../components/QuoteBlock';
 import ProfileDisplay from '../components/ProfileDisplay';
@@ -11,13 +11,14 @@ const HomeScreen = ({
   onDailyChallenge,
   onTestMemory,
   onSeeClass,
+  onGoToSet,
+  onGoToLesson,
   currentSet,
   currentLesson,
   content,
   onProfilePress,
   onAvatarPress,
 }) => {
-
   const defaultReferences = [
     { word: 'love', examples: ['I love my family.', 'Love conquers all.'] },
     { word: 'heart', examples: ['My heart is joyful.', 'He spoke from the heart.'] },
@@ -42,13 +43,27 @@ const HomeScreen = ({
 
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
-        <Button secondary label="Daily Challenge" onPress={onDailyChallenge} />
-        {onTestMemory && (
-          <Button secondary label="Test My Memory" onPress={onTestMemory} />
-        )}
+        <TouchableOpacity style={styles.customButton} onPress={onDailyChallenge}>
+          <Text style={styles.customButtonText}>Daily Challenge</Text>
+          <Ionicons name="arrow-forward" size={20} color="white" />
+        </TouchableOpacity>
+
         {onSeeClass && (
-          <Button secondary label="See Class" onPress={onSeeClass} />
+          <TouchableOpacity style={styles.customButton} onPress={onSeeClass}>
+            <Text style={styles.customButtonText}>See Class</Text>
+            <Ionicons name="arrow-forward" size={20} color="white" />
+          </TouchableOpacity>
         )}
+
+          <TouchableOpacity style={styles.customButton} onPress={onGoToSet}>
+            <Text style={styles.customButtonText}>Go to Set</Text>
+            <Ionicons name="arrow-forward" size={20} color="white" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.customButton} onPress={onGoToLesson}>
+            <Text style={styles.customButtonText}>Current Lesson</Text>
+            <Ionicons name="arrow-forward" size={20} color="white" />
+          </TouchableOpacity>
       </View>
     </View>
   );
@@ -59,104 +74,37 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
     backgroundColor: themeVariables.primaryColor,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    borderRadius: 20,
-    overflow: 'hidden',
-    // Ensure header tall enough to fit avatar and text comfortably
-    minHeight: 200,
-  },
-  headerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  profileContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  avatarWrapper: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  profileAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 12,
-    padding: 4,
-  },
-  profileTextContainer: {
-    justifyContent: 'center',
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: themeVariables.whiteColor,
-  },
-  profileGrade: {
-    fontSize: 16,
-    color: themeVariables.whiteColor,
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: themeVariables.whiteColor,
-  },
-  pointsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 12,
-  },
-  pointsText: {
-    fontSize: 16,
-    marginLeft: 4,
-    fontWeight: 'bold',
-    color: themeVariables.whiteColor,
   },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
+    marginTop: 24,
   },
   bottomButtonContainer: {
+    width: '100%',
+    marginTop: 24,
+    gap: 12,
+    marginBottom: 16,
+  },
+  customButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: themeVariables.whiteColor,
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     width: '100%',
   },
-  bottomButton: {
-    flex: 1,
-    marginHorizontal: 4,
-    backgroundColor: themeVariables.primaryColor,
-    paddingVertical: 12,
-    borderRadius: themeVariables.borderRadiusPill,
-    alignItems: 'center',
-  },
-  bottomButtonText: {
+  customButtonText: {
     color: themeVariables.whiteColor,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  progressContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
