@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import speechService, { stopTTS } from '../services/speechService';
-import Tts from 'react-native-tts';
+import speechService from '../services/speechService';
 import themeVariables from '../styles/theme';
 
 const stripPunctuation = (str) =>
@@ -25,6 +24,7 @@ const QuoteBlock = ({
 }) => {
   const [activeRef, setActiveRef] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const cancelRef = useRef(false);
 
   let displayText = '';
   let refList = [];
@@ -89,18 +89,13 @@ const QuoteBlock = ({
     if (!displayText.trim()) return;
     try {
       if (isSpeaking) {
-        // Directly stop any ongoing speech
-        try {
-          Tts.stop();
-        } catch (e) {
-          // Fallback to service stop
-          stopTTS();
-        }
+        cancelRef.current = true;
+        await speechService.stopTTS();
         setIsSpeaking(false);
       } else {
-        // Start speaking (fire-and-forget)
+        cancelRef.current = false;
         setIsSpeaking(true);
-        speechService.readQuote(displayText, profile.ttsVoice);
+        speechService.readQuote(displayText, profile.ttsVoice, cancelRef);
       }
     } catch (err) {
       console.warn('TTS failed:', err);
@@ -113,6 +108,7 @@ const QuoteBlock = ({
     speechService.setupTTSListeners(onTTSFinish);
 
     return () => {
+      cancelRef.current = true;
       speechService.stopTTS();
       speechService.cleanupTTSListeners();
     };
