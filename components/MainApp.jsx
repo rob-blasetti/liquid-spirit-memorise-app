@@ -492,6 +492,7 @@ import BottomNav from '../navigation/BottomNav';
           onSaveOverride={saveOverrideProgress}
           onBack={goHome}
           onReset={wipeProfile}
+          onSaveProfile={saveProfile}
         />
       );
     }

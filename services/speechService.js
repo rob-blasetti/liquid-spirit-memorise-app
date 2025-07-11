@@ -2,10 +2,8 @@ import Tts from 'react-native-tts';
 
 export const stopTTS = async () => {
   try {
-    if (typeof Tts.stop === 'function') {
-      const stop = Tts.stop.bind(Tts);
-      await stop();
-    }
+    await Tts.getInitStatus();
+    Tts.stop();
     console.log('TTS emergency stopped');
   } catch (error) {
     console.warn('TTS error:', error);
@@ -15,8 +13,6 @@ export const stopTTS = async () => {
 export const readQuote = async (text, ttsVoice) => {
   console.log('=== readQuote called ===');
   console.log('Text:', text);
-  Tts.setDefaultVoice('com.apple.ttsbundle.Samantha-compact');
-
   const availableVoices = await Tts.voices();
   console.log(availableVoices);
 
@@ -29,12 +25,12 @@ export const readQuote = async (text, ttsVoice) => {
     // Clean the text
     const cleanText = text.replace(/[^\w\s.,!?-]/g, '').trim();
 
+    // Stop any ongoing speech before starting
     await stopTTS();
-    await new Promise(resolve => setTimeout(resolve, 200));
 
-    if (ttsVoice) {
-      await Tts.setDefaultVoice(ttsVoice); // ✅ use selected voice
-    }
+    // Set TTS voice: use selected voice or fallback to default
+    const voiceToUse = ttsVoice || 'com.apple.ttsbundle.Samantha-compact';
+    await Tts.setDefaultVoice(voiceToUse);
 
     try {
       Tts.setDefaultRate(0.5, true); // 0.5 rate, true for iOS compatibility

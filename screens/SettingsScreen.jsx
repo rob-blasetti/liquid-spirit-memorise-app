@@ -13,7 +13,7 @@ const voiceOptions = [
   { label: 'Karen (AU)', value: 'com.apple.ttsbundle.Karen-compact' },
 ];
 
-const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset }) => {
+const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset, onSaveProfile }) => {
   const [selectedSet, setSelectedSet] = useState(
     overrideProgress?.setNumber ?? currentProgress.setNumber
   );
@@ -66,6 +66,10 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           onPress={async () => {
             await Tts.setDefaultVoice(voice.value);
             setSelectedVoice(voice.value);
+            // Persist the selected voice in user profile
+            if (onSaveProfile) {
+              onSaveProfile({ ...profile, ttsVoice: voice.value });
+            }
           }}
         >
           <Text

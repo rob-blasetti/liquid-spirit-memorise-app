@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import speechService, { stopTTS } from '../services/speechService';
+import Tts from 'react-native-tts';
 import themeVariables from '../styles/theme';
 
 const stripPunctuation = (str) =>
@@ -86,14 +87,20 @@ const QuoteBlock = ({
 
   const handleAudioPress = async () => {
     if (!displayText.trim()) return;
-
     try {
       if (isSpeaking) {
-        await speechService.stopTTS();
+        // Directly stop any ongoing speech
+        try {
+          Tts.stop();
+        } catch (e) {
+          // Fallback to service stop
+          stopTTS();
+        }
         setIsSpeaking(false);
       } else {
+        // Start speaking (fire-and-forget)
         setIsSpeaking(true);
-        await speechService.readQuote(displayText, profile.ttsVoice);
+        speechService.readQuote(displayText, profile.ttsVoice);
       }
     } catch (err) {
       console.warn('TTS failed:', err);
@@ -162,8 +169,9 @@ const QuoteBlock = ({
         <TouchableOpacity
           style={styles.audioButton}
           onPress={handleAudioPress}
-          accessibilityLabel="Read quote aloud"
-          accessibilityHint="Double tap to hear this quote"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel={isSpeaking ? "Stop reading quote" : "Read quote aloud"}
+          accessibilityHint={isSpeaking ? "Double tap to stop the speech" : "Double tap to hear this quote"}
         >
           <Ionicons
             name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
