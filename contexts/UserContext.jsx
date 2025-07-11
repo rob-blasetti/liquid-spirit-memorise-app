@@ -47,7 +47,12 @@ export const UserProvider = ({ children }) => {
   const updateFamily = async (newFamily) => {
     setFamily(newFamily);
     try {
-      await AsyncStorage.setItem('family', JSON.stringify(newFamily));
+      // Avoid setting undefined/null values; remove key instead
+      if (newFamily === undefined || newFamily === null) {
+        await AsyncStorage.removeItem('family');
+      } else {
+        await AsyncStorage.setItem('family', JSON.stringify(newFamily));
+      }
     } catch (e) {
       console.error('Error saving family:', e);
     }

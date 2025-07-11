@@ -1,90 +1,209 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, Linking, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
-import { signInWithLiquidSpirit } from '../services/authService';
+import { Button } from 'liquid-spirit-styleguide';
+import { signInWithLiquidSpirit, loginGuest, registerGuest } from '../services/authService';
 import { useUser } from '../contexts/UserContext';
-import splashLogo from '../assets/img/Nuri_Splash.png';
 import themeVariables from '../styles/theme';
 
-const StartScreen = ({ onSignIn, onGuest }) => {
-  // Local state for user credentials
-  const [bahaiId, setBahaiId] = useState('');
+const StartScreen = ({ onSignIn }) => {
+  const [mode, setMode] = useState('menu');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  // Context setters for user data
+  const [confirmPassword, setConfirmPassword] = useState('');
+  // For Liquid Spirit login
+  const [bahaiId, setBahaiId] = useState('');
   const { setUser, setClasses, setFamily, setChildren } = useUser();
-  const handleSignIn = async () => {
+
+  // Common post-auth context update
+  const handleAuthSuccess = (data, isGuest = false) => {
+    // Set authenticated user and family in context
+    setUser(data);
+    setFamily(data.family);
+    // Determine raw children list from data.children or data.nuriUsers (for LS login)
+    const rawChildren = Array.isArray(data.children)
+      ? data.children
+      : Array.isArray(data.nuriUsers)
+      ? data.nuriUsers
+      : [];
+    if (rawChildren.length > 0) {
+      // Map children entries for context: { child, classes }
+      const childrenEntries = rawChildren.map(child => {
+        // Derive grade if available on child or from curriculumLesson
+        let grade = child.grade;
+        if (grade == null && Array.isArray(child.classes)) {
+          const cls = child.classes.find(c => c.curriculumLesson && c.curriculumLesson.grade != null);
+          grade = cls?.curriculumLesson?.grade;
+        }
+        // Include grade on child object
+        const childWithGrade = { ...child, grade };
+        return {
+          child: childWithGrade,
+          classes: Array.isArray(child.classes) ? child.classes : [],
+        };
+      });
+      setChildren(childrenEntries);
+      const allClasses = childrenEntries.reduce((acc, c) => {
+        if (Array.isArray(c.classes)) acc.push(...c.classes);
+        return acc;
+      }, []);
+      setClasses(allClasses);
+    } else {
+      setChildren([]);
+      setClasses([]);
+    }
+    // Trigger sign-in callback with children for profile setup
+    onSignIn({ ...data, guest: isGuest, children: rawChildren });
+  };
+
+  const handleGuestLogin = async () => {
     try {
-      // Call auth service with credentials and log the response
-      const loginDetails = await signInWithLiquidSpirit(bahaiId, password);
-      console.log('signInWithLiquidSpirit response:', loginDetails);
-      // Update context: user info, family, children, and aggregate classes from all children
-      setUser(loginDetails);
-      setFamily(loginDetails.family);
-      if (loginDetails.children) {
-        // store children list
-        setChildren(loginDetails.children);
-        // aggregate all classes arrays from each child into one list
-        const allClasses = loginDetails.children.reduce((acc, child) => {
-          if (Array.isArray(child.classes)) {
-            acc.push(...child.classes);
-          }
-          return acc;
-        }, []);
-        console.log('classes to set in setClasses:', allClasses);
-        setClasses(allClasses);
-      } else {
-        // no children: clear
-        setChildren([]);
-        setClasses([]);
-      }
-      // Proceed with sign-in callback, passing the user details
-      onSignIn(loginDetails);
+      const data = await loginGuest(username, password);
+      handleAuthSuccess(data, true);
     } catch (e) {
-      // Log any sign-in errors
-      console.error('Sign in failed:', e);
+      console.error('Guest login failed:', e);
     }
   };
 
+  const handleGuestRegister = async () => {
+    if (password !== confirmPassword) return;
+    try {
+      const data = await registerGuest(username, password);
+      handleAuthSuccess(data, true);
+    } catch (e) {
+      console.error('Guest registration failed:', e);
+    }
+  };
+
+  const handleLSLogin = async () => {
+    try {
+      const data = await signInWithLiquidSpirit(bahaiId, password);
+      handleAuthSuccess(data, false);
+    } catch (e) {
+      console.error('LS login failed:', e);
+    }
+  };
+
+  // Render based on mode
+  if (mode === 'login') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.heading}>Login</Text>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Username</Text>
+          <TextInput
+            style={styles.input}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.buttonRow}>
+          <View style={styles.buttonContainer}>
+            <Button secondary label='Back' onPress={() => setMode('menu')} />
+          </View>
+          <View style={styles.buttonContainer}>
+            <Button primary label='Submit' onPress={handleGuestLogin} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+  if (mode === 'register') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.heading}>Register</Text>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Username</Text>
+          <TextInput
+            style={styles.input}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Confirm Password</Text>
+          <TextInput
+            style={styles.input}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.buttonRow}>
+          <View style={styles.buttonContainer}>
+            <Button secondary label="Back" onPress={() => setMode('menu')} />
+          </View>
+          <View style={styles.buttonContainer}>
+            <Button primary label="Submit" onPress={handleGuestRegister} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+  if (mode === 'lsLogin') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.heading}>Liquid Spirit Login</Text>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Bahai ID</Text>
+          <TextInput
+            style={styles.input}
+            value={bahaiId}
+            onChangeText={setBahaiId}
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.buttonRow}>
+          <View style={styles.buttonContainer}>
+            <Button secondary label="Back" onPress={() => setMode('menu')} />
+          </View>
+          <View style={styles.buttonContainer}>
+            <Button primary label="Submit" onPress={handleLSLogin} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+  // Menu
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Nuri</Text>
-      <Image source={splashLogo} style={styles.image} resizeMode="contain" />
-      {/* Credential inputs */}
-      <TextInput
-        placeholder="Bahai ID"
-        style={styles.input}
-        value={bahaiId}
-        onChangeText={setBahaiId}
-        autoCapitalize="none"
-        keyboardType="default"
-      />
-      <TextInput
-        placeholder="Password"
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-      />
-      <View style={styles.buttonContainer}>
-        <ThemedButton
-          title="Sign in with Liquid Spirit"
-          onPress={handleSignIn}
-        />
-      </View>
-      <View style={styles.buttonContainer}>
-        <ThemedButton
-          title="Continue as Guest"
-          onPress={onGuest}
-          style={styles.guestButton}
-          textStyle={styles.guestText}
-        />
-      </View>
-      <View style={styles.linksContainer}>
-        <Text style={styles.link} onPress={() => Linking.openURL('https://example.com/privacy')}>Privacy</Text>
-        <Text style={styles.link}> | </Text>
-        <Text style={styles.link} onPress={() => Linking.openURL('https://example.com/terms')}>Terms of Use</Text>
-      </View>
+      <Button secondary label="Login" onPress={() => { setUsername(''); setPassword(''); setMode('login'); }} />
+      <Button secondary label="Register" onPress={() => { setUsername(''); setPassword(''); setConfirmPassword(''); setMode('register'); }} />
+      <Button secondary label="Login with Liquid Spirit" onPress={() => { setBahaiId(''); setPassword(''); setMode('lsLogin'); }} />
     </View>
   );
 };
@@ -95,46 +214,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: themeVariables.darkGreyColor,
+    backgroundColor: themeVariables.primaryColor,
   },
   heading: {
     fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 16,
+    color: themeVariables.whiteColor,
   },
-  image: {
+  inputContainer: {
     width: '80%',
-    height: 200,
-    marginBottom: 32,
+    marginVertical: 8,
   },
-  // Input fields for Bahai ID and password
+  inputLabel: {
+    color: themeVariables.whiteColor,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
   input: {
-    width: '80%',
+    width: '100%',
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 4,
     paddingHorizontal: 8,
-    marginVertical: 8,
+    backgroundColor: themeVariables.whiteColor,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginTop: 16,
   },
   buttonContainer: {
-    width: '80%',
-    marginVertical: 8,
-  },
-  guestButton: {
-    backgroundColor: '#f3f3f3',
-  },
-  guestText: {
-    color: '#312783',
-  },
-  linksContainer: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 32,
-  },
-  link: {
-    color: '#312783',
-    textDecorationLine: 'underline',
+    flex: 1,
+    marginHorizontal: 8,
   },
 });
 

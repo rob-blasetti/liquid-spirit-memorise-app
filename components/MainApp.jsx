@@ -163,8 +163,34 @@ import BottomNav from '../navigation/BottomNav';
     return <Splash />;
   }
   const handleStartSignIn = (user) => {
+    // Determine initial profile for sign-in: for LS login, choose first child
+    let profileToSave;
+    if (Array.isArray(user.children) && user.children.length > 0) {
+      // Select first child by default, ensuring numeric grade
+      const firstChild = user.children[0];
+      const fullName = firstChild.firstName && firstChild.lastName
+        ? `${firstChild.firstName} ${firstChild.lastName}`
+        : firstChild.name || '';
+      const gradeNum = typeof firstChild.grade === 'string'
+        ? parseInt(firstChild.grade, 10)
+        : firstChild.grade;
+      profileToSave = {
+        ...firstChild,
+        name: fullName,
+        grade: gradeNum,
+        guest: false,
+        // include list of all children for account switching
+        children: user.children,
+      };
+    } else {
+      // Fallback for guest or single-profile users: ensure numeric grade
+      const gradeNum = typeof user.grade === 'string'
+        ? parseInt(user.grade, 10)
+        : user.grade;
+      profileToSave = { ...user, grade: gradeNum, guest: false };
+    }
     // Save authenticated user profile
-    saveProfile({ ...user, guest: false });
+    saveProfile(profileToSave);
     // Award initial profile achievement
     awardAchievement('profile');
   };
@@ -609,26 +635,35 @@ import BottomNav from '../navigation/BottomNav';
               )}
               <FlatList
                 data={children}
-                keyExtractor={item => item.child._id}
+                keyExtractor={item => {
+                  const childObj = item.child || item;
+                  return childObj._id;
+                }}
                 renderItem={({ item }) => {
-                  // extract the child object and compute full name
-                  const childObj = item.child;
+                  // Support both entry shapes: { child, classes } or child object directly
+                  const entry = item.child ? item : { child: item, classes: [] };
+                  const childObj = entry.child;
                   const fullName = `${childObj.firstName} ${childObj.lastName}`;
-                  const selected = { ...childObj, name: fullName };
+                  const gradeNum = typeof childObj.grade === 'string'
+                    ? parseInt(childObj.grade, 10)
+                    : childObj.grade;
+                  const selected = { ...childObj, name: fullName, grade: gradeNum };
                   return (
                     <TouchableOpacity
                       style={styles.childButton}
                       onPress={() => {
-                        // Switch to selected child account, restoring achievements and score
+                        // Switch to selected child account
                         const childAchievements = selected.achievements || defaultAchievements;
                         const childScore = selected.score || 0;
                         setAchievements(childAchievements);
+                        // Save profile of selected child (no children list)
                         saveProfile({
                           ...selected,
                           guest: false,
                           achievements: childAchievements,
                           score: childScore,
                         });
+                        // Update user context
                         setUser({
                           ...selected,
                           achievements: childAchievements,
@@ -637,9 +672,9 @@ import BottomNav from '../navigation/BottomNav';
                         setChooseChildVisible(false);
                       }}
                     >
-                {childObj.avatar
-                  ? <Image source={{ uri: childObj.avatar }} style={styles.childAvatar} />
-                  : <Avatar size={40} name={fullName} variant="beam" />}
+                      {childObj.avatar
+                        ? <Image source={{ uri: childObj.avatar }} style={styles.childAvatar} />
+                        : <Avatar size={40} name={fullName} variant="beam" />}
                       <Text style={styles.childText}>{fullName}</Text>
                     </TouchableOpacity>
                   );
