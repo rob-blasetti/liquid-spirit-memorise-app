@@ -6,7 +6,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    backgroundColor: theme.whiteColor,
+    backgroundColor: theme.primaryColor,
   },
   title: {
     fontSize: 24,
@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     backgroundColor: '#fff',
     paddingVertical: 8,
+    backgroundColor: theme.primaryColor
   },
   navItem: {
     alignItems: 'center',
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 12,
     marginTop: 4,
-    color: '#333',
+    color: theme.whiteColor,
   },
   profileContainer: {
     flexDirection: 'row',

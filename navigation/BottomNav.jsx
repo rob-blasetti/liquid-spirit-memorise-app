@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import themeVariables from '../styles/theme';
 import styles from '../styles/mainAppStyles';
 
 /**
@@ -24,27 +25,27 @@ const BottomNav = ({
 }) => (
   <View style={styles.bottomNav}>
     <TouchableOpacity style={styles.navItem} onPress={goHome}>
-      <Ionicons name="home-outline" size={24} color="#333" />
+      <Ionicons name="home-outline" size={24} color={themeVariables.whiteColor} />
       <Text style={styles.navText}>Home</Text>
     </TouchableOpacity>
     <TouchableOpacity style={styles.navItem} onPress={goGrades}>
-      <Ionicons name="library-outline" size={24} color="#333" />
+      <Ionicons name="library-outline" size={24} color={themeVariables.whiteColor} />
       <Text style={styles.navText}>Library</Text>
     </TouchableOpacity>
     <TouchableOpacity style={styles.navItem} onPress={goClass}>
-      <Ionicons name="school-outline" size={24} color="#333" />
+      <Ionicons name="school-outline" size={24} color={themeVariables.whiteColor} />
       <Text style={styles.navText}>Classes</Text>
     </TouchableOpacity>
     <TouchableOpacity style={styles.navItem} onPress={goGames}>
-      <Ionicons name="game-controller-outline" size={24} color="#333" />
+      <Ionicons name="game-controller-outline" size={24} color={themeVariables.whiteColor} />
       <Text style={styles.navText}>Game</Text>
     </TouchableOpacity>
     <TouchableOpacity style={styles.navItem} onPress={goAchievements}>
-      <Ionicons name="trophy-outline" size={24} color="#333" />
+      <Ionicons name="trophy-outline" size={24} color={themeVariables.whiteColor} />
       <Text style={styles.navText}>Badges</Text>
     </TouchableOpacity>
     <TouchableOpacity style={styles.navItem} onPress={goSettings}>
-      <Ionicons name="settings-outline" size={24} color="#333" />
+      <Ionicons name="settings-outline" size={24} color={themeVariables.whiteColor} />
       <Text style={styles.navText}>Settings</Text>
     </TouchableOpacity>
   </View>

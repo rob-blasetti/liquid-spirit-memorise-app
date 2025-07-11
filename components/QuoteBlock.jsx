@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
   quoteText: {
     fontSize: 18,
     textAlign: 'center',
+    fontStyle: 'italic',
   },
   underline: {
     textDecorationLine: 'underline',
