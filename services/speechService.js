@@ -10,7 +10,7 @@ export const stopTTS = async () => {
   }
 };
 
-export const readQuote = async (text, ttsVoice) => {
+export const readQuote = async (text, ttsVoice, cancelRef) => {
   console.log('=== readQuote called ===');
   console.log('Text:', text);
   const availableVoices = await Tts.voices();
@@ -27,10 +27,12 @@ export const readQuote = async (text, ttsVoice) => {
 
     // Stop any ongoing speech before starting
     await stopTTS();
+    if (cancelRef?.current) return;
 
     // Set TTS voice: use selected voice or fallback to default
     const voiceToUse = ttsVoice || 'com.apple.ttsbundle.Samantha-compact';
     await Tts.setDefaultVoice(voiceToUse);
+    if (cancelRef?.current) return;
 
     try {
       Tts.setDefaultRate(0.5, true); // 0.5 rate, true for iOS compatibility
@@ -39,7 +41,9 @@ export const readQuote = async (text, ttsVoice) => {
       console.warn('Could not set TTS settings:', settingsError);
     }
 
-    Tts.speak(cleanText);
+    if (!cancelRef?.current) {
+      Tts.speak(cleanText);
+    }
   } catch (error) {
     console.error('TTS error:', error);
   }
