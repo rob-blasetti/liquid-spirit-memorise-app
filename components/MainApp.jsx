@@ -9,6 +9,9 @@ import {
   Grade2Screen,
   Grade2SetScreen,
   Grade2LessonScreen,
+  Grade2bScreen,
+  Grade2bSetScreen,
+  Grade2bLessonScreen,
   Grade3Screen,
   Grade4Screen,
   SettingsScreen,
@@ -231,8 +234,12 @@ import BottomNav from '../navigation/BottomNav';
   const goAchievements = () => setNav({ screen: 'achievements' });
   const goGames = () => setNav({ screen: 'games' });
   const goGrade2Set = (setNumber) => setNav({ screen: 'grade2Set', setNumber });
-  // Navigate to "coming soon" for Grade 2 - Book 3-2 from Grades screen
-  const goGrade2Coming = () => setNav({ screen: 'grade2Coming' });
+  const goGrade2b = () => { visitGrade(2); setNav({ screen: 'grade2b' }); };
+  const goGrade2bSet = (setNumber) => setNav({ screen: 'grade2bSet', setNumber });
+  const goGrade2bLesson = (lessonNumber) =>
+    setNav(prev => ({ screen: 'grade2bLesson', setNumber: prev.setNumber, lessonNumber }));
+  const goBackToGrade2bSet = () => setNav(prev => ({ screen: 'grade2bSet', setNumber: prev.setNumber }));
+  const goBackToGrade2b = () => setNav({ screen: 'grade2b' });
   const goGrade2Lesson = (lessonNumber) => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber }));
   const goBackToGrade2Set = () => setNav(prev => ({ screen: 'grade2Set', setNumber: prev.setNumber }));
   const goBackToGrade2 = () => setNav({ screen: 'grade2' });
@@ -251,6 +258,7 @@ import BottomNav from '../navigation/BottomNav';
       setNumber: prev.setNumber,
       lessonNumber: prev.lessonNumber,
       fromGames,
+      lessonScreen: prev.screen,
     }));
   };
 
@@ -267,7 +275,12 @@ import BottomNav from '../navigation/BottomNav';
     // Navigate to the selected game; treat all games (including practice) uniformly
     goGame(gameId, content, true);
   };
-  const goBackToLesson = () => setNav(prev => ({ screen: 'grade2Lesson', setNumber: prev.setNumber, lessonNumber: prev.lessonNumber }));
+  const goBackToLesson = () =>
+    setNav(prev => ({
+      screen: prev.lessonScreen === 'grade2bLesson' ? 'grade2bLesson' : 'grade2Lesson',
+      setNumber: prev.setNumber,
+      lessonNumber: prev.lessonNumber,
+    }));
 
   // Navigation for Grade 1 lessons
   const goGrade1Lesson = (lessonNumber) => setNav({ screen: 'grade1Lesson', lessonNumber });
@@ -471,6 +484,17 @@ import BottomNav from '../navigation/BottomNav';
           onPlayGame={(q) => goGame('tapGame', q)}
         />
       );
+    if (nav.screen === 'grade2bLesson')
+      return (
+        <Grade2bLessonScreen
+          setNumber={nav.setNumber}
+          lessonNumber={nav.lessonNumber}
+          onBack={goBackToGrade2bSet}
+          onComplete={completeLesson}
+          onPractice={goPractice}
+          onPlayGame={(q) => goGame('tapGame', q)}
+        />
+      );
     if (gameScreens[nav.screen]) {
       const GameComponent = gameScreens[nav.screen];
       const backHandler = nav.fromGames ? goGames : goBackToLesson;
@@ -482,22 +506,25 @@ import BottomNav from '../navigation/BottomNav';
       );
     }
     if (nav.screen === 'grade2Set') {
-      const backHandler = nav.setNumber === 2 ? goHome : goBackToGrade2;
-      return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={backHandler} />;
-    }
-    if (nav.screen === 'grade2') return <Grade2Screen onSetSelect={goGrade2Set} onBack={goHome} />;
-    if (nav.screen === 'grade2Coming') {
-      // Coming soon for Grade 2 - Book 3-2
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Grade 2 - Book 3-2</Text>
-          <Text style={styles.subtitle}>Content coming soon</Text>
-          <View style={styles.buttonContainer}>
-            <ThemedButton title="Back" onPress={goGrades} />
-          </View>
-        </View>
+        <Grade2SetScreen
+          setNumber={nav.setNumber}
+          onLessonSelect={goGrade2Lesson}
+          onBack={goBackToGrade2}
+        />
       );
     }
+    if (nav.screen === 'grade2bSet') {
+      return (
+        <Grade2bSetScreen
+          setNumber={nav.setNumber}
+          onLessonSelect={goGrade2bLesson}
+          onBack={goBackToGrade2b}
+        />
+      );
+    }
+    if (nav.screen === 'grade2') return <Grade2Screen onSetSelect={goGrade2Set} onBack={goHome} />;
+    if (nav.screen === 'grade2b') return <Grade2bScreen onSetSelect={goGrade2bSet} onBack={goHome} />;
     if (nav.screen === 'grade3') return <Grade3Screen onBack={goHome} />;
     if (nav.screen === 'grade4') return <Grade4Screen onBack={goHome} />;
     if (nav.screen === 'achievements') {
@@ -535,11 +562,10 @@ import BottomNav from '../navigation/BottomNav';
             if (g === 1) {
               goGrade1();
             } else if (g === 2) {
-              // Book 3-2 is coming soon: show coming soon screen
               if (setNumber === 2) {
-                goGrade2Coming();
+                goGrade2b();
               } else if (setNumber) {
-                // Navigate to specific set (for Book 3-1 and others)
+                // Navigate to specific set (for Book 3-1)
                 goGrade2Set(setNumber);
               } else {
                 goGrade2();
