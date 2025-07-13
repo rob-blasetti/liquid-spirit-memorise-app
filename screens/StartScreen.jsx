@@ -113,7 +113,12 @@ const StartScreen = ({ onSignIn }) => {
             <Button secondary label='Back' onPress={() => setMode('menu')} />
           </View>
           <View style={styles.buttonContainer}>
-            <Button primary label='Submit' onPress={handleGuestLogin} />
+            <Button
+              primary
+              label='Submit'
+              onPress={handleGuestLogin}
+              style={styles.submitButton}
+            />
           </View>
         </View>
       </View>
@@ -157,7 +162,11 @@ const StartScreen = ({ onSignIn }) => {
             <Button secondary label="Back" onPress={() => setMode('menu')} />
           </View>
           <View style={styles.buttonContainer}>
-            <Button primary label="Submit" onPress={handleGuestRegister} />
+            <Button
+              label="Submit"
+              onPress={handleGuestRegister}
+              style={styles.submitButton}
+            />
           </View>
         </View>
       </View>
@@ -191,7 +200,12 @@ const StartScreen = ({ onSignIn }) => {
             <Button secondary label="Back" onPress={() => setMode('menu')} />
           </View>
           <View style={styles.buttonContainer}>
-            <Button primary label="Submit" onPress={handleLSLogin} />
+            <Button
+              primary
+              label="Submit"
+              onPress={handleLSLogin}
+              style={styles.submitButton}
+            />
           </View>
         </View>
       </View>
@@ -201,9 +215,24 @@ const StartScreen = ({ onSignIn }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Nuri</Text>
-      <Button secondary label="Login" onPress={() => { setUsername(''); setPassword(''); setMode('login'); }} />
-      <Button secondary label="Register" onPress={() => { setUsername(''); setPassword(''); setConfirmPassword(''); setMode('register'); }} />
-      <Button secondary label="Login with Liquid Spirit" onPress={() => { setBahaiId(''); setPassword(''); setMode('lsLogin'); }} />
+      <View style={styles.menuRow}>
+        <Button
+          secondary
+          label="Login"
+          onPress={() => { setUsername(''); setPassword(''); setMode('login'); }}
+        />
+        <Button
+          secondary
+          label="Register"
+          onPress={() => { setUsername(''); setPassword(''); setConfirmPassword(''); setMode('register'); }}
+        />
+      </View>
+      <Button
+        secondary
+        label="Login with Liquid Spirit"
+        onPress={() => { setBahaiId(''); setPassword(''); setMode('lsLogin'); }}
+        style={styles.lsButton}
+      />
     </View>
   );
 };
@@ -249,6 +278,19 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flex: 1,
     marginHorizontal: 8,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginTop: 16,
+  },
+  lsButton: {
+    marginTop: 32,
+  },
+  submitButton: {
+    borderWidth: 1,
+    borderColor: themeVariables.whiteColor,
   },
 });
 
