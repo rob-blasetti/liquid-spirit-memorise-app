@@ -737,6 +737,8 @@ import BottomNav from '../navigation/BottomNav';
         goGames={goGames}
         goAchievements={goAchievements}
         goSettings={goSettings}
+        // Pass current active screen to highlight the corresponding tab
+        activeScreen={nav.screen}
       />
     </SafeAreaView>
   );
