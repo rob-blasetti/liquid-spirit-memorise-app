@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import { grade1Lessons } from '../data/grade1';
+import themeVariables from '../styles/theme';
 
 const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
   const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
@@ -38,20 +39,26 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 16,
     textAlign: 'center',
+    color: themeVariables.whiteColor,
   },
   prayer: {
     fontSize: 16,
     marginBottom: 16,
     textAlign: 'center',
+    color: themeVariables.whiteColor,
   },
   quote: {
     fontSize: 16,
     fontStyle: 'italic',
     marginBottom: 24,
     textAlign: 'center',
+    color: themeVariables.whiteColor,
   },
   buttonContainer: {
     width: '80%',
+    borderColor: themeVariables.whiteColor,
+    borderWidth: 1,
+    borderRadius: 20
   },
 });
 

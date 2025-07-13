@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const Grade4Screen = ({ onBack }) => {
   return (
@@ -24,11 +25,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 16,
+    color: themeVariables.whiteColor,
   },
   subtitle: {
     fontSize: 16,
     marginBottom: 24,
-    color: '#666',
+    color: themeVariables.greyColor,
     textAlign: 'center',
   },
   buttonContainer: {

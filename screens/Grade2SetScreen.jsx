@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const Grade2SetScreen = ({ setNumber, onLessonSelect, onBack }) => {
   // Show lessons for all sets
@@ -33,6 +34,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 24,
+    color: themeVariables.whiteColor,
   },
   subtitle: {
     fontSize: 16,

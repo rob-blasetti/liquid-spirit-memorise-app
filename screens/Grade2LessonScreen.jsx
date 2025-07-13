@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import { quoteMap } from '../data/grade2';
+import themeVariables from '../styles/theme';
 
 const Grade2LessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onComplete, onPlayGame }) => {
   const quoteObj = quoteMap[`${setNumber}-${lessonNumber}`];
@@ -34,12 +35,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 16,
     textAlign: 'center',
+    color: themeVariables.whiteColor,
   },
   quote: {
     fontSize: 16,
     fontStyle: 'italic',
     marginVertical: 24,
     textAlign: 'center',
+    color: themeVariables.whiteColor,
   },
   buttonContainer: {
     width: '80%',

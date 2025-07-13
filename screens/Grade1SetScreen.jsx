@@ -37,6 +37,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 16,
+    color: themeVariables.whiteColor,
   },
   grid: {
     flexDirection: 'row',

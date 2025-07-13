@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
+import themeVariables from '../styles/theme';
 
 const Grade2bScreen = ({ onBack, onSetSelect }) => (
   <View style={styles.container}>
@@ -26,6 +27,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 16,
+    color: themeVariables.whiteColor,
   },
   buttonContainer: {
     width: '80%',
