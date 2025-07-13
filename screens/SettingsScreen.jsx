@@ -4,6 +4,7 @@ import themeVariables from '../styles/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
+import { quoteMap as quoteMap2b } from '../data/grade2b';
 import { Button } from 'liquid-spirit-styleguide';
 import Tts from 'react-native-tts';
 
@@ -137,12 +138,51 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       </>
     );
   };
+  
+  // Settings for Grade 2b (Book 3-2): Sets 4-7 and lessons per data/grade2b
+  const renderGrade2bSettings = () => {
+    const lessons = Object.keys(quoteMap2b)
+      .filter(key => key.startsWith(`${selectedSet}-`))
+      .map(key => parseInt(key.split('-')[1], 10))
+      .sort((a, b) => a - b);
+
+    return (
+      <>
+        <Text style={styles.sectionTitle}>Set</Text>
+        {[4, 5, 6, 7].map(setNum => (
+          <TouchableOpacity
+            key={setNum}
+            style={[styles.listItem, selectedSet === setNum && styles.listItemSelected]}
+            onPress={() => setSelectedSet(setNum)}
+          >
+            <Text style={[styles.listItemText, selectedSet === setNum && styles.listItemTextSelected]}>
+              Set {setNum}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <Text style={styles.sectionTitle}>Lesson</Text>
+        {lessons.map(ln => (
+          <TouchableOpacity
+            key={ln}
+            style={[styles.listItem, selectedLesson === ln && styles.listItemSelected]}
+            onPress={() => setSelectedLesson(ln)}
+          >
+            <Text style={[styles.listItemText, selectedLesson === ln && styles.listItemTextSelected]}>
+              Lesson {ln}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </>
+    );
+  };
 
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Settings</Text>
+      <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
       {profile.grade === 1 && renderGrade1Settings()}
       {profile.grade === 2 && renderGrade2Settings()}
+      {profile.grade === '2b' && renderGrade2bSettings()}
 
       <Text style={styles.sectionTitle}>Account</Text>
       <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>

@@ -29,6 +29,7 @@ import { gameScreens } from '../games/gameRoutes';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
+import { quoteMap as quoteMap2b } from '../data/grade2b';
 import { achievements as defaultAchievements } from '../data/achievements';
 import { useUser } from '../contexts/UserContext';
 import styles from '../styles/mainAppStyles';
@@ -416,8 +417,11 @@ import BottomNav from '../navigation/BottomNav';
       const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
       content = lesson ? lesson.quote : '';
     } else if (profile.grade === 2) {
-      // Grade 2 quotes from data/grade2
-      const qObj = quoteMap[`${setNumber}-${lessonNumber}`];
+      // Grade 2 quotes for sets 1-3 (Book 3-1) or sets 4-7 (Book 3-2)
+      const key = `${setNumber}-${lessonNumber}`;
+      const qObj = setNumber <= 3
+        ? quoteMap[key]
+        : quoteMap2b[key];
       content = qObj || '';
     }
     // Pick a random game and navigate accordingly
@@ -581,12 +585,17 @@ import BottomNav from '../navigation/BottomNav';
     }
     // Default: home screen (profile overview)
       const { setNumber, lessonNumber } = getCurrentProgress();
-      // Determine current content: prayer for Grade 1, quote for Grade 2
-      const content = profile.grade === 1
-        ? (grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '')
-        : profile.grade === 2
-          ? (quoteMap[`${setNumber}-${lessonNumber}`] || '')
-          : '';
+      // Determine current content: prayer for Grade 1, quote for Grade 2 (Book 3-1 sets 1-3 or Book 3-2 sets 4-7)
+      let content = '';
+      if (profile.grade === 1) {
+        content = grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '';
+      } else if (profile.grade === 2) {
+        const key = `${setNumber}-${lessonNumber}`;
+        const cObj = setNumber <= 3
+          ? quoteMap[key]
+          : quoteMap2b[key];
+        content = cObj || '';
+      }
       return (
         <HomeScreen
           profile={profile}
