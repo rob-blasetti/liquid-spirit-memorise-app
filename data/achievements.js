@@ -190,4 +190,31 @@ export const achievements = [
     points: 10,
     earned: false,
   },
+  // Memory Match achievements by difficulty
+  {
+    id: 'memory1',
+    title: 'Memory Match Novice',
+    description: 'Complete Memory Match on Easy (4x4) difficulty',
+    icon: 'trophy',
+    points: 5,
+    earned: false,
+  },
+  {
+    id: 'memory2',
+    title: 'Memory Match Intermediate',
+    description: 'Complete Memory Match on Medium (5x5) difficulty',
+    icon: 'trophy',
+    points: 10,
+    prereq: 'memory1',
+    earned: false,
+  },
+  {
+    id: 'memory3',
+    title: 'Memory Match Master',
+    description: 'Complete Memory Match on Hard (6x6) difficulty',
+    icon: 'trophy',
+    points: 20,
+    prereq: 'memory2',
+    earned: false,
+  },
 ];

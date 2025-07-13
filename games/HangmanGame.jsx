@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
+    backgroundColor: themeVariables.greyColor,
   },
   title: {
     fontSize: 28,

@@ -39,10 +39,8 @@ const AchievementsScreen = ({ achievements, highlightId }) => {
       scrollRef.current.scrollTo({ y: offsetMap.current[highlightId] - 64, animated: true });
     }
   }, [highlightId]);
-  // Only show achievements when prerequisites are met
-  const visible = achievements.filter(
-    (ach) => !ach.prereq || achievements.find(a => a.id === ach.prereq)?.earned
-  );
+  // Show all achievements (including those with prerequisites), greyed out if not yet earned
+  const visible = achievements;
   // Group achievements into categories based on id prefix
   const grouped = visible.reduce((acc, ach) => {
     let category = 'Other';
@@ -53,7 +51,7 @@ const AchievementsScreen = ({ achievements, highlightId }) => {
     else if (ach.id.startsWith('prayer')) category = 'Prayers';
     else if (ach.id.startsWith('quote')) category = 'Quotes';
     else if (ach.id.startsWith('practice')) category = 'Practice';
-    else if (ach.id.startsWith('game') || ach.id === 'tapPerfect') category = 'Games';
+    else if (ach.id.startsWith('game') || ach.id.startsWith('memory') || ach.id === 'tapPerfect') category = 'Games';
     else if (ach.id === 'profile') category = 'Profile';
     else if (ach.id === 'explorer') category = 'Explorer';
     acc[category] = acc[category] || [];

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useDifficulty } from '../contexts/DifficultyContext';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
 import RewardBanner from '../components/RewardBanner';
@@ -7,7 +8,8 @@ import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const MemoryMatchGame = ({ quote, onBack }) => {
+const MemoryMatchGame = ({ quote, onBack, onWin }) => {
+  const { level } = useDifficulty();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [cards, setCards] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -17,25 +19,36 @@ const MemoryMatchGame = ({ quote, onBack }) => {
   const [guessesLeft, setGuessesLeft] = useState(0);
   // show banner on win
   useEffect(() => {
-    if (status === 'won') setShowBanner(true);
-  }, [status]);
+    if (status === 'won') {
+      setShowBanner(true);
+      if (onWin) onWin();
+    }
+  }, [status, onWin]);
 
   const initGame = useCallback(() => {
     const words = text.split(/\s+/);
-    const unique = Array.from(new Set(words)).slice(0, 8);
-    const initialGuesses = unique.length * 2;
-    const pairs = shuffle(
-      unique.flatMap((w) => [
+    const uniqueWords = Array.from(new Set(words));
+    const dimension = level + 3; // 4x4, 5x5, 6x6
+    const totalTiles = dimension * dimension;
+    const numPairs = Math.floor(totalTiles / 2);
+    const selectedWords = uniqueWords.slice(0, numPairs);
+    const initialGuesses = numPairs * 2;
+    let pairs = shuffle(
+      selectedWords.flatMap((w) => [
         { id: `${w}-1`, word: w, matched: false },
         { id: `${w}-2`, word: w, matched: false },
       ]),
     );
+    // If odd total tiles, add a blank placeholder
+    if (pairs.length < totalTiles) {
+      pairs.push({ id: 'blank', word: '', matched: true });
+    }
     setCards(pairs);
     setSelected([]);
     setMessage('');
     setStatus('playing');
     setGuessesLeft(initialGuesses);
-  }, [text]);
+  }, [text, level]);
   useEffect(() => {
     initGame();
   }, [initGame]);
@@ -73,6 +86,10 @@ const MemoryMatchGame = ({ quote, onBack }) => {
   const isRevealed = (card) =>
     card.matched || selected.find((c) => c.id === card.id) || status !== 'playing';
 
+  // Compute rows/columns for layout
+  const dimension = level + 3; // base dimension for total tiles
+  const columns = level === 3 ? 4 : dimension;
+  const rows = Math.ceil(cards.length / columns);
   return (
     <View style={styles.container}>
       {/* Win overlay */}
@@ -81,15 +98,22 @@ const MemoryMatchGame = ({ quote, onBack }) => {
       <Text style={styles.title}>Memory Match</Text>
       <Text style={styles.description}>Find the matching word pairs.</Text>
       <View style={styles.grid}>
-        {cards.map((card) => (
-          <TouchableOpacity
-            key={card.id}
-            style={styles.card}
-            onPress={() => handlePress(card)}
-          >
-            <Text style={styles.cardText}>{isRevealed(card) ? card.word : '?'}</Text>
-          </TouchableOpacity>
-        ))}
+        {Array.from({ length: rows }).map((_, rowIdx) => {
+          const rowCards = cards.slice(rowIdx * columns, (rowIdx + 1) * columns);
+          return (
+            <View key={rowIdx} style={styles.row}>
+              {rowCards.map((card) => (
+                <TouchableOpacity
+                  key={card.id}
+                  style={styles.card}
+                  onPress={() => handlePress(card)}
+                >
+                  <Text style={styles.cardText}>{isRevealed(card) ? card.word : '?'}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          );
+        })}
       </View>
       {status === 'playing' && (
         <Text style={styles.guessCount}>Guesses left: {guessesLeft}</Text>
@@ -126,24 +150,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: 'column',
+    alignItems: 'center',
     marginVertical: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
     borderColor: themeVariables.primaryColor,
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 4,
     borderRadius: themeVariables.borderRadiusPill,
   },
   cardText: {
-    fontSize: 18,
+    fontSize: 10,
     color: themeVariables.primaryColor,
     fontWeight: 'bold',
   },

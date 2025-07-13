@@ -32,6 +32,7 @@ import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import { achievements as defaultAchievements } from '../data/achievements';
 import { useUser } from '../contexts/UserContext';
+import { useDifficulty } from '../contexts/DifficultyContext';
 import styles from '../styles/mainAppStyles';
 import { pickRandomGame } from '../games';
 import {
@@ -49,6 +50,7 @@ import BottomNav from '../navigation/BottomNav';
  const MainApp = () => {
   // access user context (user, family, children, classes)
   const { classes, children, setUser } = useUser();
+  const { level } = useDifficulty();
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
   const [profile, setProfile] = useState(null);
@@ -502,9 +504,15 @@ import BottomNav from '../navigation/BottomNav';
     if (gameScreens[nav.screen]) {
       const GameComponent = gameScreens[nav.screen];
       const backHandler = nav.fromGames ? goGames : goBackToLesson;
+      // Props to pass to game component
+      const gameProps = { quote: nav.quote, onBack: backHandler };
+      // For Memory Match, award achievement based on difficulty level on win
+      if (nav.screen === 'memoryGame') {
+        gameProps.onWin = () => awardAchievement(`memory${level}`);
+      }
       return (
         <View style={{ flex: 1 }}>
-          <GameComponent quote={nav.quote} onBack={backHandler} />
+          <GameComponent {...gameProps} />
           <DifficultyFAB />
         </View>
       );
