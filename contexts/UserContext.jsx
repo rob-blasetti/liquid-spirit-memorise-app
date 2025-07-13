@@ -8,6 +8,8 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userChildren, setUserChildren] = useState([]);
   const [classes, setClasses] = useState([]);
+  // Track which difficulty levels the user has completed (unlocks next level)
+  const [completedDifficulties, setCompletedDifficulties] = useState({ 1: false, 2: false, 3: false });
   const [storageLoaded, setStorageLoaded] = useState(false);
 
   useEffect(() => {
@@ -25,6 +27,8 @@ export const UserProvider = ({ children }) => {
         if (storedFamily) setFamily(JSON.parse(storedFamily));
         if (storedChildren) setUserChildren(JSON.parse(storedChildren));
         if (storedClasses) setClasses(JSON.parse(storedClasses));
+        const storedCompleted = await AsyncStorage.getItem('completedDifficulties');
+        if (storedCompleted) setCompletedDifficulties(JSON.parse(storedCompleted));
       } catch (error) {
         console.error('Failed to load user data:', error);
       } finally {
@@ -75,14 +79,23 @@ export const UserProvider = ({ children }) => {
       console.error('Error saving classes:', e);
     }
   };
+  // Mark a difficulty level as completed and persist
+  const markDifficultyComplete = async (level) => {
+    setCompletedDifficulties(prev => {
+      const next = { ...prev, [level]: true };
+      AsyncStorage.setItem('completedDifficulties', JSON.stringify(next)).catch(e => console.error('Error saving completedDifficulties:', e));
+      return next;
+    });
+  };
 
   const clearUserData = async () => {
     setUser(null);
     setFamily(null);
     setUserChildren([]);
     setClasses([]);
+    setCompletedDifficulties({ 1: false, 2: false, 3: false });
     try {
-      await AsyncStorage.multiRemove(['user', 'family', 'children', 'classes']);
+      await AsyncStorage.multiRemove(['user', 'family', 'children', 'classes', 'completedDifficulties']);
     } catch (e) {
       console.error('Error clearing user data:', e);
     }
@@ -95,10 +108,12 @@ export const UserProvider = ({ children }) => {
         family,
         children: userChildren,
         classes,
+        completedDifficulties,
         setUser: updateUser,
         setFamily: updateFamily,
         setChildren: updateChildren,
         setClasses: updateClasses,
+        markDifficultyComplete,
         clearUserData,
         storageLoaded,
       }}

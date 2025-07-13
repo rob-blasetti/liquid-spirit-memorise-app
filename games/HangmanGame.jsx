@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useDifficulty } from '../contexts/DifficultyContext';
+import { useUser } from '../contexts/UserContext';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
@@ -7,14 +9,47 @@ import themeVariables from '../styles/theme';
 
 const MAX_WRONG = 8;
 
+// Compute initial guessed letters by revealing whole words based on difficulty level
+const initGuessed = (text, level) => {
+  const words = text.split(/\s+/);
+  // easy (1): reveal up to 2 words; medium (2): 1 word; hard (3): 0 words
+  const maxReveal = Math.max(0, words.length - 1);
+  const revealCount = Math.min(maxReveal, 3 - level);
+  const available = words.map((_, idx) => idx);
+  const revealIndices = [];
+  for (let i = 0; i < revealCount; i++) {
+    const pick = Math.floor(Math.random() * available.length);
+    revealIndices.push(available.splice(pick, 1)[0]);
+  }
+  const revealedLetters = new Set();
+  revealIndices.forEach((wordIdx) => {
+    const word = words[wordIdx];
+    for (const ch of word) {
+      if (/[a-z]/i.test(ch)) revealedLetters.add(ch.toLowerCase());
+    }
+  });
+  return Array.from(revealedLetters);
+};
+
 const HangmanGame = ({ quote, onBack }) => {
+  const { level } = useDifficulty();
+  const { markDifficultyComplete } = useUser();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const normalized = text.toLowerCase();
-  const [guessed, setGuessed] = useState([]);
+  // Guessed letters, initially revealing words per difficulty
+  const [guessed, setGuessed] = useState(() => initGuessed(text, level));
   const [wrong, setWrong] = useState(0);
   const [letterChoices, setLetterChoices] = useState([]);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
   const [showBanner, setShowBanner] = useState(false);
+
+  // Reset game state when difficulty level (or text) changes
+  useEffect(() => {
+    setGuessed(initGuessed(text, level));
+    setWrong(0);
+    setStatus('playing');
+    setShowBanner(false);
+  }, [level, text]);
   const letters = normalized.split('');
   const masked = letters
     .map((ch) => {
@@ -23,7 +58,7 @@ const HangmanGame = ({ quote, onBack }) => {
     })
     .join('');
 
-  // Generate 4 letter choices: 2 correct (unguessed) and 2 incorrect
+  // Generate letter choices based on difficulty: total options = 4 (easy), 6 (medium), 8 (hard)
   const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
   const generateChoices = () => {
     const unguessedCorrect = [...new Set(letters.filter(ch => /[a-z]/i.test(ch) && !guessed.includes(ch)))];
@@ -36,7 +71,9 @@ const HangmanGame = ({ quote, onBack }) => {
     }
     const incorrect = [];
     const wrongPool = alphabet.filter(ch => !normalized.includes(ch) && !guessed.includes(ch));
-    const distractCount = 4 - correct.length;
+    // Determine total number of choices based on difficulty level
+    const totalChoices = 4 + (level - 1) * 2; // 4, 6, or 8
+    const distractCount = totalChoices - correct.length;
     for (let i = 0; i < distractCount && wrongPool.length > 0; i++) {
       const idx = Math.floor(Math.random() * wrongPool.length);
       incorrect.push(wrongPool.splice(idx, 1)[0]);
@@ -70,6 +107,8 @@ const HangmanGame = ({ quote, onBack }) => {
   useEffect(() => {
     if (status === 'won') {
       setShowBanner(true);
+      // record difficulty completion
+      markDifficultyComplete(level);
     }
   }, [status]);
   // prepare letter choices on mount and after each guess
@@ -82,23 +121,25 @@ const HangmanGame = ({ quote, onBack }) => {
   return (
     <View style={styles.container}>
       <GameTopBar onBack={onBack} />
-      <Text style={styles.title}>Hangman</Text>
-      <Text style={styles.description}>Guess letters to reveal the quote.</Text>
-      <Text style={styles.quote}>{masked}</Text>
-      <Text style={styles.status}>{`Wrong guesses: ${wrong}/${MAX_WRONG}`}</Text>
-      {status === 'lost' && <Text style={styles.message}>Out of guesses!</Text>}
-      {status === 'playing' && (
-        <View style={styles.choicesContainer}>
-          {letterChoices.map((letter, i) => (
-            <ThemedButton
-              key={i}
-              title={letter.toUpperCase()}
-              onPress={() => handleGuess(letter)}
-              style={styles.choiceButton}
-            />
-          ))}
-        </View>
-      )}
+      <View style={styles.content}>
+        <Text style={styles.title}>Hangman</Text>
+        <Text style={styles.description}>Guess letters to reveal the quote.</Text>
+        <Text style={styles.quote}>{masked}</Text>
+        <Text style={styles.status}>{`Wrong guesses: ${wrong}/${MAX_WRONG}`}</Text>
+        {status === 'lost' && <Text style={styles.message}>Out of guesses!</Text>}
+        {status === 'playing' && (
+          <View style={styles.choicesContainer}>
+            {letterChoices.map((letter, i) => (
+              <ThemedButton
+                key={i}
+                title={letter.toUpperCase()}
+                onPress={() => handleGuess(letter)}
+                style={styles.choiceButton}
+              />
+            ))}
+          </View>
+        )}
+      </View>
       {showBanner && <RewardBanner onAnimationEnd={() => setShowBanner(false)} />}
     </View>
   );
@@ -111,6 +152,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     padding: 16,
     backgroundColor: themeVariables.greyColor,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,

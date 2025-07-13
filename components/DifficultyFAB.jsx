@@ -2,23 +2,36 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
+import { useUser } from '../contexts/UserContext';
 import theme from '../styles/theme';
 
 const DifficultyFAB = () => {
   const { level, setLevel } = useDifficulty();
+  const { completedDifficulties } = useUser();
   const [open, setOpen] = useState(false);
 
-  const LevelButton = ({ value }) => (
-    <TouchableOpacity
-      style={[styles.levelButton, level === value && styles.selected]}
-      onPress={() => {
-        setLevel(value);
-        setOpen(false);
-      }}
-    >
-      <Text style={styles.levelText}>{value}</Text>
-    </TouchableOpacity>
-  );
+  const LevelButton = ({ value }) => {
+    // Only allow selecting this level if prior level completed
+    const prereqCompleted = value === 1 ? true : completedDifficulties[value - 1];
+    const disabled = !prereqCompleted;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.levelButton,
+          level === value && styles.selected,
+          disabled && styles.disabled,
+        ]}
+        onPress={() => {
+          if (disabled) return;
+          setLevel(value);
+          setOpen(false);
+        }}
+        disabled={disabled}
+      >
+        <Text style={styles.levelText}>{value}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container} pointerEvents="box-none">
@@ -72,6 +85,9 @@ const styles = StyleSheet.create({
   },
   selected: {
     backgroundColor: theme.primaryLightColor,
+  },
+  disabled: {
+    opacity: 0.4,
   },
 });
 
