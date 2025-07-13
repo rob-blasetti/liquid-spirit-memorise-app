@@ -5,6 +5,7 @@ import RewardBanner from '../components/RewardBanner';
 import ThemedButton from '../components/ThemedButton';
 import PuzzlePiece from '../components/PuzzlePiece';
 import { useUser } from '../contexts/UserContext';
+import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 
 // Dimensions and sizes
@@ -17,8 +18,8 @@ const MARGIN = 10;
 const ShapeBuilderGame = ({ quote, onBack }) => {
   // Get current user for personalized messages
   const { user } = useUser();
-  // Difficulty settings: number of pieces and pre-completed count
-  const [difficulty, setDifficulty] = useState(1);
+  // Difficulty settings: number of pieces and pre-completed count from global context
+  const { level: difficulty, setLevel: setDifficulty } = useDifficulty();
   const pieceCounts = { 1: 8, 2: 16, 3: 24 };
   const prePlacedCounts = { 1: 2, 2: 4, 3: 6 };
   const pieceCount = pieceCounts[difficulty] || 8;
@@ -340,26 +341,6 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
           onAnimationEnd={() => setShowReward(false)}
         />
       )}
-      {/* Difficulty selection buttons */}
-      <View style={styles.buttonsContainer}>
-        <ThemedButton
-          title="Level 1"
-          onPress={() => setDifficulty(1)}
-          disabled={difficulty === 1}
-          style={styles.buttonMargin}
-        />
-        <ThemedButton
-          title="Level 2"
-          onPress={() => setDifficulty(2)}
-          disabled={difficulty === 2}
-          style={styles.buttonMargin}
-        />
-        <ThemedButton
-          title="Level 3"
-          onPress={() => setDifficulty(3)}
-          disabled={difficulty === 3}
-        />
-      </View>
     </View>
   );
 };
