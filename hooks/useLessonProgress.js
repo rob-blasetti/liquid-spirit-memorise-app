@@ -36,19 +36,32 @@ export default function useLessonProgress(profile, awardAchievement) {
    */
   const getCurrentProgress = () => {
     if (overrideProgress) return overrideProgress;
-    let defaultSet = 1;
     const grade = profile && profile.grade;
-    if (grade === '2b') defaultSet = 4;
-    // grades 1 and 2 default to set 1
-    return { setNumber: defaultSet, lessonNumber: 1 };
+    // Default starting point based on grade
+    if (grade === '1') {
+      // Grade 1 has no sets; starts at Lesson 1
+      return { lessonNumber: 1 };
+    }
+    if (grade === '2') {
+      // Grade 2 starts at Set 1, Lesson 1
+      return { setNumber: 1, lessonNumber: 1 };
+    }
+    if (grade === '2b') {
+      // Grade 2b starts at Set 4, Lesson 1
+      return { setNumber: 4, lessonNumber: 1 };
+    }
+    // Fallback: start at first set and lesson
+    return { setNumber: 1, lessonNumber: 1 };
   };
 
   /**
    * Generate storage key per profile
    */
   const getProgressKey = () => {
-    if (profile && profile.guest) return 'progress:guest';
-    if (profile && profile._id) return `progress:${profile._id}`;
+    // Use unique profile ID for persistence; fallback to default
+    if (profile && profile._id) {
+      return `progress:${profile._id}`;
+    }
     return 'progress:default';
   };
 

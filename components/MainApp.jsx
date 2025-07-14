@@ -80,11 +80,18 @@ const MainApp = () => {
     awardAchievement('daily');
     const { setNumber, lessonNumber } = getCurrentProgress();
     let content = '';
-    if (profile.grade === 1) {
+    if (profile.grade == 1) {
+      // Grade 1: show prayer for current lesson
       content = grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '';
-    } else if (profile.grade === 2) {
+    } else if (profile.grade == 2) {
+      // Grade 2: show quote text for current set and lesson
       const key = `${setNumber}-${lessonNumber}`;
       content = quoteMap[key] || '';
+    } else if (profile.grade === '2b') {
+      // Grade 2b: show quote text for current set and lesson from grade2b data
+      const key = `${setNumber}-${lessonNumber}`;
+      const qObj = quoteMap2b[key];
+      content = qObj?.text || '';
     }
     goTo('practice', { quote: content, setNumber, lessonNumber });
   };
@@ -92,12 +99,18 @@ const MainApp = () => {
   const playSelectedGame = (gameId) => {
     const { setNumber, lessonNumber } = getCurrentProgress();
     let content = '';
-    if (profile?.grade === 1) {
+    if (profile?.grade == 1) {
+      // Grade 1: use lesson quote
       const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
       content = lesson ? lesson.quote : '';
-    } else if (profile?.grade === 2) {
+    } else if (profile?.grade == 2) {
+      // Grade 2: use quote text from grade2 data
       const qObj = quoteMap[`${setNumber}-${lessonNumber}`];
-      content = qObj || '';
+      content = qObj?.text || '';
+    } else if (profile?.grade === '2b') {
+      // Grade 2b: use quote text from grade2b data
+      const qObj = quoteMap2b[`${setNumber}-${lessonNumber}`];
+      content = qObj?.text || '';
     }
     goTo(gameId, { quote: content, setNumber, lessonNumber, fromGames: true, lessonScreen: nav.screen });
   };
@@ -223,15 +236,19 @@ const MainApp = () => {
       default: {
         const { setNumber, lessonNumber } = getCurrentProgress();
         let content = '';
-        if (profile.grade === 1) {
+        if (profile.grade == 1) {
+          // Grade 1: show prayer for current lesson
           content = grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '';
+        } else if (profile.grade == 2) {
+          // Grade 2: show quote text from grade2 data
+          const key = `${setNumber}-${lessonNumber}`;
+          const qObj = quoteMap[key];
+          content = qObj?.text || '';
         } else if (profile.grade === '2b') {
+          // Grade 2b: show quote text from grade2b data
           const key = `${setNumber}-${lessonNumber}`;
-          content = quoteMap2b[key] || '';
-        } else if (profile.grade === 2) {
-          const key = `${setNumber}-${lessonNumber}`;
-          const cObj = setNumber <= 3 ? quoteMap[key] : quoteMap2b[key];
-          content = cObj || '';
+          const qObj = quoteMap2b[key];
+          content = qObj?.text || '';
         }
         return (
           <HomeScreen

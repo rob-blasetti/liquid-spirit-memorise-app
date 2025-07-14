@@ -21,6 +21,8 @@ export default function GuestLoginScreen({ route }) {
     // Convert grade to number for 1,2,3,4,5; preserve '2b'
     const gradeVal = selectedGrade === '2b' ? '2b' : parseInt(selectedGrade, 10);
     onSignIn({
+      // Assign a unique ID for each guest based on avatarSeed
+      _id: avatarSeed,
       name: displayName,
       avatarSeed,
       ...(avatarPhoto ? { avatar: avatarPhoto } : {}),

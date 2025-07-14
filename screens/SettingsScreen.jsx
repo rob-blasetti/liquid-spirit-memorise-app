@@ -24,7 +24,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   const [selectedVoice, setSelectedVoice] = useState(profile?.ttsVoice ?? null);
 
   useEffect(() => {
-    if (profile?.grade === 2) {
+    if (String(profile?.grade) === '2') {
       const lessons = Object.keys(quoteMap)
         .filter(key => key.startsWith(`${selectedSet}-`))
         .map(key => parseInt(key.split('-')[1], 10))
@@ -180,9 +180,9 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
-      {profile.grade === 1 && renderGrade1Settings()}
-      {profile.grade === 2 && renderGrade2Settings()}
-      {profile.grade === '2b' && renderGrade2bSettings()}
+      {String(profile.grade) === '1' && renderGrade1Settings()}
+      {String(profile.grade) === '2' && renderGrade2Settings()}
+      {String(profile.grade) === '2b' && renderGrade2bSettings()}
 
       <Text style={styles.sectionTitle}>Account</Text>
       <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>

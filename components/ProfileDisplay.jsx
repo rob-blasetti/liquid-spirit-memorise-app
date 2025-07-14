@@ -41,8 +41,13 @@ const ProfileDisplay = ({
 
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
             <Text style={styles.profileName}>{displayName}</Text>
-            <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+          <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+          {/* Show only lesson for Grade 1, otherwise include set */}
+          {profile.grade == 1 ? (
+            <Text style={styles.progressText}>Lesson {currentLesson}</Text>
+          ) : (
             <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
+          )}
           </TouchableOpacity>
         </View>
 
