@@ -286,7 +286,7 @@ export const quoteMap = {
     ],
   },
   '7-2': {
-    text: '“Waste not your time in idleness and sloth. Occupy yourselves with that which profiteth yourselves and others.',
+    text: 'Waste not your time in idleness and sloth. Occupy yourselves with that which profiteth yourselves and others.',
     references: [
         {
             word: 'Idleness',

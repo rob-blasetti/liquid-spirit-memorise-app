@@ -187,14 +187,29 @@ import { NavigationContainer } from '@react-navigation/native';
         children: user.children,
       };
     } else {
-      // Fallback for guest or single-profile users: ensure numeric grade
-      const gradeNum = typeof user.grade === 'string'
+      // Fallback for guest or single-profile users: preserve '2b' or parse numeric grade
+      const gradeVal = user.guest
+        ? user.grade
+        : typeof user.grade === 'string'
         ? parseInt(user.grade, 10)
         : user.grade;
-      profileToSave = { ...user, grade: gradeNum, guest: false };
+      profileToSave = { ...user, grade: gradeVal, guest: !!user.guest };
     }
+    // Clear previous progress and selections for new login
+    setOverrideProgress(null);
+    AsyncStorage.removeItem('currentSet');
+    AsyncStorage.removeItem('currentLesson');
+    setCompletedLessons({});
+    setVisitedGrades({});
     // Save authenticated user profile
     saveProfile(profileToSave);
+    // Clear navigation and progress for new session
+    setNav({ screen: 'home' });
+    setOverrideProgress(null);
+    AsyncStorage.removeItem('currentSet');
+    AsyncStorage.removeItem('currentLesson');
+    setCompletedLessons({});
+    setVisitedGrades({});
     // Award initial profile achievement
     awardAchievement('profile');
   };
@@ -369,7 +384,8 @@ import { NavigationContainer } from '@react-navigation/native';
 
   // Handle "Go to Set" navigation based on current profile grade
   const handleGoSet = () => {
-    if (profile.grade === 1) goGrade1();
+    if (profile.grade === '2b') goGrade2b();
+    else if (profile.grade === 1) goGrade1();
     else if (profile.grade === 2) goGrade2();
     else if (profile.grade === 3) goGrade3();
     else if (profile.grade === 4) goGrade4();
@@ -380,11 +396,11 @@ import { NavigationContainer } from '@react-navigation/native';
   const getCurrentProgress = () => {
     if (overrideProgress) return overrideProgress;
     if (!profile) return { setNumber: 1, lessonNumber: 1 };
-    const gradeNum = profile.grade;
-    // Default to first set and first lesson
-    let setNumber = 1;
+    // Default starting set based on grade (Grade 2b starts at set 4)
+    const startingSet = profile.grade === '2b' ? 4 : 1;
+    let setNumber = startingSet;
     let lessonNumber = 1;
-    // Use completedLessons to find next uncompleted lesson in set 1
+    // Find next uncompleted lesson in the starting set
     const completed = completedLessons[setNumber] || {};
     while (completed[lessonNumber]) {
       lessonNumber += 1;
@@ -395,7 +411,9 @@ import { NavigationContainer } from '@react-navigation/native';
   // Handle navigation to the current lesson directly
   const handleGoCurrentLesson = () => {
     const { setNumber, lessonNumber } = getCurrentProgress();
-    if (profile.grade === 1) {
+    if (profile.grade === '2b') {
+      setNav({ screen: 'grade2bLesson', setNumber, lessonNumber });
+    } else if (profile.grade === 1) {
       goGrade1Lesson(lessonNumber);
     } else if (profile.grade === 2) {
       setNav({ screen: 'grade2Lesson', setNumber, lessonNumber });
@@ -576,11 +594,12 @@ import { NavigationContainer } from '@react-navigation/native';
       let content = '';
       if (profile.grade === 1) {
         content = grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '';
+      } else if (profile.grade === '2b') {
+        const key = `${setNumber}-${lessonNumber}`;
+        content = quoteMap2b[key] || '';
       } else if (profile.grade === 2) {
         const key = `${setNumber}-${lessonNumber}`;
-        const cObj = setNumber <= 3
-          ? quoteMap[key]
-          : quoteMap2b[key];
+        const cObj = setNumber <= 3 ? quoteMap[key] : quoteMap2b[key];
         content = cObj || '';
       }
       return (
@@ -590,6 +609,9 @@ import { NavigationContainer } from '@react-navigation/native';
           content={content}
           onDailyChallenge={handleDailyChallenge}
           onTestMemory={() => goGame('memoryGame', content)}
+          onSeeClass={goClass}
+          onGoToSet={handleGoSet}
+          onGoToLesson={handleGoCurrentLesson}
           currentSet={setNumber}
           currentLesson={lessonNumber}
           onProfilePress={() => setChooseChildVisible(true)}
