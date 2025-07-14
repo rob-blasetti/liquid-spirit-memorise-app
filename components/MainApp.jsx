@@ -16,9 +16,7 @@ import {
   Grade4Screen,
   SettingsScreen,
   AchievementsScreen,
-  ProfileSetupScreen,
   HomeScreen,
-  StartScreen,
   Splash,
   GamesListScreen,
   ClassScreen,
@@ -46,6 +44,8 @@ import speechService from '../services/speechService';
 import NotificationBanner from './NotificationBanner';
 import DifficultyFAB from './DifficultyFAB';
 import BottomNav from '../navigation/BottomNav';
+import AuthNavigator from '../navigation/AuthNavigator';
+import { NavigationContainer } from '@react-navigation/native';
 
  const MainApp = () => {
   // access user context (user, family, children, classes)
@@ -95,7 +95,6 @@ import BottomNav from '../navigation/BottomNav';
       setUser(child);
     }
   }, [profile]);
-  const [showSetup, setShowSetup] = useState(false);
   const [notification, setNotification] = useState(null);
   // Persisted guest profile
   const [guestProfile, setGuestProfile] = useState(null);
@@ -106,7 +105,6 @@ import BottomNav from '../navigation/BottomNav';
     // If currently using guest profile, clear active profile state and reset achievements
     if (profile && profile.guest) {
       setProfile(null);
-      setShowSetup(false);
       setAchievements(defaultAchievements);
     }
     setChooseChildVisible(false);
@@ -216,7 +214,6 @@ import BottomNav from '../navigation/BottomNav';
       // ignore errors
     }
   };
-  const handleContinueGuest = () => setShowSetup(true);
   const goHome = () => setNav({ screen: 'home' });
   const visitGrade = (g) => {
     setVisitedGrades(prev => {
@@ -441,7 +438,6 @@ import BottomNav from '../navigation/BottomNav';
   const wipeProfile = async () => {
     await clearProfile();
     setProfile(null);
-    setShowSetup(false);
     // Reset achievements to defaults when wiping profile
     setAchievements(defaultAchievements);
   };
@@ -449,32 +445,11 @@ import BottomNav from '../navigation/BottomNav';
   // Render the appropriate screen
   const renderScreen = () => {
     if (!profile) {
-      if (!showSetup) {
-        return (
-          <StartScreen
-            onSignIn={handleStartSignIn}
-            onGuest={handleContinueGuest}
-          />
-        );
-      }
-      // Guest profile creation
-      // Handler for creating a new guest profile: initialize fresh achievements and score
-      const handleGuestSave = (p) => {
-        // Deep copy default achievements to reset state
-        const initAch = defaultAchievements.map(a => ({ ...a }));
-        setAchievements(initAch);
-        // New guest starts with fresh achievements and zero score
-        const newProfile = { ...p, guest: true, achievements: initAch, score: 0 };
-        // Update profile state and user context
-        setProfile(newProfile);
-        setUser(newProfile);
-        setShowSetup(false);
-        // Save and persist profile
-        saveProfile(newProfile);
-        // Award initial 'profile' achievement
-        awardAchievement('profile');
-      };
-      return <ProfileSetupScreen onSave={handleGuestSave} />;
+      return (
+        <NavigationContainer>
+          <AuthNavigator onSignIn={handleStartSignIn} />
+        </NavigationContainer>
+      );
     }
     // Grade 1 screens: set and lesson
     if (nav.screen === 'grade1') return <Grade1SetScreen onBack={goHome} onLessonSelect={goGrade1Lesson} />;

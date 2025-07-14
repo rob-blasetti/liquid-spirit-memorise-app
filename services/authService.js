@@ -15,9 +15,8 @@ export const signInWithLiquidSpirit = async (bahaiId, password) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ identifier: bahaiId, password, type: 'auth' }),
-
     });
-
+    
     if (!response.ok) {
       throw new Error('Failed to authenticate');
     }
@@ -44,6 +43,7 @@ export const registerGuest = async (username, password) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
+    console.log('response: ', response);
     if (!response.ok) throw new Error('Guest registration failed');
     const data = await response.json();
     return data;
@@ -58,7 +58,7 @@ export const loginGuest = async (username, password) => {
     const response = await fetch(`${API_URL}/api/nuri/login-guest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ identifier: username, password }),
     });
 
     if (!response.ok) throw new Error('Guest login failed');
@@ -67,6 +67,27 @@ export const loginGuest = async (username, password) => {
     return data;
   } catch (e) {
     console.error('Guest login error:', e);
+    throw e;
+  }
+};
+/**
+ * Verify a Bahá'í ID by sending an email to the associated address.
+ * @param {string} bahaiId - The user's Bahá'í ID.
+ * @param {string} email - The email associated with the Bahá'í ID.
+ * @returns {Promise<object>} Response data.
+ */
+export const verifyBahaiEmail = async (bahaiId, email) => {
+  try {
+    const response = await fetch(`${API_URL}/api/nuri/login-ls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: bahaiId, email, type: 'verify-email' }),
+    });
+    if (!response.ok) throw new Error('Email verification failed');
+    const data = await response.json();
+    return data;
+  } catch (e) {
+    console.error('Email verification failed', e);
     throw e;
   }
 };

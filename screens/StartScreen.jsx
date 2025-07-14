@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
 import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit, loginGuest, registerGuest } from '../services/authService';
 import { useUser } from '../contexts/UserContext';
@@ -241,7 +240,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 16,
     backgroundColor: themeVariables.primaryColor,
   },
