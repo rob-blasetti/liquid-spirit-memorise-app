@@ -31,7 +31,7 @@ const initGuessed = (text, level) => {
   return Array.from(revealedLetters);
 };
 
-const HangmanGame = ({ quote, onBack }) => {
+const HangmanGame = ({ quote, onBack, onWin }) => {
   const { level } = useDifficulty();
   const { markDifficultyComplete } = useUser();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
@@ -109,6 +109,7 @@ const HangmanGame = ({ quote, onBack }) => {
       setShowBanner(true);
       // record difficulty completion
       markDifficultyComplete(level);
+      if (onWin) onWin();
     }
   }, [status]);
   // prepare letter choices on mount and after each guess

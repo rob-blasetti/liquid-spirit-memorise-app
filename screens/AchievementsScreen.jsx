@@ -51,7 +51,14 @@ const AchievementsScreen = ({ achievements, highlightId }) => {
     else if (ach.id.startsWith('prayer')) category = 'Prayers';
     else if (ach.id.startsWith('quote')) category = 'Quotes';
     else if (ach.id.startsWith('practice')) category = 'Practice';
-    else if (ach.id.startsWith('game') || ach.id.startsWith('memory') || ach.id === 'tapPerfect') category = 'Games';
+    else if (
+      ach.id.startsWith('game') ||
+      ach.id.startsWith('memory') ||
+      ach.id.startsWith('shape') ||
+      ach.id.startsWith('hangman') ||
+      ach.id === 'tapPerfect'
+    )
+      category = 'Games';
     else if (ach.id === 'profile') category = 'Profile';
     else if (ach.id === 'explorer') category = 'Explorer';
     acc[category] = acc[category] || [];
