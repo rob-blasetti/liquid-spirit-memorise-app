@@ -13,6 +13,8 @@ export default function GuestLoginScreen({ route }) {
   const [avatarPhoto, setAvatarPhoto] = useState(null);
   const grades = ['1', '2', '2b', '3', '4', '5'];
   const [selectedGrade, setSelectedGrade] = useState(grades[0]);
+  // Temporarily disable higher grades
+  const disabledGrades = ['3', '4', '5'];
 
   const handleLogin = () => {
     if (!displayName) return;
@@ -75,25 +77,32 @@ export default function GuestLoginScreen({ route }) {
       {/* Grade selector */}
       <Text style={styles.gradeLabel}>Grade</Text>
       <View style={styles.gradeRow}>
-        {grades.map(g => (
-          <TouchableOpacity
-            key={g}
-            style={[
-              styles.gradeButton,
-              selectedGrade === g && styles.gradeButtonActive
-            ]}
-            onPress={() => setSelectedGrade(g)}
-          >
-            <Text
+        {grades.map(g => {
+          const disabled = disabledGrades.includes(g);
+          const active = selectedGrade === g;
+          return (
+            <TouchableOpacity
+              key={g}
+              disabled={disabled}
               style={[
-                styles.gradeText,
-                selectedGrade === g && styles.gradeTextActive
+                styles.gradeButton,
+                active && styles.gradeButtonActive,
+                disabled && styles.gradeButtonDisabled
               ]}
+              onPress={() => !disabled && setSelectedGrade(g)}
             >
-              {g}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.gradeText,
+                  active && styles.gradeTextActive,
+                  disabled && styles.gradeTextDisabled
+                ]}
+              >
+                {g}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
       <Button label="Continue" onPress={handleLogin} />
     </View>
@@ -124,18 +133,18 @@ const styles = StyleSheet.create({
   },
   gradeRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    width: '80%',
+    borderWidth: 1,
+    borderColor: themeVariables.primaryColor,
+    borderRadius: 24,
+    overflow: 'hidden',
     marginBottom: 16,
   },
   gradeButton: {
-    borderWidth: 1,
-    borderColor: themeVariables.primaryColor,
-    borderRadius: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
-    marginVertical: 4,
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   gradeButtonActive: {
@@ -147,5 +156,11 @@ const styles = StyleSheet.create({
   },
   gradeTextActive: {
     color: themeVariables.whiteColor,
+  },
+  gradeButtonDisabled: {
+    backgroundColor: themeVariables.buttonDisabledBg,
+  },
+  gradeTextDisabled: {
+    color: themeVariables.buttonDisabledText,
   },
 });
