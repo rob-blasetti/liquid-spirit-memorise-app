@@ -4,8 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
+  const [token, setToken] = useState(null);
+  const [user, setUser] = useState(null);          // current active user
+  const [users, setUsers] = useState([]);          // all available user profiles
   const [family, setFamily] = useState(null);
-  const [user, setUser] = useState(null);
   const [userChildren, setUserChildren] = useState([]);
   const [classes, setClasses] = useState([]);
   // Track which difficulty levels the user has completed (unlocks next level)
@@ -28,6 +30,12 @@ export const UserProvider = ({ children }) => {
         if (storedChildren) setUserChildren(JSON.parse(storedChildren));
         if (storedClasses) setClasses(JSON.parse(storedClasses));
         const storedCompleted = await AsyncStorage.getItem('completedDifficulties');
+        // Load auth token
+        const storedToken = await AsyncStorage.getItem('token');
+        if (storedToken) setToken(storedToken);
+        // Load all user profiles
+        const storedUsers = await AsyncStorage.getItem('users');
+        if (storedUsers) setUsers(JSON.parse(storedUsers));
         if (storedCompleted) setCompletedDifficulties(JSON.parse(storedCompleted));
       } catch (error) {
         console.error('Failed to load user data:', error);
@@ -43,7 +51,11 @@ export const UserProvider = ({ children }) => {
   const updateUser = async (newUser) => {
     setUser(newUser);
     try {
-      await AsyncStorage.setItem('user', JSON.stringify(newUser));
+      if (newUser === undefined || newUser === null) {
+        await AsyncStorage.removeItem('user');
+      } else {
+        await AsyncStorage.setItem('user', JSON.stringify(newUser));
+      }
     } catch (e) {
       console.error('Error saving user:', e);
     }
@@ -59,6 +71,34 @@ export const UserProvider = ({ children }) => {
       }
     } catch (e) {
       console.error('Error saving family:', e);
+    }
+  };
+
+  // Update auth token
+  const updateToken = async (newToken) => {
+    setToken(newToken);
+    try {
+      if (newToken == null) {
+        await AsyncStorage.removeItem('token');
+      } else {
+        await AsyncStorage.setItem('token', newToken);
+      }
+    } catch (e) {
+      console.error('Error saving token:', e);
+    }
+  };
+  
+  // Update list of all user profiles
+  const updateUsers = async (newUsers) => {
+    setUsers(newUsers);
+    try {
+      if (!newUsers) {
+        await AsyncStorage.removeItem('users');
+      } else {
+        await AsyncStorage.setItem('users', JSON.stringify(newUsers));
+      }
+    } catch (e) {
+      console.error('Error saving users list:', e);
     }
   };
 
@@ -89,13 +129,15 @@ export const UserProvider = ({ children }) => {
   };
 
   const clearUserData = async () => {
+    setToken(null);
     setUser(null);
+    setUsers([]);
     setFamily(null);
     setUserChildren([]);
     setClasses([]);
     setCompletedDifficulties({ 1: false, 2: false, 3: false });
     try {
-      await AsyncStorage.multiRemove(['user', 'family', 'children', 'classes', 'completedDifficulties']);
+      await AsyncStorage.multiRemove(['token', 'user', 'users', 'family', 'children', 'classes', 'completedDifficulties']);
     } catch (e) {
       console.error('Error clearing user data:', e);
     }
@@ -104,7 +146,11 @@ export const UserProvider = ({ children }) => {
   return (
     <UserContext.Provider
       value={{
-        user,
+        token,
+        setToken: updateToken,
+        user,               // current active user
+        users,              // all available user profiles
+        setUsers: updateUsers,
         family,
         children: userChildren,
         classes,

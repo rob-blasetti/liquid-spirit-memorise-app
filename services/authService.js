@@ -93,15 +93,17 @@ export const verifyBahaiEmail = async (bahaiId, email) => {
 };
 
 // Register a regular Nuri user
-export const registerNuriUser = async (name, email, password, bahaiId) => {
+export const registerNuriUser = async (username, email, password, bahaiId, grade) => {
+  console.log(username, email, password, bahaiId, grade);
   try {
     const response = await fetch(`${API_URL}/api/nuri/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, bahaiId }),
+      body: JSON.stringify({ username, email, password, bahaiId, grade }),
     });
     if (!response.ok) throw new Error('Registration failed');
     const data = await response.json();
+    console.log('data token and user: ', data.token, data.user);
     return data;
   } catch (e) {
     console.error('Nuri registration error:', e);

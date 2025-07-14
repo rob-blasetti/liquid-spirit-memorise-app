@@ -24,6 +24,8 @@ const HomeScreen = ({
     { word: 'heart', examples: ['My heart is joyful.', 'He spoke from the heart.'] },
   ];
 
+  console.log('profile: ', profile);
+
   return (
     <View style={styles.container}>
       {/* Profile Header */}

@@ -49,7 +49,7 @@ import { NavigationContainer } from '@react-navigation/native';
 
  const MainApp = () => {
   // access user context (user, family, children, classes)
-  const { classes, children, setUser } = useUser();
+  const { classes, children, setUser, setFamily, setChildren, setClasses, setToken, setUsers } = useUser();
   const { level } = useDifficulty();
   const [showSplash, setShowSplash] = useState(true);
   const [nav, setNav] = useState({ screen: 'home' });
@@ -166,51 +166,49 @@ import { NavigationContainer } from '@react-navigation/native';
   if (showSplash) {
     return <Splash />;
   }
-  const handleStartSignIn = (user) => {
-    // Determine initial profile for sign-in: for LS login, choose first child
-    let profileToSave;
-    if (Array.isArray(user.children) && user.children.length > 0) {
-      // Select first child by default, ensuring numeric grade
-      const firstChild = user.children[0];
-      const fullName = firstChild.firstName && firstChild.lastName
-        ? `${firstChild.firstName} ${firstChild.lastName}`
-        : firstChild.name || '';
-      const gradeNum = typeof firstChild.grade === 'string'
-        ? parseInt(firstChild.grade, 10)
-        : firstChild.grade;
-      profileToSave = {
-        ...firstChild,
-        name: fullName,
-        grade: gradeNum,
-        guest: false,
-        // include list of all children for account switching
-        children: user.children,
-      };
-    } else {
-      // Fallback for guest or single-profile users: preserve '2b' or parse numeric grade
-      const gradeVal = user.guest
-        ? user.grade
-        : typeof user.grade === 'string'
-        ? parseInt(user.grade, 10)
-        : user.grade;
-      profileToSave = { ...user, grade: gradeVal, guest: !!user.guest };
+  const handleStartSignIn = (data) => {
+    // Handle guest login separately
+    if (data.guest) {
+      // Guest data contains user fields directly
+      const guestUser = data;
+      // Update context: no auth token, only guest profile
+      setToken(null);
+      setUsers([guestUser]);
+      setUser(guestUser);
+      setProfile(guestUser);
+      // Persist guest profile only
+      persistProfile(guestUser);
+      // Navigate to home
+      setNav({ screen: 'home' });
+      return;
     }
-    // Clear previous progress and selections for new login
+    // Handle Nuri login (non-guest) shapes
+    let authToken = null;
+    const primaryUser = data.user;
+    const dataFamily = data.family;
+    const dataChildren = data.children || [];
+    authToken = data.token;
+    // Update context: token, users list, current user
+    setToken(authToken);
+    setUsers([primaryUser, ...dataChildren]);
+    setUser(primaryUser);
+    setProfile(primaryUser);
+    if (dataFamily !== undefined) setFamily(dataFamily);
+    if (dataChildren.length) {
+      const entries = dataChildren.map(child => ({ child, classes: [] }));
+      setChildren(entries);
+      setClasses([]);
+    }
+    // Persist only the primary user profile
+    saveProfile(primaryUser);
+    // Reset lesson/progress state
     setOverrideProgress(null);
     AsyncStorage.removeItem('currentSet');
     AsyncStorage.removeItem('currentLesson');
     setCompletedLessons({});
     setVisitedGrades({});
-    // Save authenticated user profile
-    saveProfile(profileToSave);
-    // Clear navigation and progress for new session
+    // Navigate to home
     setNav({ screen: 'home' });
-    setOverrideProgress(null);
-    AsyncStorage.removeItem('currentSet');
-    AsyncStorage.removeItem('currentLesson');
-    setCompletedLessons({});
-    setVisitedGrades({});
-    // Award initial profile achievement
     awardAchievement('profile');
   };
   
@@ -452,10 +450,15 @@ import { NavigationContainer } from '@react-navigation/native';
 
 
   
-  // Wipe profile and score for testing
+  // Wipe profile and guest account, and reset score/achievements
   const wipeProfile = async () => {
+    // Clear stored profile
     await clearProfile();
+    // Also remove any stored guest profile
+    await deleteGuestProfile();
+    // Reset local state
     setProfile(null);
+    setGuestProfile(null);
     // Reset achievements to defaults when wiping profile
     setAchievements(defaultAchievements);
   };
@@ -669,13 +672,36 @@ import { NavigationContainer } from '@react-navigation/native';
                     ) : (
                       <Avatar size={40} name={guestProfile.name} variant="beam" />
                     )}
-                    <Text style={styles.childText}>{guestProfile.name} (Guest)</Text>
+                  <Text style={styles.childText}>
+                    {guestProfile.name} (Guest){profile && profile.guest ? ' (Active)' : ''}
+                  </Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.deleteButton} onPress={deleteGuestAccount}>
                     <Text style={styles.deleteButtonText}>Delete Guest Account</Text>
                   </TouchableOpacity>
                   <View style={styles.divider} />
                 </>
+              )}
+              {/* Primary user account */}
+              {profile && !profile.guest && (
+                <TouchableOpacity
+                  style={styles.childButton}
+                  onPress={() => {
+                    // Switch to primary user profile
+                    saveProfile(profile);
+                    setUser(profile);
+                    setChooseChildVisible(false);
+                  }}
+                >
+                  {profile.avatar ? (
+                    <Image source={{ uri: profile.avatar }} style={styles.childAvatar} />
+                  ) : (
+                    <Avatar size={40} name={profile.name} variant="beam" />
+                  )}
+                <Text style={styles.childText}>
+                  {profile.name}{!profile.guest ? ' (Active)' : ''}
+                </Text>
+                </TouchableOpacity>
               )}
               <FlatList
                 data={children}
@@ -687,7 +713,10 @@ import { NavigationContainer } from '@react-navigation/native';
                   // Support both entry shapes: { child, classes } or child object directly
                   const entry = item.child ? item : { child: item, classes: [] };
                   const childObj = entry.child;
-                  const fullName = `${childObj.firstName} ${childObj.lastName}`;
+                  // Display full name if available, else fallback to username
+                  const fullName = childObj.firstName && childObj.firstName.trim()
+                    ? `${childObj.firstName} ${childObj.lastName || ''}`.trim()
+                    : (childObj.username || childObj.name || '');
                   const gradeNum = typeof childObj.grade === 'string'
                     ? parseInt(childObj.grade, 10)
                     : childObj.grade;
@@ -719,7 +748,9 @@ import { NavigationContainer } from '@react-navigation/native';
                       {childObj.avatar
                         ? <Image source={{ uri: childObj.avatar }} style={styles.childAvatar} />
                         : <Avatar size={40} name={fullName} variant="beam" />}
-                      <Text style={styles.childText}>{fullName}</Text>
+                      <Text style={styles.childText}>
+                        {fullName}{profile && !profile.guest && profile._id === childObj._id ? ' (Active)' : ''}
+                      </Text>
                     </TouchableOpacity>
                   );
                 }}

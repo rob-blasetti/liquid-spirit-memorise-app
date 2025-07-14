@@ -17,6 +17,8 @@ const ProfileDisplay = ({
     ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
     : 0;
 
+  // Determine display name: use name if present, else fallback to username
+  const displayName = profile.name && profile.name.trim() ? profile.name : profile.username;
   return (
     <LinearGradient
       colors={['#b13cb3', '#5a2ca0']}
@@ -30,7 +32,7 @@ const ProfileDisplay = ({
             {profile.avatar ? (
               <Image source={{ uri: profile.avatar }} style={styles.profileAvatar} />
             ) : (
-              <Avatar size={64} name={profile.name} variant="beam" />
+              <Avatar size={64} name={displayName} variant="beam" />
             )}
             <View style={styles.avatarOverlay}>
               <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
@@ -38,7 +40,7 @@ const ProfileDisplay = ({
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
-            <Text style={styles.profileName}>{profile.name}</Text>
+            <Text style={styles.profileName}>{displayName}</Text>
             <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
             <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
           </TouchableOpacity>

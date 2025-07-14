@@ -64,13 +64,20 @@ const StartScreen = ({ onSignIn }) => {
     }
   };
 
+  const [regLoading, setRegLoading] = useState(false);
+  const [regError, setRegError] = useState('');
   const handleGuestRegister = async () => {
     if (password !== confirmPassword) return;
+    setRegError('');
+    setRegLoading(true);
     try {
       const data = await registerGuest(username, password);
       handleAuthSuccess(data, true);
     } catch (e) {
       console.error('Guest registration failed:', e);
+      setRegError(e.message || 'Registration failed');
+    } finally {
+      setRegLoading(false);
     }
   };
 
@@ -156,14 +163,17 @@ const StartScreen = ({ onSignIn }) => {
             autoCapitalize="none"
           />
         </View>
+        {regError ? <Text style={styles.errorText}>{regError}</Text> : null}
         <View style={styles.buttonRow}>
           <View style={styles.buttonContainer}>
             <Button secondary label="Back" onPress={() => setMode('menu')} />
           </View>
           <View style={styles.buttonContainer}>
             <Button
-              label="Submit"
+              primary
+              label={regLoading ? 'Registering...' : 'Submit'}
               onPress={handleGuestRegister}
+              disabled={regLoading}
               style={styles.submitButton}
             />
           </View>
@@ -290,6 +300,11 @@ const styles = StyleSheet.create({
   submitButton: {
     borderWidth: 1,
     borderColor: themeVariables.whiteColor,
+  },
+  errorText: {
+    color: themeVariables.redColor || 'red',
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });
 
