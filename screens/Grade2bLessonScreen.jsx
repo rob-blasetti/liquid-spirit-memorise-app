@@ -3,14 +3,30 @@ import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import { quoteMap } from '../data/grade2b';
 import themeVariables from '../styles/theme';
+import { useProfile } from '../hooks/useProfile';
+import PrayerBlock from '../components/PrayerBlock';
+import QuoteBlock from '../components/QuoteBlock';
 
 const Grade2bLessonScreen = ({ setNumber, lessonNumber, onBack, onPractice, onComplete, onPlayGame }) => {
-  const quoteObj = quoteMap[`${setNumber}-${lessonNumber}`];
-  const quote = quoteObj?.text || `This is a dummy quote for Lesson ${lessonNumber} of Set ${setNumber}.`;
+  const { profile } = useProfile();
+  const quoteObj = quoteMap[`${setNumber}-${lessonNumber}`] || {};
+  const quote = quoteObj.text || `This is a dummy quote for Lesson ${lessonNumber} of Set ${setNumber}.`;
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Grade 2 - Set {setNumber} Lesson {lessonNumber}</Text>
-      <Text style={styles.quote}>{quote}</Text>
+      {quoteObj.prayer ? (
+        <PrayerBlock
+          prayer={quoteObj.prayer}
+          profile={profile}
+        />
+      ) : null}
+      {quoteObj.text ? (
+        <QuoteBlock
+          quote={quoteObj.text}
+          profile={profile}
+          references={quoteObj.references}
+        />
+      ) : null}
       <View style={styles.buttonContainer}>
         <ThemedButton title="Complete Lesson" onPress={() => onComplete(setNumber, lessonNumber)} />
         <ThemedButton title="Practice" onPress={() => onPractice(quoteObj)} />

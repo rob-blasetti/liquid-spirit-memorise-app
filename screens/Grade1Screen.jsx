@@ -1,25 +1,35 @@
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
-import { prayers, grade1Lessons } from '../data/grade1';
+import { grade1Lessons } from '../data/grade1';
+import { useProfile } from '../hooks/useProfile';
+import PrayerBlock from '../components/PrayerBlock';
+import QuoteBlock from '../components/QuoteBlock';
 
-const Grade1Screen = ({ onBack }) => (
-  <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.title}>Grade 1</Text>
-    {grade1Lessons.map(l => (
-      <View key={l.lesson} style={styles.lessonContainer}>
-        <Text style={styles.lessonTitle}>
-          Lesson {l.lesson} - {l.virtue}
-        </Text>
-        <Text style={styles.prayer}>{l.prayer}</Text>
-        <Text style={styles.quote}>{l.quote}</Text>
+const Grade1Screen = ({ onBack }) => {
+  const { profile } = useProfile();
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Grade 1</Text>
+      {grade1Lessons.map(l => (
+        <View key={l.lesson} style={styles.lessonContainer}>
+          <Text style={styles.lessonTitle}>
+            Lesson {l.lesson} - {l.virtue}
+          </Text>
+          {l.prayer ? (
+            <PrayerBlock prayer={l.prayer} profile={profile} />
+          ) : null}
+          {l.quote ? (
+            <QuoteBlock quote={l.quote} profile={profile} />
+          ) : null}
+        </View>
+      ))}
+      <View style={styles.buttonContainer}>
+        <ThemedButton title="Back" onPress={onBack} />
       </View>
-    ))}
-    <View style={styles.buttonContainer}>
-      <ThemedButton title="Back" onPress={onBack} />
-    </View>
-  </ScrollView>
-);
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

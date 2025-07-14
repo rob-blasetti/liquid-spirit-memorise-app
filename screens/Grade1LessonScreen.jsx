@@ -4,7 +4,12 @@ import ThemedButton from '../components/ThemedButton';
 import { grade1Lessons } from '../data/grade1';
 import themeVariables from '../styles/theme';
 
+import { useProfile } from '../hooks/useProfile';
+import PrayerBlock from '../components/PrayerBlock';
+import QuoteBlock from '../components/QuoteBlock';
+
 const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
+  const { profile } = useProfile();
   const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
   if (!lesson) {
     return (
@@ -19,8 +24,19 @@ const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Lesson {lesson.lesson} - {lesson.virtue}</Text>
-      <Text style={styles.prayer}>{lesson.prayer}</Text>
-      <Text style={styles.quote}>{lesson.quote}</Text>
+      {lesson.prayer ? (
+        <PrayerBlock
+          prayer={lesson.prayer}
+          profile={profile}
+          backgroundColor={themeVariables.neutralLight}
+        />
+      ) : null}
+      {lesson.quote ? (
+        <QuoteBlock
+          quote={lesson.quote}
+          profile={profile}
+        />
+      ) : null}
       <View style={styles.buttonContainer}>
         <ThemedButton title="Back" onPress={onBack} />
       </View>

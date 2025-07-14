@@ -2,7 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
+import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
+import { grade1Lessons } from '../data/grade1';
+import { quoteMap } from '../data/grade2';
+import { quoteMap as quoteMap2b } from '../data/grade2b';
 import ProfileDisplay from '../components/ProfileDisplay';
 
 const HomeScreen = ({
@@ -15,14 +19,31 @@ const HomeScreen = ({
   onGoToLesson,
   currentSet,
   currentLesson,
-  content,
   onProfilePress,
   onAvatarPress,
 }) => {
-  const defaultReferences = [
-    { word: 'love', examples: ['I love my family.', 'Love conquers all.'] },
-    { word: 'heart', examples: ['My heart is joyful.', 'He spoke from the heart.'] },
-  ];
+  // Determine prayer and quote based on grade and progress
+  let prayerToShow = null;
+  let quoteToShow = null;
+  let references = [];
+  if (profile.grade === 1) {
+    const lesson = grade1Lessons.find(l => l.lesson === currentLesson);
+    prayerToShow = lesson?.prayer;
+    quoteToShow = lesson?.quote;
+  } else if (profile.grade === 2) {
+    const key = `${currentSet}-${currentLesson}`;
+    const qObj = quoteMap[key] || {};
+    quoteToShow = qObj.text;
+    references = qObj.references || [];
+  } else if (profile.grade === '2b') {
+    // For grade 2b, set-level prayer is from first lesson of this set (prefix offset 3)
+    const setKey = String(currentSet + 3);
+    prayerToShow = quoteMap2b[`${setKey}-1`]?.prayer;
+    const key = `${setKey}-${currentLesson}`;
+    const qObj = quoteMap2b[key] || {};
+    quoteToShow = qObj.text;
+    references = qObj.references || [];
+  }
 
   console.log('profile: ', profile);
 
@@ -38,9 +59,21 @@ const HomeScreen = ({
         onProfilePress={onProfilePress}
       />
 
-      {/* Quote/Content */}
+      {/* Prayer and Quote Blocks */}
       <View style={styles.contentContainer}>
-        <QuoteBlock quote={content} profile={profile} references={defaultReferences} />
+        {prayerToShow ? (
+          <PrayerBlock
+            prayer={prayerToShow}
+            profile={profile}
+          />
+        ) : null}
+        {quoteToShow ? (
+          <QuoteBlock
+            quote={quoteToShow}
+            profile={profile}
+            references={references}
+          />
+        ) : null}
       </View>
 
       {/* Action Buttons */}
@@ -50,22 +83,10 @@ const HomeScreen = ({
           <Ionicons name="arrow-forward" size={20} color="white" />
         </TouchableOpacity>
 
-        {onSeeClass && (
-          <TouchableOpacity style={styles.customButton} onPress={onSeeClass}>
-            <Text style={styles.customButtonText}>See Class</Text>
-            <Ionicons name="arrow-forward" size={20} color="white" />
-          </TouchableOpacity>
-        )}
-
-          <TouchableOpacity style={styles.customButton} onPress={onGoToSet}>
-            <Text style={styles.customButtonText}>Go to Set</Text>
-            <Ionicons name="arrow-forward" size={20} color="white" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.customButton} onPress={onGoToLesson}>
-            <Text style={styles.customButtonText}>Current Lesson</Text>
-            <Ionicons name="arrow-forward" size={20} color="white" />
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.customButton} onPress={onGoToLesson}>
+          <Text style={styles.customButtonText}>Current Lesson</Text>
+          <Ionicons name="arrow-forward" size={20} color="white" />
+        </TouchableOpacity>
       </View>
     </View>
   );

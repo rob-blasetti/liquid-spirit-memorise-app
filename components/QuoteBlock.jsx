@@ -119,6 +119,7 @@ const QuoteBlock = ({
       source={backgroundImage}
       style={[styles.background, { backgroundColor }]}
     >
+      <Text style={styles.title}>Quote</Text>
       <Text style={styles.quoteText}>
         {tokens.map((part) =>
           part.underline ? (
@@ -184,6 +185,7 @@ const styles = StyleSheet.create({
   background: {
     width: '100%',
     padding: 16,
+    marginVertical: themeVariables.margin,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -236,6 +238,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: themeVariables.primaryColor,
+    textAlign: 'center',
   },
 });
 
