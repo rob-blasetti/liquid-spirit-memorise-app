@@ -481,9 +481,13 @@ import { NavigationContainer } from '@react-navigation/native';
       const backHandler = nav.fromGames ? goGames : goBackToLesson;
       // Props to pass to game component
       const gameProps = { quote: nav.quote, onBack: backHandler };
-      // For Memory Match, award achievement based on difficulty level on win
+      // Award achievements based on game and difficulty level
       if (nav.screen === 'memoryGame') {
         gameProps.onWin = () => awardAchievement(`memory${level}`);
+      } else if (nav.screen === 'shapeBuilderGame') {
+        gameProps.onWin = () => awardAchievement(`shape${level}`);
+      } else if (nav.screen === 'hangmanGame') {
+        gameProps.onWin = () => awardAchievement(`hangman${level}`);
       }
       return (
         <View style={{ flex: 1 }}>

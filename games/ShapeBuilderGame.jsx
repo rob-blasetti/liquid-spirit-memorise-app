@@ -15,7 +15,7 @@ const PIECE_SIZE = 50;
 const SLOT_SIZE = PIECE_SIZE;
 const MARGIN = 10;
 
-const ShapeBuilderGame = ({ quote, onBack }) => {
+const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   // Get current user for personalized messages
   const { user } = useUser();
   // Difficulty settings: number of pieces and pre-completed count from global context
@@ -125,6 +125,7 @@ const ShapeBuilderGame = ({ quote, onBack }) => {
   useEffect(() => {
     if (placedCount === count) {
       setShowReward(true);
+      if (onWin) onWin();
     }
   }, [placedCount, count]);
   // Reset placedCount when difficulty changes
