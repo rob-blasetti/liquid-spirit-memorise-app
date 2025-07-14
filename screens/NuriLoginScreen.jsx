@@ -1,32 +1,25 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
-import { signInWithLiquidSpirit } from '../services/authService';
+import { loginNuriUser } from '../services/authService';
 
-export default function LiquidSpiritLoginScreen({ route }) {
+export default function NuriLoginScreen({ route }) {
   const { onSignIn } = route.params;
-  const [bahaiId, setBahaiId] = useState('');
-  const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     try {
-      const data = await signInWithLiquidSpirit(bahaiId, email, password);
+      const data = await loginNuriUser(email, password);
       onSignIn(data);
     } catch (err) {
-      console.error('Liquid Spirit login failed', err);
+      console.error('Login failed', err);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Liquid Spirit Login</Text>
-      <TextInput
-        placeholder="Bahá'í ID"
-        value={bahaiId}
-        onChangeText={setBahaiId}
-        style={styles.input}
-      />
+      <Text style={styles.heading}>Login</Text>
       <TextInput
         placeholder="Email"
         keyboardType="email-address"
@@ -35,13 +28,13 @@ export default function LiquidSpiritLoginScreen({ route }) {
         style={styles.input}
       />
       <TextInput
-        placeholder="Password or Token (optional)"
+        placeholder="Password"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
         style={styles.input}
       />
-      <Button label="Authenticate" onPress={handleLogin} />
+      <Button label="Login" onPress={handleLogin} />
     </View>
   );
 }

@@ -1,28 +1,35 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
-import { signInWithLiquidSpirit } from '../services/authService';
+import { registerNuriUser } from '../services/authService';
 
-export default function LiquidSpiritLoginScreen({ route }) {
+export default function NuriRegisterScreen({ route }) {
   const { onSignIn } = route.params;
+  const [name, setName] = useState('');
   const [bahaiId, setBahaiId] = useState('');
-  const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     try {
-      const data = await signInWithLiquidSpirit(bahaiId, email, password);
+      const data = await registerNuriUser(name, email, password, bahaiId);
       onSignIn(data);
     } catch (err) {
-      console.error('Liquid Spirit login failed', err);
+      console.error('Register failed', err);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Liquid Spirit Login</Text>
+      <Text style={styles.heading}>Register</Text>
       <TextInput
-        placeholder="Bahá'í ID"
+        placeholder="Name"
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Bahá'í ID (optional)"
         value={bahaiId}
         onChangeText={setBahaiId}
         style={styles.input}
@@ -35,13 +42,13 @@ export default function LiquidSpiritLoginScreen({ route }) {
         style={styles.input}
       />
       <TextInput
-        placeholder="Password or Token (optional)"
+        placeholder="Password"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
         style={styles.input}
       />
-      <Button label="Authenticate" onPress={handleLogin} />
+      <Button label="Register" onPress={handleRegister} />
     </View>
   );
 }

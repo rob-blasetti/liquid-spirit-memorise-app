@@ -6,15 +6,15 @@ import { API_URL } from '../config';
  * @param {string} password - The user's password.
  * @returns {Promise<object>} Authenticated user data.
  */
-export const signInWithLiquidSpirit = async (bahaiId, password) => {
-  console.log('API_URL in authService:', API_URL, 'bahaiId:', bahaiId, 'password', password);
+export const signInWithLiquidSpirit = async (bahaiId, email, password) => {
+  console.log('API_URL in authService:', API_URL, 'bahaiId:', bahaiId, 'email', email);
   try {
     const response = await fetch(`${API_URL}/api/nuri/login-ls`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ identifier: bahaiId, password, type: 'auth' }),
+      body: JSON.stringify({ bahaiId, email, password, type: 'auth' }),
     });
     
     if (!response.ok) {
@@ -88,6 +88,40 @@ export const verifyBahaiEmail = async (bahaiId, email) => {
     return data;
   } catch (e) {
     console.error('Email verification failed', e);
+    throw e;
+  }
+};
+
+// Register a regular Nuri user
+export const registerNuriUser = async (name, email, password, bahaiId) => {
+  try {
+    const response = await fetch(`${API_URL}/api/nuri/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, bahaiId }),
+    });
+    if (!response.ok) throw new Error('Registration failed');
+    const data = await response.json();
+    return data;
+  } catch (e) {
+    console.error('Nuri registration error:', e);
+    throw e;
+  }
+};
+
+// Login an existing Nuri user
+export const loginNuriUser = async (email, password) => {
+  try {
+    const response = await fetch(`${API_URL}/api/nuri/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error('Login failed');
+    const data = await response.json();
+    return data;
+  } catch (e) {
+    console.error('Nuri login error:', e);
     throw e;
   }
 };

@@ -20,3 +20,5 @@ export { default as StartScreen } from './StartScreen';
 export { default as Splash } from './Splash';
 export { default as GamesListScreen } from './GamesListScreen';
 export { default as ClassScreen } from './ClassScreen';
+export { default as NuriRegisterScreen } from './NuriRegisterScreen';
+export { default as NuriLoginScreen } from './NuriLoginScreen';
