@@ -6,9 +6,10 @@ export default function WelcomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Welcome to Nuri</Text>
-      <Button label="Register as Guest" onPress={() => navigation.navigate('GuestRegister1')} />
-      <Button label="Maybe Later" onPress={() => navigation.navigate('GuestLogin')} />
-      <Button label="Login with Liquid Spirit" onPress={() => navigation.navigate('LSLogin')} />
+      <Button label="Continue as Guest" onPress={() => navigation.navigate('GuestLogin')} />
+      <Button label="Register" onPress={() => navigation.navigate('NuriRegister')} />
+      <Button label="Login" onPress={() => navigation.navigate('NuriLogin')} />
+      <Button label="Liquid Spirit" onPress={() => navigation.navigate('LSLogin')} />
     </View>
   );
 }
