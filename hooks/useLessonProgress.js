@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function useLessonProgress(awardAchievement) {
+// Hook for tracking and overriding lesson progress
+// Accepts profile (to derive grade-specific defaults) and awardAchievement callback
+// Hook to track completed lessons and per-profile override progress
+export default function useLessonProgress(profile, awardAchievement) {
   const [completedLessons, setCompletedLessons] = useState({});
-  const [overrideProgress, setOverrideProgress] = useState(null);
+  // Map overrides by profile key in-memory
+  const overrideMap = useRef({});
+  // Current override for active profile
+  const [overrideProgress, setOverrideProgressInternal] = useState(null);
 
+  /**
+   * Mark a lesson complete and award any milestones
+   */
   const completeLesson = (setNumber, lessonNumber) => {
     setCompletedLessons(prev => {
       const lessons = prev[setNumber] || {};
@@ -21,10 +31,61 @@ export default function useLessonProgress(awardAchievement) {
     });
   };
 
+  /**
+   * Compute current progress: override if present, else default by grade
+   */
   const getCurrentProgress = () => {
     if (overrideProgress) return overrideProgress;
-    return { setNumber: 1, lessonNumber: 1 };
+    let defaultSet = 1;
+    const grade = profile && profile.grade;
+    if (grade === '2b') defaultSet = 4;
+    // grades 1 and 2 default to set 1
+    return { setNumber: defaultSet, lessonNumber: 1 };
   };
+
+  /**
+   * Generate storage key per profile
+   */
+  const getProgressKey = () => {
+    if (profile && profile.guest) return 'progress:guest';
+    if (profile && profile._id) return `progress:${profile._id}`;
+    return 'progress:default';
+  };
+
+  /**
+   * Set override for current profile and persist
+   */
+  const setOverrideProgress = async (progress) => {
+    setOverrideProgressInternal(progress);
+    const key = getProgressKey();
+    overrideMap.current[key] = progress;
+    try {
+      if (progress) {
+        await AsyncStorage.setItem(key, JSON.stringify(progress));
+      } else {
+        await AsyncStorage.removeItem(key);
+      }
+    } catch (e) {
+      console.error('Error saving progress override:', e);
+    }
+  };
+
+  // On profile change, load saved override from memory or storage
+  useEffect(() => {
+    const key = getProgressKey();
+    const mem = overrideMap.current[key];
+    if (mem !== undefined) {
+      setOverrideProgressInternal(mem);
+    } else {
+      AsyncStorage.getItem(key)
+        .then(str => {
+          const saved = str ? JSON.parse(str) : null;
+          overrideMap.current[key] = saved;
+          setOverrideProgressInternal(saved);
+        })
+        .catch(e => console.error('Error loading progress override:', e));
+    }
+  }, [profile]);
 
   return {
     completedLessons,

@@ -22,9 +22,11 @@ export const loadGuestProfile = async () => {
 
 export const saveProfile = async (profile) => {
   try {
-    await AsyncStorage.setItem('profile', JSON.stringify(profile));
+    // Store registered and guest profiles separately
     if (profile.guest) {
       await AsyncStorage.setItem('guestProfile', JSON.stringify(profile));
+    } else {
+      await AsyncStorage.setItem('profile', JSON.stringify(profile));
     }
   } catch (e) {
     console.error('Error saving profile:', e);

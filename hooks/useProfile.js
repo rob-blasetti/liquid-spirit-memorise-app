@@ -8,9 +8,11 @@ import {
 } from '../services/profileService';
 
 const initialState = {
-  profile: null,
+  profile: null,       // active profile
   guestProfile: null,
 };
+
+// We keep separate registeredProfile to preserve original non-guest user
 
 function reducer(state, action) {
   switch (action.type) {
@@ -26,6 +28,7 @@ function reducer(state, action) {
 export default function useProfile() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [showSplash, setShowSplash] = useState(true);
+  const [registeredProfile, setRegisteredProfile] = useState(null);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') {
@@ -39,7 +42,10 @@ export default function useProfile() {
   useEffect(() => {
     const fetchProfiles = async () => {
       const prof = await loadProfile();
-      if (prof) dispatch({ type: 'setProfile', payload: prof });
+      if (prof) {
+        setRegisteredProfile(prof);
+        dispatch({ type: 'setProfile', payload: prof });
+      }
       const guest = await loadGuestProfile();
       if (guest) dispatch({ type: 'setGuestProfile', payload: guest });
     };
@@ -47,8 +53,18 @@ export default function useProfile() {
   }, []);
 
   const saveProfile = async (p) => {
+    // If this is a registered user, update registeredProfile storage
+    if (!p.guest) {
+      setRegisteredProfile(p);
+    }
+    // Set active profile
     dispatch({ type: 'setProfile', payload: p });
+    // Persist to appropriate storage
     await persistProfile(p);
+    if (p && p.guest) {
+      // Also update in-memory guestProfile
+      dispatch({ type: 'setGuestProfile', payload: p });
+    }
   };
 
   const wipeProfile = async () => {
@@ -58,7 +74,11 @@ export default function useProfile() {
 
   return {
     showSplash,
+    // active user profile
     profile: state.profile,
+    // the non-guest registered profile
+    registeredProfile,
+    // guest profile
     guestProfile: state.guestProfile,
     setProfile: (p) => dispatch({ type: 'setProfile', payload: p }),
     setGuestProfile: (p) => dispatch({ type: 'setGuestProfile', payload: p }),
@@ -67,6 +87,10 @@ export default function useProfile() {
     deleteGuestAccount: async () => {
       await deleteGuestProfile();
       dispatch({ type: 'setGuestProfile', payload: null });
+      // If active was guest, switch back to registered
+      if (state.profile && state.profile.guest && registeredProfile) {
+        dispatch({ type: 'setProfile', payload: registeredProfile });
+      }
     },
   };
 }

@@ -6,6 +6,7 @@ import { achievements as defaultAchievements } from '../data/achievements';
 
 const ChildSwitcherModal = ({
   visible,
+  registeredProfile,
   guestProfile,
   profile,
   children,
@@ -57,25 +58,36 @@ const ChildSwitcherModal = ({
             <View style={styles.divider} />
           </>
         )}
-        {profile && !profile.guest && (
-          <TouchableOpacity
-            style={styles.childButton}
-            onPress={() => {
-              saveProfile(profile);
-              setUser(profile);
-              setChooseChildVisible(false);
-            }}
-          >
-            {profile.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.childAvatar} />
-            ) : (
-              <Avatar size={40} name={profile.name} variant="beam" />
-            )}
-            <Text style={styles.childText}>
-              {profile.name}{!profile.guest ? ' (Active)' : ''}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {registeredProfile && (() => {
+          const rp = registeredProfile;
+          const displayName = rp.name && rp.name.trim() ? rp.name : rp.username || '';
+          const regAch = rp.achievements || defaultAchievements;
+          const regScore = rp.score || 0;
+          return (
+            <TouchableOpacity
+              style={styles.childButton}
+              onPress={() => {
+                setAchievements(regAch);
+                saveProfile(rp);
+                setUser({
+                  ...rp,
+                  achievements: regAch,
+                  score: regScore,
+                });
+                setChooseChildVisible(false);
+              }}
+            >
+              {rp.avatar ? (
+                <Image source={{ uri: rp.avatar }} style={styles.childAvatar} />
+              ) : (
+                <Avatar size={40} name={displayName} variant="beam" />
+              )}
+              <Text style={styles.childText}>
+                {displayName}{profile && profile._id === rp._id ? ' (Active)' : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })()}
         <FlatList
           data={children}
           keyExtractor={item => {

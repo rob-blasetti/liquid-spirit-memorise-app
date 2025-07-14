@@ -33,6 +33,7 @@ import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
 import useProfile from '../hooks/useProfile';
+import { launchImageLibrary } from 'react-native-image-picker';
 import useAchievements from '../hooks/useAchievements';
 import useLessonProgress from '../hooks/useLessonProgress';
 
@@ -42,15 +43,19 @@ const MainApp = () => {
   const {
     showSplash,
     profile,
+    registeredProfile,
     guestProfile,
     setProfile,
     setGuestProfile,
     saveProfile,
     deleteGuestAccount,
+    // Function to clear current profile and return to welcome screen
+    wipeProfile,
   } = useProfile();
   const { nav, goTo, visitGrade } = useNavigationHandlers();
   const { achievements, notification, setNotification, awardAchievement } = useAchievements(profile, saveProfile);
-  const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(awardAchievement);
+  // Pass profile to lesson progress hook to adjust defaults by grade
+  const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
 
   if (showSplash) return <Splash />;
@@ -97,11 +102,37 @@ const MainApp = () => {
     goTo(gameId, { quote: content, setNumber, lessonNumber, fromGames: true, lessonScreen: nav.screen });
   };
 
+  // Allow user to pick a new avatar image
+  const handleAvatarPress = () => {
+    launchImageLibrary({ mediaType: 'photo', includeBase64: true }, async (response) => {
+      if (response.didCancel || response.errorCode) return;
+      const asset = response.assets && response.assets[0];
+      if (asset) {
+        let avatarUri;
+        if (asset.base64) {
+          const type = asset.type || 'image/jpeg';
+          avatarUri = `data:${type};base64,${asset.base64}`;
+        } else {
+          avatarUri = asset.uri;
+        }
+        const updatedProfile = { ...profile, avatar: avatarUri };
+        await saveProfile(updatedProfile);
+        setProfile(updatedProfile);
+      }
+    });
+  };
+
   const renderScreen = () => {
     if (!profile) {
       return (
         <NavigationContainer>
-          <AuthNavigator onSignIn={() => {}} />
+          {/* onSignIn may receive { user, token } from Nuri auth or a raw profile for guest */}
+          <AuthNavigator onSignIn={(data) => {
+            const newProfile = data && data.user ? data.user : data;
+            saveProfile(newProfile);
+            // After signing in, reset navigation to Home
+            goTo('home');
+          }} />
         </NavigationContainer>
       );
     }
@@ -160,7 +191,8 @@ const MainApp = () => {
             overrideProgress={overrideProgress}
             onSaveOverride={setOverrideProgress}
             onBack={goHome}
-            onReset={() => {}}
+            // Wipe user profile and navigate to Welcome screen
+            onReset={wipeProfile}
             onSaveProfile={saveProfile}
           />
         );
@@ -213,7 +245,10 @@ const MainApp = () => {
             onGoToLesson={() => {}}
             currentSet={setNumber}
             currentLesson={lessonNumber}
+            // Open account modal
             onProfilePress={() => setChooseChildVisible(true)}
+            // Open image picker for avatar change
+            onAvatarPress={handleAvatarPress}
           />
         );
       }
@@ -234,6 +269,7 @@ const MainApp = () => {
       )}
       <ChildSwitcherModal
         visible={chooseChildVisible}
+        registeredProfile={registeredProfile}
         guestProfile={guestProfile}
         profile={profile}
         children={children}
