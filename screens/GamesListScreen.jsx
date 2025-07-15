@@ -110,6 +110,7 @@ export default GamesListScreen;
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    marginBottom: -40,
   },
   container: {
     flex: 1,

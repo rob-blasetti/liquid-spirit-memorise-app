@@ -132,9 +132,11 @@ export default AchievementsScreen;
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    marginBottom: -40,
   },
   container: {
     flex: 1,
+    marginBottom: -40,
   },
   header: {
     paddingTop: 12,

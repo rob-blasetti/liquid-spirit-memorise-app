@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 24,
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 40,
   },
   customButton: {
     flexDirection: 'row',
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   pearlinaImage: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 110,
     left: -40,
     width: 120,
     height: 120,
