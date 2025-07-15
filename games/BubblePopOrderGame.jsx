@@ -125,7 +125,7 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
     <View style={styles.container}>
       <GameTopBar onBack={onBack} iconColor={themeVariables.whiteColor} />
       {/* Remaining wrong taps counter */}
-      <Text style={styles.remaining}>{remainingGuesses}</Text>
+      <Text style={styles.remaining}>Taps left: {remainingGuesses}</Text>
       <Text style={styles.title}>Bubble Pop Order</Text>
       <Text style={styles.description}>Pop the words in the correct order.</Text>
       {bubbles.map((b) =>
@@ -192,11 +192,11 @@ const styles = StyleSheet.create({
   },
   remaining: {
     position: 'absolute',
-    top: 16,
+    top: 96,
     right: 16,
     fontSize: 16,
     fontWeight: 'bold',
-    color: themeVariables.primaryColor,
+    color: themeVariables.whiteColor,
     zIndex: 1,
   },
 });
