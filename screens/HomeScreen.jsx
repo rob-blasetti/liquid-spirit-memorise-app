@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
@@ -76,15 +76,16 @@ const HomeScreen = ({
         ) : null}
       </View>
 
+      {/* Pearlina image positioned bottom-left pointing towards quote */}
+      <Image
+        source={require('../assets/img/pearlina-pointing-right.png')}
+        style={styles.pearlinaImage}
+      />
+
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
         <TouchableOpacity style={styles.customButton} onPress={onDailyChallenge}>
           <Text style={styles.customButtonText}>Daily Challenge</Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.customButton} onPress={onGoToLesson}>
-          <Text style={styles.customButtonText}>Current Lesson</Text>
           <Ionicons name="arrow-forward" size={20} color="white" />
         </TouchableOpacity>
       </View>
@@ -128,6 +129,14 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
     fontSize: 16,
     fontWeight: '500',
+  },
+  pearlinaImage: {
+    position: 'absolute',
+    bottom: 90,
+    left: -40,
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
   },
 });
 

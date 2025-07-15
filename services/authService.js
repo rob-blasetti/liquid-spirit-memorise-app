@@ -7,20 +7,19 @@ import { API_URL } from '../config';
  * @returns {Promise<object>} Authenticated user data.
  */
 export const signInWithLiquidSpirit = async (bahaiId, email, password) => {
-  console.log('API_URL in authService:', API_URL, 'bahaiId:', bahaiId, 'email', email);
   try {
     const response = await fetch(`${API_URL}/api/nuri/login-ls`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ bahaiId, email, password, type: 'auth' }),
+      body: JSON.stringify({ identifier: bahaiId, email, password, type: 'auth' }),
     });
     
     if (!response.ok) {
       throw new Error('Failed to authenticate');
     }
-
+    
     const responseData = await response.json();
     console.log('Fetched auth with LS:', responseData);
     return responseData;
