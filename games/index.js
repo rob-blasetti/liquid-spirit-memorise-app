@@ -6,6 +6,7 @@ export const gameIds = [
   'memoryGame',
   'shapeBuilderGame',
   'hangmanGame',
+  'bubblePopGame',
   // 'practice',
   // 'tapGame',
   // 'scrambleGame',

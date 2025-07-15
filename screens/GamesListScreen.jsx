@@ -39,6 +39,7 @@ const titles = {
   sceneChangeGame: 'Scene Change',
   wordSwapGame: 'Word Swap',
   buildRecallGame: 'Build & Recall',
+  bubblePopGame: 'Bubble Pop Order',
 };
 const iconMap = {
   practice: 'book-outline',
@@ -61,6 +62,7 @@ const iconMap = {
   sceneChangeGame: 'images-outline',
   wordSwapGame: 'swap-horizontal-outline',
   buildRecallGame: 'build-outline',
+  bubblePopGame: 'ellipse-outline',
 };
 
 const GamesListScreen = ({ onSelect }) => (
