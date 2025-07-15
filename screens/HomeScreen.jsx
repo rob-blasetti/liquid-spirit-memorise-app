@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import FastImage from 'react-native-fast-image';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -73,9 +74,10 @@ const HomeScreen = ({
       </View>
 
       {/* Pearlina image positioned bottom-left pointing towards quote */}
-      <Image
+      <FastImage
         source={require('../assets/img/pearlina-pointing-right.png')}
         style={styles.pearlinaImage}
+        resizeMode={FastImage.resizeMode.contain}
       />
 
       {/* Action Buttons */}
@@ -132,7 +134,6 @@ const styles = StyleSheet.create({
     left: -40,
     width: 120,
     height: 120,
-    resizeMode: 'contain',
   },
 });
 

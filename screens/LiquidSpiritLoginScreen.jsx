@@ -3,8 +3,7 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit } from '../services/authService';
 
-export default function LiquidSpiritLoginScreen({ route }) {
-  const { onSignIn } = route.params;
+export default function LiquidSpiritLoginScreen({ onSignIn }) {
   const [bahaiId, setBahaiId] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');

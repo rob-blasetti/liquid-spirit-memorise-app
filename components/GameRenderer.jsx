@@ -13,6 +13,11 @@ const GameRenderer = ({ screen, quote, onBack, level, awardAchievement }) => {
     gameProps.onWin = () => awardAchievement(`shape${level}`);
   } else if (screen === 'hangmanGame') {
     gameProps.onWin = () => awardAchievement(`hangman${level}`);
+  } else if (screen === 'bubblePopOrderGame') {
+    // Award achievement based on bubble pop difficulty
+    gameProps.onWin = () => awardAchievement(`bubble${level}`);
+    // Pass difficulty level to bubble pop game for tap limit
+    gameProps.level = level;
   }
   return (
     <View style={{ flex: 1 }}>

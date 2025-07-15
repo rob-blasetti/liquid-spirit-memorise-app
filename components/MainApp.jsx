@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { SafeAreaView, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, View, Image as RNImage } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -28,6 +28,7 @@ import BottomNav from '../navigation/BottomNav';
 import NotificationBanner from './NotificationBanner';
 import ChildSwitcherModal from './ChildSwitcherModal';
 import GameRenderer from './GameRenderer';
+import FastImage from 'react-native-fast-image';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
@@ -57,6 +58,12 @@ const MainApp = () => {
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
+
+  // Preload Pearlina image for Home screen into FastImage cache
+  useEffect(() => {
+    const asset = RNImage.resolveAssetSource(require('../assets/img/pearlina-pointing-right.png'));
+    FastImage.preload([{ uri: asset.uri }]);
+  }, []);
 
   if (showSplash) return <Splash />;
 

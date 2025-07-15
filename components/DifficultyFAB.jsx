@@ -4,6 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import { useUser } from '../contexts/UserContext';
 import theme from '../styles/theme';
+import themeVariables from '../styles/theme';
 
 const DifficultyFAB = () => {
   const { level, setLevel } = useDifficulty();
@@ -52,12 +53,14 @@ const DifficultyFAB = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 54,
     right: 24,
     alignItems: 'center',
   },
   fab: {
     backgroundColor: theme.primaryColor,
+    borderColor: themeVariables.whiteColor,
+    borderWidth: 1,
     width: 56,
     height: 56,
     borderRadius: 28,

@@ -3,8 +3,7 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { loginNuriUser } from '../services/authService';
 
-export default function NuriLoginScreen({ route }) {
-  const { onSignIn } = route.params;
+export default function NuriLoginScreen({ onSignIn, navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 

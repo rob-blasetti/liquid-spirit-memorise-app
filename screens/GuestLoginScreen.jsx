@@ -6,8 +6,7 @@ import Avatar from '@flipxyz/react-native-boring-avatars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 
-export default function GuestLoginScreen({ route }) {
-  const { onSignIn } = route.params;
+export default function GuestLoginScreen({ onSignIn }) {
   const [displayName, setDisplayName] = useState('');
   const [avatarSeed, setAvatarSeed] = useState(Math.random().toString());
   const [avatarPhoto, setAvatarPhoto] = useState(null);

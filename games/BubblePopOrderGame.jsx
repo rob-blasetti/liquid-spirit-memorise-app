@@ -5,18 +5,48 @@ import themeVariables from '../styles/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BubblePopOrderGame = ({ quote, onBack }) => {
+const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/);
+  // Limit bubbles based on difficulty level
+  const allWords = text.split(/\s+/);
+  const maxBubbles = level === 1 ? 8 : level === 2 ? 16 : 32;
+  const words = allWords.slice(0, maxBubbles);
   const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [bubbles, setBubbles] = useState([]);
+  const [wrongCount, setWrongCount] = useState(0);
+  // Compute remaining wrong taps based on difficulty
+  const wrongLimit = level === 1 ? 5 : level === 2 ? 3 : 1;
+  const remainingGuesses = Math.max(0, wrongLimit - wrongCount);
 
-  // initialize bubbles
+  // initialize bubbles with non-overlapping positions
   useEffect(() => {
+    const placements = [];
     const items = words.map((w, i) => {
-      const startX = Math.random() * (SCREEN_WIDTH - 80);
-      const startY = Math.random() * (SCREEN_HEIGHT / 2) + SCREEN_HEIGHT / 4;
+      // estimate bubble size based on word length
+      const charWidth = 10; const paddingH = 16 * 2;
+      const paddingV = 12 * 2; const fontSize = 18;
+      const wWidth = w.length * charWidth + paddingH;
+      const wHeight = fontSize + paddingV;
+      const radius = Math.max(wWidth, wHeight) / 2;
+      // find non-overlapping position
+      let x, y, cx, cy, tries = 0;
+      do {
+        x = Math.random() * (SCREEN_WIDTH - wWidth);
+        y = Math.random() * (SCREEN_HEIGHT / 2) + SCREEN_HEIGHT / 4;
+        cx = x + wWidth / 2;
+        cy = y + wHeight / 2;
+        tries++;
+        // avoid infinite loop
+        if (tries > 100) break;
+      } while (
+        placements.some(p => {
+          const dx = p.cx - cx;
+          const dy = p.cy - cy;
+          return Math.sqrt(dx * dx + dy * dy) < (p.radius + radius);
+        })
+      );
+      placements.push({ cx, cy, radius });
       const floatAnim = new Animated.Value(0);
       const scale = new Animated.Value(1);
       Animated.loop(
@@ -38,31 +68,52 @@ const BubblePopOrderGame = ({ quote, onBack }) => {
           }),
         ]),
       ).start();
-      return { word: w, id: i, x: startX, y: startY, floatAnim, scale, popped: false };
+      return { word: w, id: i, x, y, floatAnim, scale, popped: false };
     });
     setBubbles(items);
     setIndex(0);
     setMessage('');
-  }, [text]);
+    setWrongCount(0);
+  }, [text, level]);
 
   const handlePress = (id) => {
+    // prevent interaction after win or too many wrong taps
+    const wrongLimit = level === 1 ? 5 : level === 2 ? 3 : 1;
+    if (wrongCount >= wrongLimit || index >= words.length) return;
     setBubbles((prev) => {
       const updated = prev.map((b) => {
-        if (b.id !== id) return b;
-        if (b.popped) return b;
+        if (b.id !== id || b.popped) return b;
         if (b.word === words[index]) {
           Animated.timing(b.scale, { toValue: 0, duration: 200, useNativeDriver: true }).start();
           b.popped = true;
           const next = index + 1;
           setIndex(next);
-          if (next === words.length) setMessage('Great job!');
-          else setMessage('');
+          if (next === words.length) {
+            setMessage('Great job!');
+            if (onWin) {
+              // defer onWin to avoid state updates during render phase
+              setTimeout(() => onWin(), 0);
+            }
+          } else {
+            setMessage('');
+          }
         } else {
+          // wrong tap
           Animated.sequence([
             Animated.timing(b.scale, { toValue: 0.5, duration: 150, useNativeDriver: true }),
             Animated.timing(b.scale, { toValue: 1, duration: 150, useNativeDriver: true }),
           ]).start();
           setMessage('Try again');
+          setWrongCount((prevCount) => {
+            const limit = level === 1 ? 5 : level === 2 ? 3 : 1;
+            const newCount = prevCount + 1;
+            if (newCount >= limit) {
+              setMessage('Game Over');
+              // return to previous screen after a short delay
+              setTimeout(() => onBack(), 1000);
+            }
+            return newCount;
+          });
         }
         return b;
       });
@@ -72,7 +123,9 @@ const BubblePopOrderGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} iconColor={themeVariables.whiteColor} />
+      {/* Remaining wrong taps counter */}
+      <Text style={styles.remaining}>{remainingGuesses}</Text>
       <Text style={styles.title}>Bubble Pop Order</Text>
       <Text style={styles.description}>Pop the words in the correct order.</Text>
       {bubbles.map((b) =>
@@ -101,31 +154,34 @@ const BubblePopOrderGame = ({ quote, onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: themeVariables.primaryColor,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'top',
   },
   title: {
     fontSize: 28,
     marginBottom: 16,
+    marginTop: 16,
     textAlign: 'center',
+    color: themeVariables.whiteColor
   },
   description: {
     fontSize: 16,
     marginBottom: 8,
     textAlign: 'center',
+    color: themeVariables.whiteColor
   },
   bubble: {
     position: 'absolute',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: themeVariables.primaryLightColor,
+    backgroundColor: themeVariables.tertiaryColor,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: themeVariables.primaryColor,
+    borderColor: themeVariables.whiteColor,
   },
   word: {
-    color: themeVariables.primaryColorDark,
+    color: themeVariables.whiteColor,
     fontWeight: 'bold',
     fontSize: 18,
   },
@@ -133,6 +189,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginTop: 12,
+  },
+  remaining: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: themeVariables.primaryColor,
+    zIndex: 1,
   },
 });
 

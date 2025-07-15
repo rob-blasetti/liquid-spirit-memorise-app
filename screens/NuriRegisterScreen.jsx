@@ -4,8 +4,7 @@ import { Button } from 'liquid-spirit-styleguide';
 import { registerNuriUser } from '../services/authService';
 import themeVariables from '../styles/theme';
 
-export default function NuriRegisterScreen({ route }) {
-  const { onSignIn } = route.params;
+export default function NuriRegisterScreen({ onSignIn }) {
   const [username, setUsername] = useState('');
   const [bahaiId, setBahaiId] = useState('');
   const [email, setEmail] = useState('');

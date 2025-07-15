@@ -17,32 +17,21 @@ export default function AuthNavigator({ onSignIn }) {
       headerTitle: ''
     }}>
       {/* Hide header on initial welcome screen */}
-      <Stack.Screen
-        name="Welcome"
-        component={WelcomeScreen}
-        initialParams={{ onSignIn }}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="GuestLogin"
-        component={GuestLoginScreen}
-        initialParams={{ onSignIn }}
-      />
-      <Stack.Screen
-        name="NuriRegister"
-        component={NuriRegisterScreen}
-        initialParams={{ onSignIn }}
-      />
-      <Stack.Screen
-        name="NuriLogin"
-        component={NuriLoginScreen}
-        initialParams={{ onSignIn }}
-      />
-      <Stack.Screen
-        name="LSLogin"
-        component={LiquidSpiritLoginScreen}
-        initialParams={{ onSignIn }}
-      />
+      <Stack.Screen name="Welcome" options={{ headerShown: false }}>
+        {props => <WelcomeScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="GuestLogin">
+        {props => <GuestLoginScreen {...props} onSignIn={onSignIn} />}
+      </Stack.Screen>
+      <Stack.Screen name="NuriRegister">
+        {props => <NuriRegisterScreen {...props} onSignIn={onSignIn} />}
+      </Stack.Screen>
+      <Stack.Screen name="NuriLogin">
+        {props => <NuriLoginScreen {...props} onSignIn={onSignIn} />}
+      </Stack.Screen>
+      <Stack.Screen name="LSLogin">
+        {props => <LiquidSpiritLoginScreen {...props} onSignIn={onSignIn} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }

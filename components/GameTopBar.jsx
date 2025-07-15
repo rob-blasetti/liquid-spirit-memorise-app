@@ -3,13 +3,13 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 
-const GameTopBar = ({ onBack }) => (
+const GameTopBar = ({ onBack, iconColor = themeVariables.primaryColor }) => (
   <View style={styles.container}>
     <TouchableOpacity onPress={onBack} style={styles.iconButton}>
       <Ionicons
         name="chevron-back"
         size={24}
-        color={themeVariables.primaryColor}
+        color={iconColor}
       />
     </TouchableOpacity>
   </View>
