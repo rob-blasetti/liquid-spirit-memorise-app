@@ -1,189 +1,206 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 
-// Map icon name strings to Ionicons names
-const iconMap = {
-  'calendar-check-o': 'calendar',
-  'trophy': 'trophy',
-};
-const AchievementItem = ({ icon, title, description, points, earned }) => (
-  <View style={styles.item}>
-    <Ionicons
-      name={iconMap[icon]}
-      size={32}
-      color={earned ? themeVariables.secondaryColor : '#ccc'}
-    />
-    <View style={styles.itemText}>
-      <Text style={styles.itemTitle}>{title}</Text>
-      <Text style={styles.itemDesc}>{description}</Text>
-    </View>
-    <View style={styles.pointsContainer}>
-      <Text style={styles.pointsText}>{points}</Text>
-      <Ionicons
-        name="star"
-        size={24}
-        color={earned ? themeVariables.secondaryColor : '#ccc'}
-      />
-    </View>
-  </View>
-);
+const { width } = Dimensions.get('window');
+const HORIZONTAL_PADDING = 16;
+const CARD_HEIGHT = 120;
+// Customize these two colors to match your design
+const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 
-const AchievementsScreen = ({ achievements, highlightId }) => {
-  const scrollRef = useRef();
-  const offsetMap = useRef({});
+const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer'];
 
-  useEffect(() => {
-    if (highlightId && scrollRef.current && offsetMap.current[highlightId] != null) {
-      scrollRef.current.scrollTo({ y: offsetMap.current[highlightId] - 64, animated: true });
-    }
-  }, [highlightId]);
-  // Show all achievements (including those with prerequisites), greyed out if not yet earned
-  const visible = achievements;
-  // Group achievements into categories based on id prefix
-  const grouped = visible.reduce((acc, ach) => {
-    let category = 'Other';
-    if (ach.id === 'daily') category = 'Daily Challenge';
-    else if (ach.id.startsWith('streak')) category = 'Streaks';
-    else if (ach.id.startsWith('set')) category = 'Sets';
-    else if (ach.id.startsWith('grade')) category = 'Grades';
-    else if (ach.id.startsWith('prayer')) category = 'Prayers';
-    else if (ach.id.startsWith('quote')) category = 'Quotes';
-    else if (ach.id.startsWith('practice')) category = 'Practice';
-    else if (
+const AchievementsScreen = ({ achievements = [] }) => {
+  // Group achievements into categories based on id prefixes
+  const grouped = achievements.reduce((acc, ach) => {
+    let category = '';
+    if (ach.id.startsWith('prayer')) {
+      category = 'Prayers';
+    } else if (ach.id.startsWith('quote')) {
+      category = 'Quotes';
+    } else if (
       ach.id.startsWith('game') ||
       ach.id.startsWith('memory') ||
+      ach.id.startsWith('tap') ||
+      ach.id.startsWith('fill') ||
       ach.id.startsWith('shape') ||
       ach.id.startsWith('hangman') ||
-      ach.id === 'tapPerfect'
-    )
+      ach.id.startsWith('color') ||
+      ach.id.startsWith('rhythm') ||
+      ach.id.startsWith('silhouette') ||
+      ach.id.startsWith('scene') ||
+      ach.id.startsWith('word') ||
+      ach.id.startsWith('build')
+    ) {
       category = 'Games';
-    else if (ach.id === 'profile') category = 'Profile';
-    else if (ach.id === 'explorer') category = 'Explorer';
+    } else if (ach.id === 'profile') {
+      category = 'Profile';
+    } else if (ach.id === 'explorer') {
+      category = 'Explorer';
+    } else {
+      return acc;
+    }
     acc[category] = acc[category] || [];
     acc[category].push(ach);
     return acc;
   }, {});
-  // Define display order for categories
-  const order = ['Daily Challenge', 'Streaks', 'Sets', 'Grades', 'Prayers', 'Quotes', 'Practice', 'Games', 'Profile', 'Explorer', 'Other'];
+
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>Achievements</Text>
-      </View>
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {order.map((section) => {
-          const items = grouped[section];
-          if (!items) return null;
-          return (
-            <View key={section} style={styles.section}>
-              <Text style={styles.sectionHeader}>{section}</Text>
-              {items.map((ach) => (
-                <View
-                  key={ach.id}
-                  onLayout={e => { offsetMap.current[ach.id] = e.nativeEvent.layout.y; }}
-                  style={[
-                    styles.item,
-                    highlightId === ach.id && styles.highlight,
-                  ]}
+    <LinearGradient
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      colors={[themeVariables.gradientStart, themeVariables.gradientEnd]}
+      style={styles.background}
+    >
+      <SafeAreaView style={styles.container}>
+
+        {/* Header with subtle background burst */}
+        <View style={styles.header}>
+          <Ionicons
+            name="star-outline"
+            size={96}
+            color="rgba(255,255,255,0.1)"
+            style={styles.headerBgIcon}
+          />
+          <Text style={styles.title}>Achievements</Text>
+        </View>
+
+        {/* Achievement Cards */}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {order.flatMap((section) => {
+            const items = grouped[section] || [];
+            return items.map((item) => {
+              const pct = Math.max(0, Math.min(100, item.points));
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.cardWrapper}
+                  activeOpacity={0.7}
                 >
-                  <AchievementItem
-                    icon={ach.icon}
-                    title={ach.title}
-                    description={ach.description}
-                    points={ach.points}
-                    earned={ach.earned}
-                  />
-                </View>
-              ))}
-            </View>
-          );
-        })}
-      </ScrollView>
-      {/* Mark Daily Challenge button removed */}
-    </View>
+                  <LinearGradient
+                    colors={CARD_GRADIENT}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.card}
+                  >
+                    <View style={styles.cardText}>
+                      <Text style={styles.cardTitle}>{item.title}</Text>
+                      <Text style={styles.cardDesc}>{item.description}</Text>
+                    </View>
+
+                    <Ionicons
+                      name={item.earned ? 'star' : 'star-outline'}
+                      size={32}
+                      color={themeVariables.whiteColor}
+                      style={styles.cardIcon}
+                    />
+
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${pct}%` },
+                        ]}
+                      />
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              );
+            });
+          })}
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
+export default AchievementsScreen;
+
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    alignSelf: 'stretch',
-    paddingHorizontal: 16,
-    backgroundColor: themeVariables.darkGreyColor,
+  },
+  header: {
+    paddingTop: 12,
+    paddingBottom: 16,
+    paddingHorizontal: HORIZONTAL_PADDING,
+    position: 'relative',
+  },
+  headerBgIcon: {
+    position: 'absolute',
+    top: -20,
+    left: -10,
   },
   title: {
+    color: themeVariables.whiteColor,
     fontSize: 24,
+    fontWeight: '700',
   },
-  headerContainer: {
-    paddingTop: 12,
-    paddingBottom: 6,
-    alignItems: 'center',
+  content: {
+    paddingBottom: 24,
+    paddingHorizontal: HORIZONTAL_PADDING,
   },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 6,
-    width: '100%',
+  cardWrapper: {
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
   },
-  itemText: {
-    marginLeft: 12,
-    flex: 1,
+  card: {
+    height: CARD_HEIGHT,
+    borderRadius: themeVariables.borderRadiusPill,
+    overflow: 'hidden',
   },
-  itemTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  cardText: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
   },
-  itemDesc: {
-    fontSize: 14,
-    color: '#666',
-  },
-  // Deprecated: use pointsContainer and pointsText instead
-  itemPoints: {
-    fontSize: 12,
-    color: '#333',
-  },
-  pointsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 50,
-    marginRight: 16,
-  },
-  pointsText: {
-    fontSize: 12,
-    color: '#333',
-    marginBottom: 4,
-    fontWeight: 'bold',
-  },
-  scrollView: {
-    flex: 1,
-    alignSelf: 'stretch',
-  },
-  scrollContent: {
-    paddingVertical: 6,
-  },
-  section: {
-    marginBottom: 12,
-  },
-  sectionHeader: {
+  cardTitle: {
+    color: themeVariables.whiteColor,
     fontSize: 20,
-    fontWeight: 'bold',
-    /* align with container's horizontal padding */
-    paddingTop: 6,
-    paddingBottom: 2,
+    fontWeight: '500',
   },
-  // Highlighted achievement
-  highlight: {
-    backgroundColor: themeVariables.neutralLight,
-    borderColor: themeVariables.primaryColor,
-    borderWidth: 2,
-    borderRadius: 8,
+  cardDesc: {
+    color: themeVariables.whiteColor,
+    fontSize: 16,
+    marginTop: 4,
+  },
+  cardIcon: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+  },
+  progressTrack: {
+    position: 'absolute',
+    bottom: 12,
+    left: 16,
+    right: 16,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: themeVariables.whiteColor,
   },
 });
-
-export default AchievementsScreen;

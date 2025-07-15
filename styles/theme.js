@@ -14,6 +14,9 @@ const themeVariables = {
     primaryColor: '#312783', // This references blueColor, so we replace it
     primaryLightColor: '#3578a8', // Adjust this manually to be lighter blue
     primaryLighterColor: '#5b9ac8', // Even lighter blue
+    // Gradient defaults for screens (e.g., background gradients)
+    gradientStart: '#312783',       // dark blue, same as primaryColor
+    gradientEnd: '#3578a8',         // lighter blue, same as primaryLightColor
     
     secondaryColor: '#58db33',
     secondaryLightColor: '#72e457', // Adjust this manually to be lighter green
