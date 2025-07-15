@@ -254,17 +254,10 @@ const MainApp = () => {
           <HomeScreen
             profile={profile}
             achievements={achievements}
-            content={content}
             onDailyChallenge={handleDailyChallenge}
-            onTestMemory={() => goTo('memoryGame', { quote: content })}
-            onSeeClass={() => goTo('class')}
-            onGoToSet={() => {}}
-            onGoToLesson={() => {}}
             currentSet={setNumber}
             currentLesson={lessonNumber}
-            // Open account modal
             onProfilePress={() => setChooseChildVisible(true)}
-            // Open image picker for avatar change
             onAvatarPress={handleAvatarPress}
           />
         );
@@ -297,15 +290,17 @@ const MainApp = () => {
         deleteGuestAccount={deleteGuestAccount}
       />
       <View style={styles.container}>{renderScreen()}</View>
-      <BottomNav
-        goHome={goHome}
-        goGrades={() => goTo('grades')}
-        goClass={() => goTo('class')}
-        goGames={() => goTo('games')}
-        goAchievements={() => goTo('achievements')}
-        goSettings={() => goTo('settings')}
-        activeScreen={nav.screen}
-      />
+      {profile && (
+        <BottomNav
+          goHome={goHome}
+          goGrades={() => goTo('grades')}
+          goClass={() => goTo('class')}
+          goGames={() => goTo('games')}
+          goAchievements={() => goTo('achievements')}
+          goSettings={() => goTo('settings')}
+          activeScreen={nav.screen}
+        />
+      )}
     </SafeAreaView>
   );
 };
