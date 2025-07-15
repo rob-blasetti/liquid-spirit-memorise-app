@@ -229,17 +229,17 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
         {String(profile.grade) === '2' && renderGrade2Settings()}
         {String(profile.grade) === '2b' && renderGrade2bSettings()}
 
+        {renderVoiceOptions()}
+        
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.itemWrapper}>
-            <TouchableOpacity style={[styles.item, styles.accountItem]} onPress={onReset}>
-              <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
-              <Text style={[styles.itemText, styles.accountText]}>Wipe User Details</Text>
+            <TouchableOpacity style={[styles.item]} onPress={onReset}>
+              <Ionicons name="log-out-outline" size={20} color={themeVariables.redColor} style={styles.accountIcon} />
+              <Text style={[styles.itemText, styles.accountText]}>Logout</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {renderVoiceOptions()}
       </ScrollView>
     </SafeAreaView>
   );
