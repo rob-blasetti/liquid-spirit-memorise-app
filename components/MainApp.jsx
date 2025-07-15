@@ -149,7 +149,7 @@ const MainApp = () => {
         </NavigationContainer>
       );
     }
-    if (['practice', 'tapGame', 'scrambleGame', 'nextWordGame', 'memoryGame', 'flashGame', 'revealGame', 'firstLetterGame', 'letterScrambleGame', 'fastTypeGame', 'hangmanGame', 'fillBlankGame', 'shapeBuilderGame', 'colorSwitchGame', 'rhythmRepeatGame', 'silhouetteSearchGame', 'memoryMazeGame', 'sceneChangeGame', 'wordSwapGame', 'buildRecallGame'].includes(nav.screen)) {
+    if (['practice', 'tapGame', 'scrambleGame', 'nextWordGame', 'memoryGame', 'flashGame', 'revealGame', 'firstLetterGame', 'letterScrambleGame', 'fastTypeGame', 'hangmanGame', 'fillBlankGame', 'shapeBuilderGame', 'colorSwitchGame', 'rhythmRepeatGame', 'silhouetteSearchGame', 'memoryMazeGame', 'sceneChangeGame', 'wordSwapGame', 'buildRecallGame', 'bubblePopOrderGame'].includes(nav.screen)) {
       const backHandler = nav.fromGames ? goHome : goBackToLesson;
       return <GameRenderer screen={nav.screen} quote={nav.quote} onBack={backHandler} level={level} awardAchievement={awardAchievement} />;
     }
