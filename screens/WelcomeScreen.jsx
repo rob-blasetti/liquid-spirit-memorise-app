@@ -25,6 +25,7 @@ export default function WelcomeScreen({ navigation }) {
 
       {/* Custom LS Sign-In Button to embed logo */}
       <TouchableOpacity
+        label="Liquid Spirit"
         style={[styles.fullWidthButton]}
         onPress={() => navigation.navigate('LSLogin')}
         activeOpacity={0.8}

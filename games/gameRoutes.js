@@ -18,6 +18,7 @@ import MemoryMazeGame from './MemoryMazeGame';
 import SceneChangeGame from './SceneChangeGame';
 import WordSwapGame from './WordSwapGame';
 import BuildRecallGame from './BuildRecallGame';
+import BubblePopOrderGame from './BubblePopOrderGame';
 
 export const gameScreens = {
   practice: QuotePracticeScreen,
@@ -40,4 +41,5 @@ export const gameScreens = {
   sceneChangeGame: SceneChangeGame,
   wordSwapGame: WordSwapGame,
   buildRecallGame: BuildRecallGame,
+  bubblePopGame: BubblePopOrderGame,
 };
