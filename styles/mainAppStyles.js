@@ -46,22 +46,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomNav: {
+    position: 'absolute',
+    bottom: 20,              // float up off the bottom edge
+    left: 20,
+    right: 20,
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
+    backgroundColor: theme.bottomNavBg, // e.g. '#4B2770'
+    borderRadius: 30,        // nice pill shape
     paddingVertical: 8,
-    backgroundColor: theme.primaryColor
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    // optional shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    // optional elevation for Android
+    elevation: 5,
   },
   navItem: {
-    alignItems: 'center',
     flex: 1,
+    alignItems: 'center',
+  },
+  navIcon: {
+    marginBottom: 2,
   },
   navText: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 11,
     color: theme.whiteColor,
+    opacity: 0.6,            // default dimmed
+  },
+  navTextActive: {
+    opacity: 1,              // full‑bright
+    borderBottomWidth: 2,
+    borderBottomColor: theme.whiteColor,
+    paddingBottom: 2,
   },
   profileContainer: {
     flexDirection: 'row',

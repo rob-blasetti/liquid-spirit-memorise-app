@@ -54,6 +54,8 @@ const themeVariables = {
     alertErrorBg: '#e52f2f',
     alertWarningBg: '#ffcc00', // Assuming a standard warning color
     alertTextColor: '#ffffff',
+
+    bottomNavBg: '#4B2770',
     
     fontFamily: "'Noto Sans', sans-serif",
     

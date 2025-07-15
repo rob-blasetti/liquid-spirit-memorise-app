@@ -23,6 +23,9 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     overrideProgress?.lessonNumber ?? currentProgress.lessonNumber
   );
   const [selectedVoice, setSelectedVoice] = useState(profile?.ttsVoice ?? null);
+  // For grade-1 slider bubble positioning
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const [bubbleLayout, setBubbleLayout] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (String(profile?.grade) === '2') {
@@ -89,21 +92,63 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     const lessonNumbers = grade1Lessons.map(l => l.lesson);
     const minLesson = Math.min(...lessonNumbers);
     const maxLesson = Math.max(...lessonNumbers);
+    // Calculate bubble position
+    const range = maxLesson - minLesson;
+    const bubbleRatio = range > 0 ? (selectedLesson - minLesson) / range : 0.5;
+    const rawLeft = sliderWidth * bubbleRatio - bubbleLayout.width / 2;
+    const bubbleLeft = sliderWidth
+      ? Math.min(Math.max(rawLeft, 0), sliderWidth - bubbleLayout.width)
+      : 0;
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Lesson</Text>
-        <Text style={styles.sliderValue}>{selectedLesson}</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={minLesson}
-          maximumValue={maxLesson}
-          step={1}
-          value={selectedLesson}
-          minimumTrackTintColor={themeVariables.tertiaryColor}
-          maximumTrackTintColor={themeVariables.neutralDark}
-          thumbTintColor={themeVariables.whiteColor}
-          onValueChange={val => setSelectedLesson(val)}
-        />
+        <View
+          style={styles.sliderContainer}
+          onLayout={({ nativeEvent }) =>
+            setSliderWidth(nativeEvent.layout.width)
+          }
+        >
+          {/* Bubble container with pointer */}
+          <View
+            style={[styles.sliderBubbleContainer, { left: bubbleLeft }]}
+          >
+            {/* Bubble rectangle */}
+            <View
+              style={styles.sliderBubble}
+              onLayout={({ nativeEvent }) =>
+                setBubbleLayout({
+                  width: nativeEvent.layout.width,
+                  height: nativeEvent.layout.height,
+                })
+              }
+            >
+              <Text style={styles.sliderBubbleText}>{selectedLesson}</Text>
+            </View>
+            {/* Pointer triangle */}
+            <View style={styles.sliderBubbleTriangle} />
+          </View>
+          {/* Slider and min/max labels positioned below bubble */}
+          <View
+            style={[
+              styles.sliderRow,
+              { marginTop: bubbleLayout.height + 16 },
+            ]}
+          >
+            <Text style={styles.sliderMinMax}>{minLesson}</Text>
+            <Slider
+              style={styles.sliderFlex}
+              minimumValue={minLesson}
+              maximumValue={maxLesson}
+              step={1}
+              value={selectedLesson}
+              minimumTrackTintColor={themeVariables.tertiaryColor}
+              maximumTrackTintColor={themeVariables.neutralDark}
+              thumbTintColor={themeVariables.whiteColor}
+              onValueChange={val => setSelectedLesson(val)}
+            />
+            <Text style={styles.sliderMinMax}>{maxLesson}</Text>
+          </View>
+        </View>
       </View>
     );
   };
@@ -300,16 +345,75 @@ const styles = StyleSheet.create({
   segmentOptionSelected: {
     backgroundColor: themeVariables.tertiaryColor,
   },
+  // Display selected slider value inside a pink circular background
   sliderValue: {
+    backgroundColor: themeVariables.tertiaryColor,
     color: themeVariables.whiteColor,
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
     marginBottom: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    alignSelf: 'center',
+  },
+  // Slider track styling (height only; width flexes)
+  slider: {
+    height: 40,
+  },
+  // Container for slider and its min/max labels
+  sliderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  // Label for slider min and max values
+  sliderMinMax: {
+    color: themeVariables.whiteColor,
+    fontSize: 14,
+    width: 24,
+    textAlign: 'center',
+  },
+  // Flex style for slider within row
+  sliderFlex: {
+    flex: 1,
+    height: 40,
+  },
+  // Slider container to measure width and position the floating bubble
+  sliderContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  // Container wrapping bubble rectangle and pointer triangle
+  sliderBubbleContainer: {
+    position: 'absolute',
+    top: 0,
+    alignItems: 'center',
+  },
+  // Floating bubble rectangle for the value
+  sliderBubble: {
+    alignItems: 'center',
+    backgroundColor: themeVariables.tertiaryColor,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    overflow: 'visible',
+  },
+  // Text inside the floating bubble
+  sliderBubbleText: {
+    color: themeVariables.whiteColor,
+    fontSize: 14,
+  },
+  // Triangle pointer underneath the bubble
+  sliderBubbleTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: themeVariables.tertiaryColor,
   },
   item: {
     backgroundColor: themeVariables.neutralLight,
