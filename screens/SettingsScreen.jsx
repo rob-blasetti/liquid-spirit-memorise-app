@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import Slider from '@react-native-community/slider';
 import themeVariables from '../styles/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { grade1Lessons } from '../data/grade1';
@@ -46,62 +47,66 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
   if (!profile) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.subtitle}>No profile loaded</Text>
         <Button label="Back" onPress={onBack} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   const renderVoiceOptions = () => (
-    <>
+    <View style={styles.section}>
       <Text style={styles.sectionTitle}>TTS Voice</Text>
       {voiceOptions.map((voice) => (
-        <TouchableOpacity
-          key={voice.value}
-          style={[
-            styles.listItem,
-            selectedVoice === voice.value && styles.listItemSelected,
-          ]}
-          onPress={async () => {
-            await Tts.setDefaultVoice(voice.value);
-            setSelectedVoice(voice.value);
-            // Persist the selected voice in user profile
-            if (onSaveProfile) {
-              onSaveProfile({ ...profile, ttsVoice: voice.value });
-            }
-          }}
-        >
-          <Text
+        <View key={voice.value} style={styles.itemWrapper}>
+          <TouchableOpacity
             style={[
-              styles.listItemText,
-              selectedVoice === voice.value && styles.listItemTextSelected,
+              styles.item,
+              selectedVoice === voice.value && styles.itemSelected,
             ]}
+            onPress={async () => {
+              await Tts.setDefaultVoice(voice.value);
+              setSelectedVoice(voice.value);
+              onSaveProfile?.({ ...profile, ttsVoice: voice.value });
+            }}
           >
-            {voice.label}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.itemText,
+                selectedVoice === voice.value && styles.itemTextSelected,
+              ]}
+            >
+              {voice.label}
+            </Text>
+          </TouchableOpacity>
+        </View>
       ))}
-    </>
+    </View>
   );
 
-  const renderGrade1Settings = () => (
-    <>
-      <Text style={styles.sectionTitle}>Lesson</Text>
-      {grade1Lessons.map(l => (
-        <TouchableOpacity
-          key={l.lesson}
-          style={[styles.listItem, selectedLesson === l.lesson && styles.listItemSelected]}
-          onPress={() => setSelectedLesson(l.lesson)}
-        >
-          <Text style={[styles.listItemText, selectedLesson === l.lesson && styles.listItemTextSelected]}>
-            Lesson {l.lesson}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </>
-  );
+  const renderGrade1Settings = () => {
+    const lessonNumbers = grade1Lessons.map(l => l.lesson);
+    const minLesson = Math.min(...lessonNumbers);
+    const maxLesson = Math.max(...lessonNumbers);
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Lesson</Text>
+        <Text style={styles.sliderValue}>{selectedLesson}</Text>
+        <Slider
+          style={styles.slider}
+          minimumValue={minLesson}
+          maximumValue={maxLesson}
+          step={1}
+          value={selectedLesson}
+          minimumTrackTintColor={themeVariables.tertiaryColor}
+          maximumTrackTintColor={themeVariables.neutralDark}
+          thumbTintColor={themeVariables.whiteColor}
+          onValueChange={val => setSelectedLesson(val)}
+        />
+      </View>
+    );
+  };
 
   const renderGrade2Settings = () => {
     const lessons = Object.keys(quoteMap)
@@ -110,36 +115,55 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       .sort((a, b) => a - b);
 
     return (
-      <>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Set</Text>
-        {[1, 2, 3].map(setNum => (
-          <TouchableOpacity
-            key={setNum}
-            style={[styles.listItem, selectedSet === setNum && styles.listItemSelected]}
-            onPress={() => setSelectedSet(setNum)}
-          >
-            <Text style={[styles.listItemText, selectedSet === setNum && styles.listItemTextSelected]}>
-              Set {setNum}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.segmentContainer}>
+          {[1, 2, 3].map(setNum => (
+            <TouchableOpacity
+              key={setNum}
+              style={[
+                styles.segmentOption,
+                selectedSet === setNum && styles.segmentOptionSelected,
+              ]}
+              onPress={() => setSelectedSet(setNum)}
+            >
+              <Text
+                style={[
+                  styles.itemText,
+                  selectedSet === setNum && styles.itemTextSelected,
+                ]}
+              >
+                {setNum}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <Text style={styles.sectionTitle}>Lesson</Text>
-        {lessons.map(ln => (
-          <TouchableOpacity
-            key={ln}
-            style={[styles.listItem, selectedLesson === ln && styles.listItemSelected]}
-            onPress={() => setSelectedLesson(ln)}
-          >
-            <Text style={[styles.listItemText, selectedLesson === ln && styles.listItemTextSelected]}>
-              Lesson {ln}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </>
+        <View style={styles.segmentContainer}>
+          {lessons.map(ln => (
+            <TouchableOpacity
+              key={ln}
+              style={[
+                styles.segmentOption,
+                selectedLesson === ln && styles.segmentOptionSelected,
+              ]}
+              onPress={() => setSelectedLesson(ln)}
+            >
+              <Text
+                style={[
+                  styles.itemText,
+                  selectedLesson === ln && styles.itemTextSelected,
+                ]}
+              >
+                {ln}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
     );
   };
-  
-  // Settings for Grade 2b (Book 3-2): Sets 4-7 and lessons per data/grade2b
+
   const renderGrade2bSettings = () => {
     const lessons = Object.keys(quoteMap2b)
       .filter(key => key.startsWith(`${selectedSet}-`))
@@ -147,104 +171,167 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       .sort((a, b) => a - b);
 
     return (
-      <>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Set</Text>
-        {[4, 5, 6, 7].map(setNum => (
-          <TouchableOpacity
-            key={setNum}
-            style={[styles.listItem, selectedSet === setNum && styles.listItemSelected]}
-            onPress={() => setSelectedSet(setNum)}
-          >
-            <Text style={[styles.listItemText, selectedSet === setNum && styles.listItemTextSelected]}>
-              Set {setNum}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.segmentContainer}>
+          {[4, 5, 6, 7].map(setNum => (
+            <TouchableOpacity
+              key={setNum}
+              style={[
+                styles.segmentOption,
+                selectedSet === setNum && styles.segmentOptionSelected,
+              ]}
+              onPress={() => setSelectedSet(setNum)}
+            >
+              <Text
+                style={[
+                  styles.itemText,
+                  selectedSet === setNum && styles.itemTextSelected,
+                ]}
+              >
+                {setNum}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <Text style={styles.sectionTitle}>Lesson</Text>
-        {lessons.map(ln => (
-          <TouchableOpacity
-            key={ln}
-            style={[styles.listItem, selectedLesson === ln && styles.listItemSelected]}
-            onPress={() => setSelectedLesson(ln)}
-          >
-            <Text style={[styles.listItemText, selectedLesson === ln && styles.listItemTextSelected]}>
-              Lesson {ln}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </>
+        <View style={styles.segmentContainer}>
+          {lessons.map(ln => (
+            <TouchableOpacity
+              key={ln}
+              style={[
+                styles.segmentOption,
+                selectedLesson === ln && styles.segmentOptionSelected,
+              ]}
+              onPress={() => setSelectedLesson(ln)}
+            >
+              <Text
+                style={[
+                  styles.itemText,
+                  selectedLesson === ln && styles.itemTextSelected,
+                ]}
+              >
+                {ln}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
     );
   };
 
   return (
-    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
-      {String(profile.grade) === '1' && renderGrade1Settings()}
-      {String(profile.grade) === '2' && renderGrade2Settings()}
-      {String(profile.grade) === '2b' && renderGrade2bSettings()}
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
+        {String(profile.grade) === '1' && renderGrade1Settings()}
+        {String(profile.grade) === '2' && renderGrade2Settings()}
+        {String(profile.grade) === '2b' && renderGrade2bSettings()}
 
-      <Text style={styles.sectionTitle}>Account</Text>
-      <TouchableOpacity style={[styles.listItem, styles.accountItem]} onPress={onReset}>
-        <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
-        <Text style={[styles.listItemText, styles.accountText]}>Wipe User Details</Text>
-      </TouchableOpacity>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.itemWrapper}>
+            <TouchableOpacity style={[styles.item, styles.accountItem]} onPress={onReset}>
+              <Ionicons name="trash" size={16} color={themeVariables.redColor} style={styles.accountIcon} />
+              <Text style={[styles.itemText, styles.accountText]}>Wipe User Details</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      {renderVoiceOptions()}
-    </ScrollView>
+        {renderVoiceOptions()}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
+export default SettingsScreen;
+
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
   container: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    padding: 16,
-    backgroundColor: themeVariables.darkGreyColor,
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    width: '100%',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
-    color: themeVariables.primaryColor,
-  },
-  listItem: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: themeVariables.whiteColor,
-  },
-  listItemSelected: {
+    flex: 1,
     backgroundColor: themeVariables.primaryColor,
   },
-  listItemText: {
-    fontSize: 16,
-    color: themeVariables.primaryColor,
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
-  listItemTextSelected: {
+  title: {
+    color: themeVariables.whiteColor,
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: themeVariables.whiteColor,
+    opacity: 0.75,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  section: {
+    marginTop: 24,
+  },
+  sectionTitle: {
+    color: themeVariables.whiteColor,
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  itemWrapper: {
+    marginBottom: 12,
+  },
+  segmentContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    backgroundColor: themeVariables.neutralLight,
+    borderRadius: themeVariables.borderRadiusPill,
+    overflow: 'hidden',
+  },
+  segmentOption: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentOptionSelected: {
+    backgroundColor: themeVariables.tertiaryColor,
+  },
+  sliderValue: {
+    color: themeVariables.whiteColor,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+    marginBottom: 12,
+  },
+  item: {
+    backgroundColor: themeVariables.neutralLight,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: themeVariables.borderRadiusPill,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemSelected: {
+    backgroundColor: themeVariables.tertiaryColor,
+  },
+  itemText: {
+    flex: 1,
+    color: themeVariables.darkText,
+    fontSize: 16,
+  },
+  itemTextSelected: {
     color: themeVariables.whiteColor,
   },
   accountItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   accountIcon: {
     marginRight: 12,
@@ -253,5 +340,3 @@ const styles = StyleSheet.create({
     color: themeVariables.redColor,
   },
 });
-
-export default SettingsScreen;
