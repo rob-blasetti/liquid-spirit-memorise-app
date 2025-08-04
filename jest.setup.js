@@ -26,3 +26,8 @@ jest.mock('react-native-tts', () => ({
   speak: jest.fn(),
   stop: jest.fn(),
 }));
+jest.mock('react-native-keychain', () => ({
+  getGenericPassword: jest.fn(() => Promise.resolve(null)),
+  setGenericPassword: jest.fn(() => Promise.resolve()),
+  resetGenericPassword: jest.fn(() => Promise.resolve()),
+}), { virtual: true });

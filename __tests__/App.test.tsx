@@ -9,10 +9,20 @@ jest.mock(
   () => ({
     getItem: jest.fn(() => Promise.resolve(null)),
     setItem: jest.fn(() => Promise.resolve()),
+    getAllKeys: jest.fn(() => Promise.resolve([])),
+    multiGet: jest.fn(() => Promise.resolve([])),
+    removeItem: jest.fn(() => Promise.resolve()),
+    multiRemove: jest.fn(() => Promise.resolve()),
   }),
   { virtual: true },
 );
- jest.mock('react-native-config', () => ({ DEV_API: 'http://localhost' }));
+jest.mock('react-native-config', () => ({ DEV_API: 'http://localhost' }));
+jest.mock('react-native-fast-image', () => {
+  const React = require('react');
+  const FastImage = props => React.createElement('FastImage', props);
+  FastImage.preload = jest.fn();
+  return FastImage;
+}, { virtual: true });
 // Mock external styleguide UI library
 jest.mock('liquid-spirit-styleguide', () => {
   const React = require('react');

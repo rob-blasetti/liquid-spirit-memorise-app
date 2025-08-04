@@ -46,7 +46,7 @@ describe('WelcomeScreen sign in navigation', () => {
       instance = ReactTestRenderer.create(<WelcomeScreen navigation={{ navigate }} />);
     });
     ReactTestRenderer.act(() => {
-      instance.root.findByProps({ label: 'Liquid Spirit' }).props.onPress();
+      instance.root.findByType(require('react-native').TouchableOpacity).props.onPress();
     });
     expect(navigate).toHaveBeenCalledWith('LSLogin');
   });
