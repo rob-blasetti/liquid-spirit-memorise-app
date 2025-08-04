@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, Image } from 'react-native';
-import Avatar from '@flipxyz/react-native-boring-avatars';
+import Avatar from '@liquidspirit/react-native-boring-avatars';
 import styles from '../styles/mainAppStyles';
 import { achievements as defaultAchievements } from '../data/achievements';
 

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { TabView, TabBar } from 'react-native-tab-view';
-import Avatar from '@flipxyz/react-native-boring-avatars';
+import Avatar from '@liquidspirit/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 
 const ClassScreen = ({ childEntries = [], onBack }) => {
