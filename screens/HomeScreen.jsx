@@ -33,8 +33,9 @@ const HomeScreen = ({
     quoteToShow = qObj.text;
     references = qObj.references || [];
   } else if (profile.grade === '2b') {
-    // For grade 2b, set-level prayer is from first lesson of this set (prefix offset 3)
-    const setKey = String(currentSet + 3);
+    // For grade 2b, show prayer and quote based on the current set and lesson
+    const setKey = String(currentSet);
+    // Prayer is stored on the first lesson of each set
     prayerToShow = quoteMap2b[`${setKey}-1`]?.prayer;
     const key = `${setKey}-${currentLesson}`;
     const qObj = quoteMap2b[key] || {};

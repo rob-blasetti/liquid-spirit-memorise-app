@@ -39,7 +39,7 @@ import useAchievements from '../hooks/useAchievements';
 import useLessonProgress from '../hooks/useLessonProgress';
 
 const MainApp = () => {
-  const { classes, children, setUser } = useUser();
+  const { classes, children, setUser, setChildren, setFamily, setToken } = useUser();
   const { level } = useDifficulty();
   const {
     showSplash,
@@ -50,7 +50,6 @@ const MainApp = () => {
     setGuestProfile,
     saveProfile,
     deleteGuestAccount,
-    // Function to clear current profile and return to welcome screen
     wipeProfile,
   } = useProfile();
   const { nav, goTo, visitGrade } = useNavigationHandlers();
@@ -147,10 +146,36 @@ const MainApp = () => {
       return (
         <NavigationContainer>
           {/* onSignIn may receive { user, token } from Nuri auth or a raw profile for guest */}
-          <AuthNavigator onSignIn={(data) => {
-            const newProfile = data && data.user ? data.user : data;
-            saveProfile(newProfile);
-            // After signing in, reset navigation to Home
+        <AuthNavigator onSignIn={(data) => {
+            // data may include { token, user } for registered or LS users, or be a raw guest profile
+            const token = data.token || null;
+            if (token) {
+              setToken(token);
+            }
+            // Determine account-level user object
+            const fullUser = data.user ? data.user : data;
+            setUser(fullUser);
+            // Populate children/family in context
+            if (Array.isArray(fullUser.children)) {
+              setChildren(fullUser.children);
+            } else {
+              setChildren([]);
+            }
+            if (fullUser.family) {
+              setFamily(fullUser.family);
+            }
+            // Determine active learning profile: first child for LS, else self
+            let activeProfile = fullUser;
+            if (Array.isArray(fullUser.children) && fullUser.children.length > 0) {
+              activeProfile = fullUser.children[0];
+            }
+            // Normalize grade: numeric grades to Number, preserve '2b'
+            const gradeVal = activeProfile.grade;
+            const normalizedGrade = gradeVal === '2b' ? '2b' : Number(gradeVal);
+            activeProfile = { ...activeProfile, grade: normalizedGrade };
+            // Persist profile for learning context
+            saveProfile(activeProfile);
+            // Navigate into the app
             goTo('home');
           }} />
         </NavigationContainer>

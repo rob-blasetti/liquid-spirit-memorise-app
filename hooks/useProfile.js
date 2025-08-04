@@ -53,17 +53,22 @@ export default function useProfile() {
   }, []);
 
   const saveProfile = async (p) => {
+    // Normalize grade: numeric grades to Number, preserve '2b'
+    const prof = { ...p };
+    if (prof.grade !== '2b') {
+      prof.grade = Number(prof.grade);
+    }
     // If this is a registered user, update registeredProfile storage
-    if (!p.guest) {
-      setRegisteredProfile(p);
+    if (!prof.guest) {
+      setRegisteredProfile(prof);
     }
     // Set active profile
-    dispatch({ type: 'setProfile', payload: p });
+    dispatch({ type: 'setProfile', payload: prof });
     // Persist to appropriate storage
-    await persistProfile(p);
-    if (p && p.guest) {
+    await persistProfile(prof);
+    if (prof.guest) {
       // Also update in-memory guestProfile
-      dispatch({ type: 'setGuestProfile', payload: p });
+      dispatch({ type: 'setGuestProfile', payload: prof });
     }
   };
 

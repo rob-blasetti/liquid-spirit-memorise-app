@@ -37,16 +37,17 @@ export default function useLessonProgress(profile, awardAchievement) {
   const getCurrentProgress = () => {
     if (overrideProgress) return overrideProgress;
     const grade = profile && profile.grade;
+    const gradeStr = String(grade);
     // Default starting point based on grade
-    if (grade === '1') {
+    if (gradeStr === '1') {
       // Grade 1 has no sets; starts at Lesson 1
       return { lessonNumber: 1 };
     }
-    if (grade === '2') {
+    if (gradeStr === '2') {
       // Grade 2 starts at Set 1, Lesson 1
       return { setNumber: 1, lessonNumber: 1 };
     }
-    if (grade === '2b') {
+    if (gradeStr === '2b') {
       // Grade 2b starts at Set 4, Lesson 1
       return { setNumber: 4, lessonNumber: 1 };
     }
