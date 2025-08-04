@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit } from '../services/authService';
+import { loadCredentials, saveCredentials } from '../services/credentialService';
 
 export default function LiquidSpiritLoginScreen({ onSignIn }) {
   const [bahaiId, setBahaiId] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
 
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      const creds = await loadCredentials();
+      if (creds) {
+        setEmail(creds.email);
+        setPassword(creds.password);
+      }
+    };
+    fetchCredentials();
+  }, []);
+
   const handleLogin = async () => {
     try {
+      await saveCredentials(email, password);
       const data = await signInWithLiquidSpirit(bahaiId, email, password);
       onSignIn(data);
     } catch (err) {
