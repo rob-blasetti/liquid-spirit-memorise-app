@@ -17,18 +17,16 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
 
-  const routes = childEntries.map((entry, i) => ({
-    key: entry.child._id || i.toString(),
-    title: `${entry.child.firstName} ${entry.child.lastName}`,
+  console.log('Child Entries:', childEntries);
+
+  const routes = childEntries.map(entry => ({
+    key: entry._id,
+    title: `${entry.firstName} ${entry.lastName}`,
   }));
 
   const renderScene = ({ route }) => {
-    const entry = childEntries.find(e => (e.child._id || '').toString() === route.key) || {
-      child: {},
-      classes: [],
-    };
-    const { classes = [] } = entry;
-    console.log(classes);
+    const entry = childEntries.find(e => e._id === route.key);
+    const classes = entry?.classes || [];
 
     return (
       <ScrollView style={styles.scene}>
