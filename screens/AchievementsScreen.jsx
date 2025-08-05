@@ -21,6 +21,8 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer'];
 
 const AchievementsScreen = ({ achievements = [] }) => {
+  // compute total points earned (sum of earned achievements)
+  const totalPoints = achievements.reduce((sum, ach) => ach.earned ? sum + ach.points : sum, 0);
   // Group achievements into categories based on id prefixes
   const grouped = achievements.reduce((acc, ach) => {
     let category = '';
@@ -40,8 +42,10 @@ const AchievementsScreen = ({ achievements = [] }) => {
       ach.id.startsWith('silhouette') ||
       ach.id.startsWith('scene') ||
       ach.id.startsWith('word') ||
-      ach.id.startsWith('build')
+      ach.id.startsWith('build') ||
+      ach.id.startsWith('bubble')
     ) {
+      // include bubble pop game achievements
       category = 'Games';
     } else if (ach.id === 'profile') {
       category = 'Profile';
@@ -73,6 +77,8 @@ const AchievementsScreen = ({ achievements = [] }) => {
             style={styles.headerBgIcon}
           />
           <Text style={styles.title}>Achievements</Text>
+          {/* total points earned */}
+          <Text style={styles.totalPoints}>Total Points: {totalPoints}</Text>
         </View>
 
         {/* Achievement Cards */}
@@ -81,7 +87,12 @@ const AchievementsScreen = ({ achievements = [] }) => {
           showsVerticalScrollIndicator={false}
         >
           {order.flatMap((section) => {
-            const items = grouped[section] || [];
+            // group and sort: earned achievements first
+            const rawItems = grouped[section] || [];
+            const items = [
+              ...rawItems.filter(a => a.earned),
+              ...rawItems.filter(a => !a.earned),
+            ];
             return items.map((item) => {
               const pct = Math.max(0, Math.min(100, item.points));
               return (
@@ -116,6 +127,8 @@ const AchievementsScreen = ({ achievements = [] }) => {
                         ]}
                       />
                     </View>
+                    {/* points value */}
+                    <Text style={styles.cardPoints}>{item.points}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               );
@@ -175,6 +188,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     left: 16,
+    right: 64, // space for the icon on the right
   },
   cardTitle: {
     color: themeVariables.whiteColor,
@@ -204,5 +218,22 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: themeVariables.whiteColor,
+  },
+  // points badge on each card
+  cardPoints: {
+    position: 'absolute',
+    bottom: 20,
+    right: 16,
+    color: themeVariables.whiteColor,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  // total points at header
+  totalPoints: {
+    color: themeVariables.whiteColor,
+    fontSize: 18,
+    fontWeight: '500',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

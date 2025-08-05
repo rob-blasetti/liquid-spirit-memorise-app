@@ -13,8 +13,7 @@ const ProfileDisplay = ({
   onAvatarPress,
   onProfilePress,
 }) => {
-  const totalPoints = achievements ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0) : 0;
-  const { firstName, lastName, username } = profile;
+  const { firstName, lastName, username, totalPoints } = profile;
   const fullName = [ firstName, lastName ]
     .filter(part => typeof part === 'string' && part.trim().length > 0)
     .join(' ');
