@@ -73,10 +73,12 @@ const MainApp = () => {
   const goGrade3 = () => { visitGrade(3, {}, () => {}, awardAchievement); goTo('grade3'); };
   const goGrade4 = () => { visitGrade(4, {}, () => {}, awardAchievement); goTo('grade4'); };
   const goGrade2Set = (setNumber) => goTo('grade2Set', { setNumber });
-  const goGrade2Lesson = (lessonNumber) => goTo('grade2Lesson', { ...nav, lessonNumber });
+  // Navigate to a specific Grade 2 lesson, preserving the current setNumber
+  const goGrade2Lesson = (lessonNumber) => goTo('grade2Lesson', { setNumber: nav.setNumber, lessonNumber });
   const goGrade2b = () => { visitGrade(2, {}, () => {}, awardAchievement); goTo('grade2b'); };
   const goGrade2bSet = (setNumber) => goTo('grade2bSet', { setNumber });
-  const goGrade2bLesson = (lessonNumber) => goTo('grade2bLesson', { ...nav, lessonNumber });
+  // Navigate to a specific Grade 2b lesson, preserving the current setNumber
+  const goGrade2bLesson = (lessonNumber) => goTo('grade2bLesson', { setNumber: nav.setNumber, lessonNumber });
 
   const goBackToGrade2Set = () => goTo('grade2Set', { setNumber: nav.setNumber });
   const goBackToGrade2bSet = () => goTo('grade2bSet', { setNumber: nav.setNumber });
@@ -187,7 +189,12 @@ const MainApp = () => {
     }
     switch (nav.screen) {
       case 'grade1':
-        return <Grade1SetScreen onBack={goHome} onLessonSelect={goTo.bind(null, 'grade1Lesson')} />;
+        return (
+          <Grade1SetScreen
+            onBack={goHome}
+            onLessonSelect={lessonNumber => goTo('grade1Lesson', { lessonNumber })}
+          />
+        );
       case 'grade1Lesson':
         return <Grade1LessonScreen lessonNumber={nav.lessonNumber} onBack={() => goTo('grade1')} />;
       case 'grade2Lesson':

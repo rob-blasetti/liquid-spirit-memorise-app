@@ -24,7 +24,6 @@ function reducer(state, action) {
       return state;
   }
 }
-
 export default function useProfile() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [showSplash, setShowSplash] = useState(true);
@@ -114,3 +113,4 @@ export default function useProfile() {
     },
   };
 }
+export { useProfile };
