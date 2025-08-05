@@ -6,7 +6,6 @@ import themeVariables from '../styles/theme';
 
 export default function NuriRegisterScreen({ onSignIn }) {
   const [username, setUsername] = useState('');
-  const [bahaiId, setBahaiId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [grade, setGrade] = useState('');
@@ -20,7 +19,7 @@ export default function NuriRegisterScreen({ onSignIn }) {
     setError('');
     setLoading(true);
     try {
-      const data = await registerNuriUser(username, email, password, bahaiId, selectedGrade);
+      const data = await registerNuriUser(username, email, password, selectedGrade);
       onSignIn(data);
     } catch (err) {
       console.error('Register failed', err);
@@ -37,12 +36,6 @@ export default function NuriRegisterScreen({ onSignIn }) {
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Bahá'í ID (optional)"
-        value={bahaiId}
-        onChangeText={setBahaiId}
         style={styles.input}
       />
       <TextInput

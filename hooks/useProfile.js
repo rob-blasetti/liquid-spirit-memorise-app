@@ -39,15 +39,25 @@ export default function useProfile() {
     return () => clearTimeout(timeout);
   }, []);
 
+  // On mount, load stored profile (registered or guest) and set active profile accordingly
   useEffect(() => {
     const fetchProfiles = async () => {
+      // Try loading a registered profile
       const prof = await loadProfile();
       if (prof) {
         setRegisteredProfile(prof);
         dispatch({ type: 'setProfile', payload: prof });
       }
+      // Try loading a guest profile
       const guest = await loadGuestProfile();
-      if (guest) dispatch({ type: 'setGuestProfile', payload: guest });
+      if (guest) {
+        // store guestProfile in state
+        dispatch({ type: 'setGuestProfile', payload: guest });
+        // if no registered profile, make guest the active profile
+        if (!prof) {
+          dispatch({ type: 'setProfile', payload: guest });
+        }
+      }
     };
     fetchProfiles();
   }, []);
@@ -90,11 +100,16 @@ export default function useProfile() {
     saveProfile,
     wipeProfile,
     deleteGuestAccount: async () => {
+      // Remove guest profile from storage and state
       await deleteGuestProfile();
       dispatch({ type: 'setGuestProfile', payload: null });
-      // If active was guest, switch back to registered
-      if (state.profile && state.profile.guest && registeredProfile) {
-        dispatch({ type: 'setProfile', payload: registeredProfile });
+      // If the active profile was a guest, switch back to registered or clear
+      if (state.profile && state.profile.guest) {
+        if (registeredProfile) {
+          dispatch({ type: 'setProfile', payload: registeredProfile });
+        } else {
+          dispatch({ type: 'setProfile', payload: null });
+        }
       }
     },
   };

@@ -230,16 +230,22 @@ const MainApp = () => {
         return <GamesListScreen onSelect={playSelectedGame} />;
       case 'settings':
         return (
-          <SettingsScreen
-            profile={profile}
-            currentProgress={getCurrentProgress()}
-            overrideProgress={overrideProgress}
-            onSaveOverride={setOverrideProgress}
-            onBack={goHome}
-            // Wipe user profile and navigate to Welcome screen
-            onReset={wipeProfile}
-            onSaveProfile={saveProfile}
-          />
+        <SettingsScreen
+          profile={profile}
+          currentProgress={getCurrentProgress()}
+          overrideProgress={overrideProgress}
+          onSaveOverride={setOverrideProgress}
+          onBack={goHome}
+          // Logout: clear guest or registered profile appropriately
+          onReset={() => {
+            if (profile?.guest) {
+              deleteGuestAccount();
+            } else {
+              wipeProfile();
+            }
+          }}
+          onSaveProfile={saveProfile}
+        />
         );
       case 'class':
         return <ClassScreen childEntries={children || []} onBack={goHome} />;

@@ -13,12 +13,13 @@ const ProfileDisplay = ({
   onAvatarPress,
   onProfilePress,
 }) => {
-  const totalPoints = achievements
-    ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0)
-    : 0;
+  const totalPoints = achievements ? achievements.filter(ach => ach.earned).reduce((sum, ach) => sum + (ach.points || 0), 0) : 0;
+  const { firstName, lastName, username } = profile;
+  const fullName = [ firstName, lastName ]
+    .filter(part => typeof part === 'string' && part.trim().length > 0)
+    .join(' ');
+  const displayName = fullName || username;
 
-  // Determine display name: use name if present, else fallback to username
-  const displayName = profile.name && profile.name.trim() ? profile.name : profile.username;
   return (
     <LinearGradient
       colors={['#b13cb3', '#5a2ca0']}
@@ -41,7 +42,7 @@ const ProfileDisplay = ({
 
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
             <Text style={styles.profileName}>{displayName}</Text>
-          <Text style={styles.profileGrade}>Grade {profile.grade || 'N/A'}</Text>
+          <Text style={styles.profileGrade}>Grade {profile.grade.toString() || 'N/A'}</Text>
           {/* Show only lesson for Grade 1, otherwise include set */}
           {profile.grade == 1 ? (
             <Text style={styles.progressText}>Lesson {currentLesson}</Text>
