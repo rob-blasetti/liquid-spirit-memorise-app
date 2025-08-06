@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Image as RNImage } from 'react-native';
+import { SafeAreaView, View, Image as RNImage, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -124,24 +124,31 @@ const MainApp = () => {
     goTo(gameId, { quote: content, setNumber, lessonNumber, fromGames: true, lessonScreen: nav.screen });
   };
 
-  // Allow user to pick a new avatar image
+  // Allow user to pick a new avatar image with optimistic update
   const handleAvatarPress = () => {
     launchImageLibrary({ mediaType: 'photo' }, async (response) => {
       if (response.didCancel || response.errorCode) return;
       const asset = response.assets?.[0];
       if (!asset) return;
 
+      // Optimistically update avatar in UI
+      const originalProfile = profile;
+      const oldProfilePicture = originalProfile.profilePicture;
+      const optimisticProfile = { ...originalProfile, profilePicture: asset.uri };
+      setProfile(optimisticProfile);
+
       try {
         // 1) upload to S3 & update the server
-        const updatedServerProfile = await uploadAndSetProfilePicture(profile, asset);
+        const updatedServerProfile = await uploadAndSetProfilePicture(originalProfile, asset);
 
         // 2) cache and push into state
-        const newProfile = { ...profile, ...updatedServerProfile };
-
-      await saveProfile(newProfile);
-      setProfile(newProfile);
+        const newProfile = { ...originalProfile, ...updatedServerProfile };
+        await saveProfile(newProfile);
+        setProfile(newProfile);
       } catch (err) {
         console.error('Avatar upload/update failed:', err);
+        // Revert avatar on failure
+        setProfile(originalProfile);
         Alert.alert('Error', 'Could not update your profile picture. Please try again.');
       }
     });

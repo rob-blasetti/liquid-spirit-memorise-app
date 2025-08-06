@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, FlatList, Image } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, FlatList } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import styles from '../styles/mainAppStyles';
 import { achievements as defaultAchievements } from '../data/achievements';
@@ -43,8 +44,16 @@ const ChildSwitcherModal = ({
                 setChooseChildVisible(false);
               }}
             >
-              {guestProfile.avatar ? (
-                <Image source={{ uri: guestProfile.avatar }} style={styles.childAvatar} />
+            { (guestProfile.profilePicture || guestProfile.avatar) ? (
+                <FastImage
+                  source={{
+                    uri: guestProfile.profilePicture || guestProfile.avatar,
+                    priority: FastImage.priority.normal,
+                    cache: FastImage.cacheControl.immutable,
+                  }}
+                  style={styles.childAvatar}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
               ) : (
                 <Avatar size={40} name={guestProfile.name} variant="beam" />
               )}
@@ -77,8 +86,16 @@ const ChildSwitcherModal = ({
                 setChooseChildVisible(false);
               }}
             >
-              {rp.avatar ? (
-                <Image source={{ uri: rp.avatar }} style={styles.childAvatar} />
+              {(rp.profilePicture || rp.avatar) ? (
+                <FastImage
+                  source={{
+                    uri: rp.profilePicture || rp.avatar,
+                    priority: FastImage.priority.normal,
+                    cache: FastImage.cacheControl.immutable,
+                  }}
+                  style={styles.childAvatar}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
               ) : (
                 <Avatar size={40} name={displayName} variant="beam" />
               )}
@@ -125,9 +142,19 @@ const ChildSwitcherModal = ({
                   setChooseChildVisible(false);
                 }}
               >
-                {childObj.avatar
-                  ? <Image source={{ uri: childObj.avatar }} style={styles.childAvatar} />
-                  : <Avatar size={40} name={fullName} variant="beam" />}
+                {(childObj.profilePicture || childObj.avatar) ? (
+                  <FastImage
+                    source={{
+                      uri: childObj.profilePicture || childObj.avatar,
+                      priority: FastImage.priority.normal,
+                      cache: FastImage.cacheControl.immutable,
+                    }}
+                    style={styles.childAvatar}
+                    resizeMode={FastImage.resizeMode.cover}
+                  />
+                ) : (
+                  <Avatar size={40} name={fullName} variant="beam" />
+                )}
                 <Text style={styles.childText}>
                   {fullName}{profile && !profile.guest && profile._id === childObj._id ? ' (Active)' : ''}
                 </Text>

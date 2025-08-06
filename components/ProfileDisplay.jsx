@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import LinearGradient from 'react-native-linear-gradient';
@@ -29,11 +30,22 @@ const ProfileDisplay = ({
       <View style={styles.headerContent}>
         <View style={styles.profileContainer}>
           <TouchableOpacity style={styles.avatarWrapper} onPress={onAvatarPress}>
-            {profile.profilePicture ? (
-              <Image source={{ uri: profile.profilePicture }} style={styles.profileAvatar} />
-            ) : (
-              <Avatar size={64} name={displayName} variant="beam" />
-            )}
+            {(() => {
+              const avatarUri = profile.profilePicture || profile.avatar;
+              return avatarUri ? (
+                <FastImage
+                  source={{
+                    uri: avatarUri,
+                    priority: FastImage.priority.normal,
+                    cache: FastImage.cacheControl.immutable,
+                  }}
+                  style={styles.profileAvatar}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              ) : (
+                <Avatar size={64} name={displayName} variant="beam" />
+              );
+            })()}
             <View style={styles.avatarOverlay}>
               <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
             </View>
