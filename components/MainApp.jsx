@@ -37,9 +37,10 @@ import useProfile from '../hooks/useProfile';
 import { launchImageLibrary } from 'react-native-image-picker';
 import useAchievements from '../hooks/useAchievements';
 import useLessonProgress from '../hooks/useLessonProgress';
+import { uploadAndSetProfilePicture } from '../services/profileService';
 
 const MainApp = () => {
-  const { classes, children, setUser, setChildren, setFamily, setToken } = useUser();
+  const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
   const { level } = useDifficulty();
   const {
     showSplash,
@@ -125,20 +126,23 @@ const MainApp = () => {
 
   // Allow user to pick a new avatar image
   const handleAvatarPress = () => {
-    launchImageLibrary({ mediaType: 'photo', includeBase64: true }, async (response) => {
+    launchImageLibrary({ mediaType: 'photo' }, async (response) => {
       if (response.didCancel || response.errorCode) return;
-      const asset = response.assets && response.assets[0];
-      if (asset) {
-        let avatarUri;
-        if (asset.base64) {
-          const type = asset.type || 'image/jpeg';
-          avatarUri = `data:${type};base64,${asset.base64}`;
-        } else {
-          avatarUri = asset.uri;
-        }
-        const updatedProfile = { ...profile, avatar: avatarUri };
-        await saveProfile(updatedProfile);
-        setProfile(updatedProfile);
+      const asset = response.assets?.[0];
+      if (!asset) return;
+
+      try {
+        // 1) upload to S3 & update the server
+        const updatedServerProfile = await uploadAndSetProfilePicture(profile, asset);
+
+        // 2) cache and push into state
+        const newProfile = { ...profile, ...updatedServerProfile };
+
+      await saveProfile(newProfile);
+      setProfile(newProfile);
+      } catch (err) {
+        console.error('Avatar upload/update failed:', err);
+        Alert.alert('Error', 'Could not update your profile picture. Please try again.');
       }
     });
   };
@@ -149,27 +153,30 @@ const MainApp = () => {
         <NavigationContainer>
           {/* onSignIn may receive { user, token } from Nuri auth or a raw profile for guest */}
         <AuthNavigator onSignIn={(data) => {
+            console.log('User signed in:', data);
             // data may include { token, user } for registered or LS users, or be a raw guest profile
             const token = data.token || null;
             if (token) {
               setToken(token);
             }
-            // Determine account-level user object
-            const fullUser = data.user ? data.user : data;
-            setUser(fullUser);
-            // Populate children/family in context
-            if (Array.isArray(fullUser.children)) {
-              setChildren(fullUser.children);
+            
+            const fullUser = data.user || null;
+            if (!fullUser) {
+              setUser(fullUser);
+            }
+            const children = data.classes || [];
+            if (children.length > 0) {
+              setChildren(children);
             } else {
               setChildren([]);
             }
-            if (fullUser.family) {
-              setFamily(fullUser.family);
-            }
+            // if (fullUser.family) {
+            //   setFamily(fullUser.family);
+            // }
             // Determine active learning profile: first child for LS, else self
             let activeProfile = fullUser;
-            if (Array.isArray(fullUser.children) && fullUser.children.length > 0) {
-              activeProfile = fullUser.children[0];
+            if (Array.isArray(children) && children.length > 0) {
+              activeProfile = children[0];
             }
             // Normalize grade: numeric grades to Number, preserve '2b'
             const gradeVal = activeProfile.grade;

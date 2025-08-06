@@ -3,6 +3,7 @@ import {
   initAchievements,
   awardAchievementData,
   getTotalPoints,
+  updateAchievementOnServer,
 } from '../services/achievementsService';
 
 export default function useAchievements(profile, saveProfile) {
@@ -15,21 +16,33 @@ export default function useAchievements(profile, saveProfile) {
   }, [profile]);
   const [notification, setNotification] = useState(null);
 
-  const awardAchievement = (id) => {
+  // Award an achievement: update local state, persist profile, and notify backend
+  const awardAchievement = async (id) => {
     if (!profile) return;
-    setAchievements(prev => {
-      const { achievementsList, notification: note, totalPoints } =
-        awardAchievementData(prev, id);
-      if (!note) return prev;
-      // persist updated profile with new achievements and score
-      saveProfile({
-        ...profile,
-        achievements: achievementsList,
-        score: totalPoints,
-      });
-      setNotification(note);
-      return achievementsList;
-    });
+    // Compute updated achievements list and total points
+    const { achievementsList, notification: note, totalPoints } =
+      awardAchievementData(achievements, id);
+    if (!note) return;
+    // Update local achievements and notification
+    setAchievements(achievementsList);
+    setNotification(note);
+    // Build updated profile object with new achievements and totalPoints
+    const updatedProfile = {
+      ...profile,
+      achievements: achievementsList,
+      totalPoints,
+    };
+    // Persist updated profile via context
+    saveProfile(updatedProfile);
+    // Remote update: send achievement to server
+    try {
+      await updateAchievementOnServer(
+        profile._id || profile.nuriUserId,
+        id
+      );
+    } catch (e) {
+      console.error('Failed to update achievement on server', e);
+    }
   };
 
   return {

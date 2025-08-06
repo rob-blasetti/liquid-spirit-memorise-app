@@ -29,8 +29,8 @@ const ProfileDisplay = ({
       <View style={styles.headerContent}>
         <View style={styles.profileContainer}>
           <TouchableOpacity style={styles.avatarWrapper} onPress={onAvatarPress}>
-            {profile.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.profileAvatar} />
+            {profile.profilePicture ? (
+              <Image source={{ uri: profile.profilePicture }} style={styles.profileAvatar} />
             ) : (
               <Avatar size={64} name={displayName} variant="beam" />
             )}
@@ -40,8 +40,13 @@ const ProfileDisplay = ({
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
-            <Text style={styles.profileName}>{displayName}</Text>
-          <Text style={styles.profileGrade}>Grade {profile.grade.toString() || 'N/A'}</Text>
+            <View style={styles.nameContainer}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              {profile.type === 'linked' && (
+                <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
+              )}
+            </View>
+            <Text style={styles.profileGrade}>Grade {profile.grade?.toString() || 'N/A'}</Text>
           {/* Show only lesson for Grade 1, otherwise include set */}
           {profile.grade == 1 ? (
             <Text style={styles.progressText}>Lesson {currentLesson}</Text>
@@ -124,6 +129,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: 'bold',
     color: themeVariables.whiteColor,
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linkIcon: {
+    marginLeft: 8,
   },
 });
 
