@@ -4,6 +4,7 @@ import {
   awardAchievementData,
   getTotalPoints,
   updateAchievementOnServer,
+  fetchUserAchievements,
 } from '../services/achievementsService';
 
 export default function useAchievements(profile, saveProfile) {
@@ -12,8 +13,32 @@ export default function useAchievements(profile, saveProfile) {
   );
   // Re-initialize achievements list when profile data changes (e.g., on login)
   useEffect(() => {
-    setAchievements(initAchievements(profile));
-  }, [profile]);
+    let isMounted = true;
+    const load = async () => {
+      if (!profile) {
+        if (isMounted) setAchievements([]);
+        return;
+      }
+      try {
+        const { achievements: serverAchievements, totalPoints } = await fetchUserAchievements(
+          profile._id || profile.id || profile.nuriUserId
+        );
+        const list = serverAchievements && serverAchievements.length
+          ? serverAchievements
+          : initAchievements(profile);
+        if (isMounted) {
+          setAchievements(list);
+          // Persist fetched achievements locally
+          saveProfile({ ...profile, achievements: list, totalPoints });
+        }
+      } catch (e) {
+        console.error('Failed to load achievements', e);
+        if (isMounted) setAchievements(initAchievements(profile));
+      }
+    };
+    load();
+    return () => { isMounted = false; };
+  }, [profile, saveProfile]);
   const [notification, setNotification] = useState(null);
 
   // Award an achievement: update local state, persist profile, and notify backend

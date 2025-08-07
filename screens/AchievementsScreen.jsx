@@ -11,6 +11,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
+import { useAchievementsContext } from '../contexts/AchievementsContext';
 
 const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
@@ -20,7 +21,8 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer'];
 
-const AchievementsScreen = ({ achievements = [] }) => {
+const AchievementsScreen = () => {
+  const { achievements = [] } = useAchievementsContext();
   // compute total points earned (sum of earned achievements)
   const totalPoints = achievements.reduce((sum, ach) => ach.earned ? sum + ach.points : sum, 0);
   // Group achievements into categories based on id prefixes

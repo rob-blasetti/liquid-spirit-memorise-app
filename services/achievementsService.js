@@ -25,6 +25,60 @@ export function getTotalPoints(achievementsList) {
 }
 
 /**
+ * Fetch a user's achievements from the backend.
+ * @param {string|number} userId
+ * @returns {Promise<{achievements: Array, totalPoints: number}>}
+ */
+export async function fetchUserAchievements(userId) {
+  if (!userId) {
+    return { achievements: [], totalPoints: 0 };
+  }
+  try {
+    const response = await fetch(`${API_URL}/api/nuri/achievements/${userId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch achievements');
+    }
+    const data = await response.json();
+
+    // Handle various possible response shapes
+    if (Array.isArray(data)) {
+      return { achievements: data, totalPoints: getTotalPoints(data) };
+    }
+
+    if (Array.isArray(data.achievements)) {
+      return {
+        achievements: data.achievements,
+        totalPoints: data.totalPoints || getTotalPoints(data.achievements),
+      };
+    }
+
+    if (data.user) {
+      const arr = data.user.achievements || [];
+      const mapped = arr.map((a) => {
+        if (a.achievement) {
+          return {
+            id: a.achievement._id || a.achievement.id,
+            title: a.achievement.title,
+            points: a.achievement.points,
+            earned: true,
+          };
+        }
+        return a;
+      });
+      return {
+        achievements: mapped,
+        totalPoints: data.user.totalPoints || getTotalPoints(mapped),
+      };
+    }
+
+    return { achievements: [], totalPoints: 0 };
+  } catch (err) {
+    console.error('fetchUserAchievements error:', err);
+    return { achievements: [], totalPoints: 0 };
+  }
+}
+
+/**
  * Notify backend that an achievement was awarded.
  * Updates the user's total points on the server.
  * @param {string} userId - NuriUser _id
