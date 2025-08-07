@@ -23,39 +23,34 @@ const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer'];
 
 const AchievementsScreen = () => {
   const { achievements = [] } = useAchievementsContext();
+  console.log('Achievements screen achievements:', achievements);
   // compute total points earned (sum of earned achievements)
   const totalPoints = achievements.reduce((sum, ach) => ach.earned ? sum + ach.points : sum, 0);
   // Group achievements into categories based on id prefixes
   const grouped = achievements.reduce((acc, ach) => {
-    let category = '';
-    if (ach.id.startsWith('prayer')) {
+    // lowercase title for simpler matching
+    const t = ach.title.toLowerCase();
+
+    let category;
+    if (t.includes('prayer')) {
       category = 'Prayers';
-    } else if (ach.id.startsWith('quote')) {
+    } else if (t.includes('quote')) {
       category = 'Quotes';
     } else if (
-      ach.id.startsWith('game') ||
-      ach.id.startsWith('memory') ||
-      ach.id.startsWith('tap') ||
-      ach.id.startsWith('fill') ||
-      ach.id.startsWith('shape') ||
-      ach.id.startsWith('hangman') ||
-      ach.id.startsWith('color') ||
-      ach.id.startsWith('rhythm') ||
-      ach.id.startsWith('silhouette') ||
-      ach.id.startsWith('scene') ||
-      ach.id.startsWith('word') ||
-      ach.id.startsWith('build') ||
-      ach.id.startsWith('bubble')
+      t.includes('daily')    ||  // Daily Learner
+      t.includes('master')   ||  // Set 1 Master, Set 2 Master, etc
+      t.includes('star')        // Grade 1 Star
     ) {
-      // include bubble pop game achievements
       category = 'Games';
-    } else if (ach.id === 'profile') {
+    } else if (t.includes('profile')) {
       category = 'Profile';
-    } else if (ach.id === 'explorer') {
+    } else if (t.includes('explorer')) {
       category = 'Explorer';
     } else {
-      return acc;
+      // if you ever add a new category, you can catch it here
+      category = 'Other';
     }
+
     acc[category] = acc[category] || [];
     acc[category].push(ach);
     return acc;

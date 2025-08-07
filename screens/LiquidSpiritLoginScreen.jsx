@@ -21,9 +21,11 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
   }, []);
 
   const handleLogin = async () => {
+    console.log('Attempting Liquid Spirit login with:', { bahaiId, email, password });
     try {
       await saveCredentials(email, password);
       const data = await signInWithLiquidSpirit(bahaiId, email, password);
+      console.log('Liquid Spirit login successful', data);
       onSignIn(data);
     } catch (err) {
       console.error('Liquid Spirit login failed', err);

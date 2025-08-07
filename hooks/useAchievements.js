@@ -8,37 +8,56 @@ import {
 } from '../services/achievementsService';
 
 export default function useAchievements(profile, saveProfile) {
+  console.log('useAchievements profile:', profile);
+
   const [achievements, setAchievements] = useState(
     initAchievements(profile)
   );
-  // Re-initialize achievements list when profile data changes (e.g., on login)
-  useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      if (!profile) {
-        if (isMounted) setAchievements([]);
-        return;
-      }
-      try {
-        const { achievements: serverAchievements, totalPoints } = await fetchUserAchievements(
-          profile._id || profile.id || profile.nuriUserId
-        );
-        const list = serverAchievements && serverAchievements.length
-          ? serverAchievements
-          : initAchievements(profile);
-        if (isMounted) {
-          setAchievements(list);
-          // Persist fetched achievements locally
+
+useEffect(() => {
+  // don’t run until we have a real ID
+  const userId = profile?._id || profile?.id || profile?.nuriUserId;
+  if (!userId) return;
+
+  let isMounted = true;
+  const load = async () => {
+    try {
+      // 1) fetch whatever the user already has on the server
+      const { achievements: serverAchievements = [], totalPoints } =
+        await fetchUserAchievements(userId);
+
+      // 2) if server has none yet, seed them locally
+      const list = serverAchievements.length
+        ? serverAchievements
+        : initAchievements(profile);
+
+      if (isMounted) {
+        setAchievements(list);
+
+        // 3) write back only if it’s new (optional, but helps avoid extra renders)
+        const haveSame =
+          JSON.stringify(profile.achievements) === JSON.stringify(list);
+        if (!haveSame) {
           saveProfile({ ...profile, achievements: list, totalPoints });
         }
-      } catch (e) {
-        console.error('Failed to load achievements', e);
-        if (isMounted) setAchievements(initAchievements(profile));
       }
-    };
-    load();
-    return () => { isMounted = false; };
-  }, [profile, saveProfile]);
+    } catch (e) {
+      console.error('Failed to fetch achievements:', e);
+      if (isMounted) {
+        // fall back
+        const list = initAchievements(profile);
+        setAchievements(list);
+      }
+    }
+  };
+
+  load();
+  return () => { isMounted = false; };
+},
+// ← effect only re-runs when the user ID changes
+[ profile?._id || profile?.id || profile?.nuriUserId ]
+);
+  
   const [notification, setNotification] = useState(null);
 
   // Award an achievement: update local state, persist profile, and notify backend

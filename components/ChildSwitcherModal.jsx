@@ -46,18 +46,19 @@ const ChildSwitcherModal = ({
                 onPress={() => {
                   const gp = guestProfile;
                   const guestAch = gp.achievements || defaultAchievements;
-                  const guestScore = gp.score || 0;
-                  saveProfile({
-                    ...gp,
-                    guest: true,
-                    achievements: guestAch,
-                    score: guestScore,
-                  });
-                  setUser({
-                    ...gp,
-                    achievements: guestAch,
-                    score: guestScore,
-                  });
+              // Determine totalPoints for guest (fallback to score for legacy data)
+              const guestPoints = gp.totalPoints != null ? gp.totalPoints : (gp.score || 0);
+              saveProfile({
+                ...gp,
+                guest: true,
+                achievements: guestAch,
+                totalPoints: guestPoints,
+              });
+              setUser({
+                ...gp,
+                achievements: guestAch,
+                totalPoints: guestPoints,
+              });
                   setChooseChildVisible(false);
                 }}
               >
@@ -96,19 +97,18 @@ const ChildSwitcherModal = ({
                 ? rp.name
                 : rp.username || '';
             const regAch = rp.achievements || defaultAchievements;
-            const regScore = rp.score || 0;
+            // Determine totalPoints for registered user (fallback to score for legacy data)
+            const regPoints = rp.totalPoints != null ? rp.totalPoints : (rp.score || 0);
             return (
               <TouchableOpacity
                 style={styles.childButton}
                 onPress={() => {
-                  saveProfile(rp);
-                  setUser({
+                  const updated = {
                     ...rp,
                     guest: false,
                     achievements: regAch,
-                    score: regScore,
+                    totalPoints: regPoints,
                   };
-                  setAchievements(regAch);
                   saveProfile(updated);
                   setUser(updated);
                   setChooseChildVisible(false);
@@ -146,21 +146,23 @@ const ChildSwitcherModal = ({
               // Preserve original grade value (e.g., '2b') or numeric grade
               const selected = { ...childObj, name: fullName, grade: childObj.grade };
               const childAchievements = selected.achievements || defaultAchievements;
-              const childScore = selected.score || 0;
+              // Determine totalPoints for child (fallback to score for legacy data)
+              const childPoints = selected.totalPoints != null ? selected.totalPoints : (selected.score || 0);
               return (
                 <TouchableOpacity
                   style={styles.childButton}
                   onPress={() => {
+                    // Persist selected child profile with proper totalPoints
                     saveProfile({
                       ...selected,
                       guest: false,
                       achievements: childAchievements,
-                      score: childScore,
+                      totalPoints: childPoints,
                     });
                     setUser({
                       ...selected,
                       achievements: childAchievements,
-                      score: childScore,
+                      totalPoints: childPoints,
                     });
                     setChooseChildVisible(false);
                   }}

@@ -19,6 +19,7 @@ const HomeScreen = ({
   onProfilePress,
   onAvatarPress,
 }) => {
+  console.log('HomeScreen achievements:', achievements);
   // Determine prayer and quote based on grade and progress
   let prayerToShow = null;
   let quoteToShow = null;

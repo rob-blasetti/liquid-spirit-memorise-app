@@ -8,7 +8,6 @@ import themeVariables from '../styles/theme';
 
 const ProfileDisplay = ({
   profile,
-  achievements,
   currentSet,
   currentLesson,
   onAvatarPress,

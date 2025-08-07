@@ -11,6 +11,7 @@ export const signInWithLiquidSpirit = async (bahaiId, email, password) => {
       },
       body: JSON.stringify({ identifier: bahaiId, email, password, type: LINKED }),
     });
+    console.log('Response from Liquid Spirit login:', response);
     
     if (!response.ok) {
       throw new Error('Failed to authenticate');
