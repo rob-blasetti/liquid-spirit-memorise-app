@@ -38,6 +38,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import useAchievements from '../hooks/useAchievements';
 import useLessonProgress from '../hooks/useLessonProgress';
 import { uploadAndSetProfilePicture } from '../services/profileService';
+import { AchievementsProvider } from '../contexts/AchievementsContext';
 
 const MainApp = () => {
   const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
@@ -54,7 +55,8 @@ const MainApp = () => {
     wipeProfile,
   } = useProfile();
   const { nav, goTo, visitGrade } = useNavigationHandlers();
-  const { achievements, notification, setNotification, awardAchievement } = useAchievements(profile, saveProfile);
+  const achievementsState = useAchievements(profile, saveProfile);
+  const { achievements, notification, setNotification, awardAchievement } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
@@ -239,7 +241,7 @@ const MainApp = () => {
       case 'grade4':
         return <Grade4Screen onBack={goHome} />;
       case 'achievements':
-        return <AchievementsScreen achievements={achievements} highlightId={nav.highlight} />;
+        return <AchievementsScreen />;
       case 'games':
         return <GamesListScreen onSelect={playSelectedGame} />;
       case 'settings':
@@ -318,6 +320,7 @@ const MainApp = () => {
   };
 
   return (
+    <AchievementsProvider value={achievementsState}>
     <SafeAreaView style={styles.container}>
       {notification && (
         <NotificationBanner
@@ -335,7 +338,6 @@ const MainApp = () => {
         guestProfile={guestProfile}
         profile={profile}
         children={children}
-        setAchievements={() => {}}
         saveProfile={saveProfile}
         setUser={setUser}
         setChooseChildVisible={setChooseChildVisible}
@@ -354,6 +356,7 @@ const MainApp = () => {
         />
       )}
     </SafeAreaView>
+    </AchievementsProvider>
   );
 };
 

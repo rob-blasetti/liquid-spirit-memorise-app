@@ -12,7 +12,6 @@ const ChildSwitcherModal = ({
   guestProfile,
   profile,
   children,
-  setAchievements,
   saveProfile,
   setUser,
   setChooseChildVisible,
@@ -48,7 +47,6 @@ const ChildSwitcherModal = ({
                   const gp = guestProfile;
                   const guestAch = gp.achievements || defaultAchievements;
                   const guestScore = gp.score || 0;
-                  setAchievements(guestAch);
                   saveProfile({
                     ...gp,
                     guest: true,
@@ -103,8 +101,8 @@ const ChildSwitcherModal = ({
               <TouchableOpacity
                 style={styles.childButton}
                 onPress={() => {
-                  // Sync achievements and score into profile when switching
-                  const updated = {
+                  saveProfile(rp);
+                  setUser({
                     ...rp,
                     guest: false,
                     achievements: regAch,
@@ -153,7 +151,6 @@ const ChildSwitcherModal = ({
                 <TouchableOpacity
                   style={styles.childButton}
                   onPress={() => {
-                    setAchievements(childAchievements);
                     saveProfile({
                       ...selected,
                       guest: false,
