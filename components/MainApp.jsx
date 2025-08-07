@@ -22,6 +22,7 @@ import {
   Splash,
   GamesListScreen,
   ClassScreen,
+  LessonJourneyScreen,
 } from '../screens';
 import AuthNavigator from '../navigation/AuthNavigator';
 import BottomNav from '../navigation/BottomNav';
@@ -213,13 +214,18 @@ const MainApp = () => {
           />
         );
       case 'grade1Lesson':
-        return <Grade1LessonScreen lessonNumber={nav.lessonNumber} onBack={() => goTo('grade1')} />;
+        return (
+          <Grade1LessonScreen
+            lessonNumber={nav.lessonNumber}
+            onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grade1')}
+          />
+        );
       case 'grade2Lesson':
         return (
           <Grade2LessonScreen
             setNumber={nav.setNumber}
             lessonNumber={nav.lessonNumber}
-            onBack={goBackToGrade2Set}
+            onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2Set}
             onComplete={completeLesson}
             onPractice={(q) => goTo('practice', { quote: q })}
             onPlayGame={(q) => goTo('tapGame', { quote: q })}
@@ -230,7 +236,7 @@ const MainApp = () => {
           <Grade2bLessonScreen
             setNumber={nav.setNumber}
             lessonNumber={nav.lessonNumber}
-            onBack={goBackToGrade2bSet}
+            onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2bSet}
             onComplete={completeLesson}
             onPractice={(q) => goTo('practice', { quote: q })}
             onPlayGame={(q) => goTo('tapGame', { quote: q })}
@@ -273,6 +279,24 @@ const MainApp = () => {
         );
       case 'class':
         return <ClassScreen childEntries={children || []} onBack={goHome} />;
+      case 'lessonJourney':
+        return (
+          <LessonJourneyScreen
+            profile={profile}
+            currentProgress={getCurrentProgress()}
+            completedLessons={completedLessons}
+            onBack={goHome}
+            goToLesson={(setNumber, lessonNumber) => {
+              if (profile.grade === 1) {
+                goTo('grade1Lesson', { lessonNumber, from: 'journey' });
+              } else if (profile.grade === 2) {
+                goTo('grade2Lesson', { setNumber, lessonNumber, from: 'journey' });
+              } else if (profile.grade === '2b') {
+                goTo('grade2bLesson', { setNumber, lessonNumber, from: 'journey' });
+              }
+            }}
+          />
+        );
       case 'grades':
         return (
           <GradesScreen
@@ -321,6 +345,7 @@ const MainApp = () => {
             currentLesson={lessonNumber}
             onProfilePress={() => setChooseChildVisible(true)}
             onAvatarPress={handleAvatarPress}
+            onJourney={() => goTo('lessonJourney')}
           />
         );
       }
