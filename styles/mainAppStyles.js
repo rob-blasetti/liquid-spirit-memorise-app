@@ -112,10 +112,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: theme.whiteColor,
     padding: 20,
-    borderRadius: 8,
-    width: '80%',
+    borderRadius: 20,
+    width: '100%',
     maxHeight: '70%',
   },
   modalTitle: {
@@ -123,6 +123,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
     textAlign: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
   },
   childButton: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, FlatList, Pressable, StyleSheet } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import styles from '../styles/mainAppStyles';
@@ -28,7 +29,15 @@ const ChildSwitcherModal = ({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setChooseChildVisible(false)} />
         <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setChooseChildVisible(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close" size={24} color="black" />
+          </TouchableOpacity>
           <Text style={styles.modalTitle}>Change Account</Text>
 
           {guestProfile && (
@@ -179,8 +188,8 @@ const ChildSwitcherModal = ({
               );
             }}
           />
+            </View>
         </View>
-      </View>
     </Modal>
   );
 };
