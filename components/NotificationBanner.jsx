@@ -73,8 +73,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     // Android shadow
-    elevation: 5,
-    zIndex: 1000,                     // ensure it floats above all
+    elevation: 10,
+    zIndex: 2000,                     // ensure it floats above all
   },
   content: {
     flexDirection: 'row',

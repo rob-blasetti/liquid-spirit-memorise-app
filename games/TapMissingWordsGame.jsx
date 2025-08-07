@@ -5,7 +5,8 @@ import GameTopBar from '../components/GameTopBar';
 import RewardBanner from '../components/RewardBanner';
 import themeVariables from '../styles/theme';
 
-const TapMissingWordsGame = ({ quote, onBack }) => {
+// Accept onWin callback to award achievements after reward banner
+const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [displayWords, setDisplayWords] = useState([]);
   const [missingWords, setMissingWords] = useState([]);
@@ -117,7 +118,14 @@ const TapMissingWordsGame = ({ quote, onBack }) => {
         </>
       )}
       {status === 'lost' && <Text style={styles.message}>Try again</Text>}
-      {showBanner && <RewardBanner onAnimationEnd={() => setShowBanner(false)} />}
+      {showBanner && (
+        <RewardBanner
+          onAnimationEnd={() => {
+            setShowBanner(false);
+            if (onWin) onWin();
+          }}
+        />
+      )}
     </View>
   );
 };

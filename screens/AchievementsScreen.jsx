@@ -19,7 +19,7 @@ const CARD_HEIGHT = 120;
 // Customize these two colors to match your design
 const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 
-const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer'];
+const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
 const AchievementsScreen = () => {
   const { achievements = [] } = useAchievementsContext();
@@ -37,9 +37,16 @@ const AchievementsScreen = () => {
     } else if (t.includes('quote')) {
       category = 'Quotes';
     } else if (
-      t.includes('daily')    ||  // Daily Learner
-      t.includes('master')   ||  // Set 1 Master, Set 2 Master, etc
-      t.includes('star')        // Grade 1 Star
+      t.includes('daily')      ||  
+      t.includes('master')     ||  
+      t.includes('star')       ||  
+      t.includes('game')       ||  
+      t.includes('tap')        ||  
+      t.includes('practice')   ||  
+      t.includes('memory')     ||  
+      t.includes('shape')      ||  
+      t.includes('hangman')    ||  
+      t.includes('bubble')
     ) {
       category = 'Games';
     } else if (t.includes('profile')) {

@@ -6,6 +6,8 @@ const GAME_ACHIEVEMENT_MAP = {
   shapeBuilderGame: { 1: 'shape1', 2: 'shape2', 3: 'shape3' },
   hangmanGame: { 1: 'hangman1', 2: 'hangman2', 3: 'hangman3' },
   bubblePopOrderGame: { 1: 'bubble1', 2: 'bubble2', 3: 'bubble3' },
+  // Tap Missing Words game achievement for perfect completion
+  tapGame: { 1: 'tapPerfect', 2: 'tapPerfect', 3: 'tapPerfect' },
 };
 
 export function getAchievementIdForGame(screen, level) {
