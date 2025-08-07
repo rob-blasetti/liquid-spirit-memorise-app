@@ -36,6 +36,23 @@ export async function grantAchievement({
   const alreadyEarned = achievements.some(a => a.id === id && a.earned);
   if (alreadyEarned) return;
 
+  // Optimistically award the achievement locally so the UI can react
+  const optimisticAchievements = achievements.map(a =>
+    a.id === id ? { ...a, earned: true } : a
+  );
+  const earned = optimisticAchievements.find(a => a.id === id);
+  if (earned) {
+    setNotification({ id: earned.id, title: earned.title });
+  }
+  setAchievements(optimisticAchievements);
+  // Persist optimistic profile state including total points if available
+  const optimisticProfile = {
+    ...profile,
+    achievements: optimisticAchievements,
+    totalPoints: (profile.totalPoints || 0) + (earned?.points || 0),
+  };
+  saveProfile(optimisticProfile);
+
   try {
     const userId = profile._id || profile.id || profile.nuriUserId;
     const { user } = await updateAchievementOnServer(userId, id);
@@ -48,7 +65,7 @@ export async function grantAchievement({
       earned: true,
     }));
 
-    // Persist profile and update context
+    // Persist profile and update context with server-confirmed state
     const updatedProfile = {
       ...profile,
       achievements: updatedAchievements,
@@ -56,11 +73,6 @@ export async function grantAchievement({
     };
     setAchievements(updatedAchievements);
     saveProfile(updatedProfile);
-
-    const earned = updatedAchievements.find(a => a.id === id);
-    if (earned) {
-      setNotification({ id: earned.id, title: earned.title });
-    }
   } catch (e) {
     console.error('grantAchievement error:', e);
   }
