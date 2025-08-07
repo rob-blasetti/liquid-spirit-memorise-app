@@ -82,7 +82,12 @@ const ChildSwitcherModal = ({
 
           {registeredProfile && (() => {
             const rp = registeredProfile;
-            const displayName = rp.name?.trim() ? rp.name : rp.username || '';
+            // Derive display name: prefer firstName + lastName, then name, then username
+            const displayName = rp.firstName?.trim()
+              ? `${rp.firstName} ${rp.lastName || ''}`.trim()
+              : rp.name?.trim()
+                ? rp.name
+                : rp.username || '';
             const regAch = rp.achievements || defaultAchievements;
             const regScore = rp.score || 0;
             return (

@@ -161,32 +161,25 @@ const MainApp = () => {
           {/* onSignIn may receive { user, token } from Nuri auth or a raw profile for guest */}
         <AuthNavigator onSignIn={(data) => {
             console.log('User signed in:', data);
-            // data may include { token, user } for registered or LS users, or be a raw guest profile
+            // Handle guest login directly
+            if (data.guest) {
+              saveProfile(data);
+              goTo('home');
+              return;
+            }
+            // Registered or LS user login flow
             const token = data.token || null;
             if (token) {
               setToken(token);
             }
-            
             const fullUser = data.user || null;
-            if (!fullUser) {
-              setUser(fullUser);
-            }
+            setUser(fullUser);
             const children = data.classes || [];
-            if (children.length > 0) {
-              setChildren(children);
-            } else {
-              setChildren([]);
-            }
-            // if (fullUser.family) {
-            //   setFamily(fullUser.family);
-            // }
+            setChildren(children);
             // Determine active learning profile: first child for LS, else self
-            let activeProfile = fullUser;
-            if (Array.isArray(children) && children.length > 0) {
-              activeProfile = children[0];
-            }
+            let activeProfile = Array.isArray(children) && children.length > 0 ? children[0] : fullUser;
             // Normalize grade: numeric grades to Number, preserve '2b'
-            const gradeVal = activeProfile.grade;
+            const gradeVal = activeProfile?.grade || '1';
             const normalizedGrade = gradeVal === '2b' ? '2b' : Number(gradeVal);
             activeProfile = { ...activeProfile, grade: normalizedGrade };
             // Persist profile for learning context

@@ -22,11 +22,13 @@ export default function GuestLoginScreen({ onSignIn }) {
     onSignIn({
       // Assign a unique ID for each guest based on avatarSeed
       _id: avatarSeed,
-      name: displayName,
+      username: displayName,
       avatarSeed,
       ...(avatarPhoto ? { avatar: avatarPhoto } : {}),
       grade: gradeVal,
       guest: true,
+      totalPoints: 0,
+      type: 'guest',
     });
   };
 
