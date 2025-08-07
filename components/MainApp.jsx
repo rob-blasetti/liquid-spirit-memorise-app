@@ -56,7 +56,7 @@ const MainApp = () => {
   } = useProfile();
   const { nav, goTo, visitGrade } = useNavigationHandlers();
   const achievementsState = useAchievements(profile, saveProfile);
-  const { achievements, notification, setNotification, awardAchievement } = achievementsState;
+  const { achievements, notification, setNotification, awardAchievement, awardGameAchievement } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
@@ -194,7 +194,15 @@ const MainApp = () => {
     }
     if (['practice', 'tapGame', 'scrambleGame', 'nextWordGame', 'memoryGame', 'flashGame', 'revealGame', 'firstLetterGame', 'letterScrambleGame', 'fastTypeGame', 'hangmanGame', 'fillBlankGame', 'shapeBuilderGame', 'colorSwitchGame', 'rhythmRepeatGame', 'silhouetteSearchGame', 'memoryMazeGame', 'sceneChangeGame', 'wordSwapGame', 'buildRecallGame', 'bubblePopOrderGame'].includes(nav.screen)) {
       const backHandler = nav.fromGames ? goHome : goBackToLesson;
-      return <GameRenderer screen={nav.screen} quote={nav.quote} onBack={backHandler} level={level} awardAchievement={awardAchievement} />;
+      return (
+        <GameRenderer
+          screen={nav.screen}
+          quote={nav.quote}
+          onBack={backHandler}
+          level={level}
+          awardGameAchievement={awardGameAchievement}
+        />
+      );
     }
     switch (nav.screen) {
       case 'grade1':

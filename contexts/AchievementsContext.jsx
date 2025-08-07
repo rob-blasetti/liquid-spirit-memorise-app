@@ -5,6 +5,7 @@ const AchievementsContext = createContext({
   notification: null,
   setNotification: () => {},
   awardAchievement: () => {},
+  awardGameAchievement: () => {},
 });
 
 export const AchievementsProvider = ({ value, children }) => (
