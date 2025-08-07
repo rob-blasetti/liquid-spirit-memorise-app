@@ -104,9 +104,13 @@ const ChildSwitcherModal = ({
                   saveProfile(rp);
                   setUser({
                     ...rp,
+                    guest: false,
                     achievements: regAch,
                     score: regScore,
-                  });
+                  };
+                  setAchievements(regAch);
+                  saveProfile(updated);
+                  setUser(updated);
                   setChooseChildVisible(false);
                 }}
               >
@@ -139,10 +143,8 @@ const ChildSwitcherModal = ({
               const fullName = childObj.firstName?.trim()
                 ? `${childObj.firstName} ${childObj.lastName || ''}`.trim()
                 : childObj.username || childObj.name || '';
-              const gradeNum = typeof childObj.grade === 'string'
-                ? parseInt(childObj.grade, 10)
-                : childObj.grade;
-              const selected = { ...childObj, name: fullName, grade: gradeNum };
+              // Preserve original grade value (e.g., '2b') or numeric grade
+              const selected = { ...childObj, name: fullName, grade: childObj.grade };
               const childAchievements = selected.achievements || defaultAchievements;
               const childScore = selected.score || 0;
               return (
