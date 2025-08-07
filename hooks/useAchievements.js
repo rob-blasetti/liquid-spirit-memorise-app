@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   initAchievements,
-  awardAchievementData,
-  getTotalPoints,
-  updateAchievementOnServer,
   fetchUserAchievements,
 } from '../services/achievementsService';
+import { grantAchievement, grantGameAchievement } from '../services/achievementGrantService';
 
 export default function useAchievements(profile, saveProfile) {
   console.log('useAchievements profile:', profile);
@@ -60,33 +58,29 @@ useEffect(() => {
   
   const [notification, setNotification] = useState(null);
 
-  // Award an achievement: update local state, persist profile, and notify backend
+  // Award an achievement by ID via service
   const awardAchievement = async (id) => {
-    if (!profile) return;
-    // Compute updated achievements list and total points
-    const { achievementsList, notification: note, totalPoints } =
-      awardAchievementData(achievements, id);
-    if (!note) return;
-    // Update local achievements and notification
-    setAchievements(achievementsList);
-    setNotification(note);
-    // Build updated profile object with new achievements and totalPoints
-    const updatedProfile = {
-      ...profile,
-      achievements: achievementsList,
-      totalPoints,
-    };
-    // Persist updated profile via context
-    saveProfile(updatedProfile);
-    // Remote update: send achievement to server
-    try {
-      await updateAchievementOnServer(
-        profile._id || profile.nuriUserId,
-        id
-      );
-    } catch (e) {
-      console.error('Failed to update achievement on server', e);
-    }
+    await grantAchievement({
+      id,
+      profile,
+      achievements,
+      setAchievements,
+      setNotification,
+      saveProfile,
+    });
+  };
+
+  // Award achievement for a game win based on screen and level
+  const awardGameAchievement = async (screen, level) => {
+    await grantGameAchievement({
+      screen,
+      level,
+      profile,
+      achievements,
+      setAchievements,
+      setNotification,
+      saveProfile,
+    });
   };
 
   return {
@@ -94,5 +88,6 @@ useEffect(() => {
     notification,
     setNotification,
     awardAchievement,
+    awardGameAchievement,
   };
 }
