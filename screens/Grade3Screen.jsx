@@ -1,19 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import ButtonList from '../components/ButtonList';
 import themeVariables from '../styles/theme';
 
-const Grade3Screen = ({ onBack }) => {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Grade 3</Text>
-      <Text style={styles.subtitle}>Content coming soon</Text>
-      <View style={styles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
-      </View>
-    </View>
-  );
-};
+const Grade3Screen = ({ onBack }) => (
+  <View style={styles.container}>
+    <Text style={styles.title}>Grade 3</Text>
+    <Text style={styles.subtitle}>Content coming soon</Text>
+    <ButtonList buttons={[{ title: 'Back', onPress: onBack }]} />
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -31,10 +27,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 24,
     color: themeVariables.greyColor,
-  },
-  buttonContainer: {
-    width: '80%',
-    marginTop: 16,
   },
 });
 

@@ -1,19 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import ThemedButton from '../components/ThemedButton';
+import ButtonList from '../components/ButtonList';
 import themeVariables from '../styles/theme';
 
 const Grade2bSetScreen = ({ setNumber, onLessonSelect, onBack }) => (
   <View style={styles.container}>
     <Text style={styles.title}>Grade 2 - Set {setNumber}</Text>
-    {[1,2,3].map(lesson => (
-      <View key={lesson} style={styles.buttonContainer}>
-        <ThemedButton title={`Lesson ${lesson}`} onPress={() => onLessonSelect(lesson)} />
-      </View>
-    ))}
-    <View style={styles.buttonContainer}>
-      <ThemedButton title="Back" onPress={onBack} />
-    </View>
+    <ButtonList
+      containerStyle={{ marginVertical: 8 }}
+      buttons={[
+        { title: 'Lesson 1', onPress: () => onLessonSelect(1) },
+        { title: 'Lesson 2', onPress: () => onLessonSelect(2) },
+        { title: 'Lesson 3', onPress: () => onLessonSelect(3) },
+        { title: 'Back', onPress: onBack },
+      ]}
+    />
   </View>
 );
 
@@ -28,10 +29,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 24,
     color: themeVariables.whiteColor,
-  },
-  buttonContainer: {
-    width: '80%',
-    marginVertical: 8,
   },
 });
 
