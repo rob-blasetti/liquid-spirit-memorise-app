@@ -93,15 +93,17 @@ android {
             keyPassword 'android'
         }
         release {
+            // Read signing credentials from environment (CI) and avoid name
+            // collisions with Gradle DSL setters (e.g., keyAlias())
             def ksFile = System.getenv('ANDROID_SIGNING_KEYSTORE_PATH')
-            def ksPass = System.getenv('ANDROID_SIGNING_STORE_PASSWORD')
-            def keyAlias = System.getenv('ANDROID_SIGNING_KEY_ALIAS')
-            def keyPass = System.getenv('ANDROID_SIGNING_KEY_PASSWORD')
-            if (ksFile && ksPass && keyAlias && keyPass) {
+            def ksStorePass = System.getenv('ANDROID_SIGNING_STORE_PASSWORD')
+            def ksAlias = System.getenv('ANDROID_SIGNING_KEY_ALIAS')
+            def ksKeyPass = System.getenv('ANDROID_SIGNING_KEY_PASSWORD')
+            if (ksFile && ksStorePass && ksAlias && ksKeyPass) {
                 storeFile file(ksFile)
-                storePassword ksPass
-                keyAlias keyAlias
-                keyPassword keyPass
+                storePassword ksStorePass
+                keyAlias ksAlias
+                keyPassword ksKeyPass
             } else {
                 // Fallback for local builds without release keystore
                 storeFile file('debug.keystore')
