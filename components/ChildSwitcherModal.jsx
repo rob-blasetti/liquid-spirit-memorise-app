@@ -4,6 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import styles from '../styles/mainAppStyles';
+import { fetchUserAchievements } from '../services/achievementsService';
 import { achievements as defaultAchievements } from '../data/achievements';
 
 const ChildSwitcherModal = ({
@@ -43,12 +44,13 @@ const ChildSwitcherModal = ({
             <>
               <TouchableOpacity
                 style={styles.childButton}
-                onPress={() => {
+                onPress={async () => {
                   const gp = guestProfile;
                   const guestAch = gp.achievements || defaultAchievements;
               // Determine totalPoints for guest (fallback to score for legacy data)
-              const guestPoints = gp.totalPoints != null ? gp.totalPoints : (gp.score || 0);
-              saveProfile({
+              let guestPoints = gp.totalPoints != null ? gp.totalPoints : (gp.score || 0);
+              // Guests may not have server points; keep fallback
+              await saveProfile({
                 ...gp,
                 guest: true,
                 achievements: guestAch,
@@ -102,14 +104,20 @@ const ChildSwitcherModal = ({
             return (
               <TouchableOpacity
                 style={styles.childButton}
-                onPress={() => {
+                onPress={async () => {
+                  // Try to fetch fresh totals from server before switching
+                  let regPoints = rp.totalPoints != null ? rp.totalPoints : (rp.score || 0);
+                  try {
+                    const { totalPoints } = await fetchUserAchievements(rp._id || rp.id || rp.nuriUserId);
+                    if (typeof totalPoints === 'number') regPoints = totalPoints;
+                  } catch {}
                   const updated = {
                     ...rp,
                     guest: false,
                     achievements: regAch,
                     totalPoints: regPoints,
                   };
-                  saveProfile(updated);
+                  await saveProfile(updated);
                   setUser(updated);
                   setChooseChildVisible(false);
                 }}
@@ -151,18 +159,24 @@ const ChildSwitcherModal = ({
               return (
                 <TouchableOpacity
                   style={styles.childButton}
-                  onPress={() => {
+                  onPress={async () => {
+                    // Try to fetch fresh totals from server before switching
+                    let freshPoints = childPoints;
+                    try {
+                      const { totalPoints } = await fetchUserAchievements(selected._id || selected.id || selected.nuriUserId);
+                      if (typeof totalPoints === 'number') freshPoints = totalPoints;
+                    } catch {}
                     // Persist selected child profile with proper totalPoints
-                    saveProfile({
+                    await saveProfile({
                       ...selected,
                       guest: false,
                       achievements: childAchievements,
-                      totalPoints: childPoints,
+                      totalPoints: freshPoints,
                     });
                     setUser({
                       ...selected,
                       achievements: childAchievements,
-                      totalPoints: childPoints,
+                      totalPoints: freshPoints,
                     });
                     setChooseChildVisible(false);
                   }}

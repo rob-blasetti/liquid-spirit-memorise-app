@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   initAchievements,
   fetchUserAchievements,
@@ -6,7 +6,10 @@ import {
 import { grantAchievement, grantGameAchievement } from '../services/achievementGrantService';
 
 export default function useAchievements(profile, saveProfile) {
-  console.log('useAchievements profile:', profile);
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.debug('useAchievements profile:', profile);
+  }
 
   const [achievements, setAchievements] = useState(
     initAchievements(profile)
@@ -30,11 +33,14 @@ useEffect(() => {
         : initAchievements(profile);
 
       if (isMounted) {
-        setAchievements(list);
+        // Avoid redundant state updates if identical
+        const sameAsState = JSON.stringify(list) === JSON.stringify(achievements);
+        if (!sameAsState) {
+          setAchievements(list);
+        }
 
         // 3) write back only if it’s new (optional, but helps avoid extra renders)
-        const haveSame =
-          JSON.stringify(profile.achievements) === JSON.stringify(list);
+        const haveSame = JSON.stringify(profile.achievements) === JSON.stringify(list);
         if (!haveSame) {
           saveProfile({ ...profile, achievements: list, totalPoints });
         }
@@ -59,7 +65,7 @@ useEffect(() => {
   const [notification, setNotification] = useState(null);
 
   // Award an achievement by ID via service
-  const awardAchievement = async (id) => {
+  const awardAchievement = useCallback(async (id) => {
     await grantAchievement({
       id,
       profile,
@@ -68,10 +74,10 @@ useEffect(() => {
       setNotification,
       saveProfile,
     });
-  };
+  }, [profile, achievements, setAchievements, setNotification, saveProfile]);
 
   // Award achievement for a game win based on screen and level
-  const awardGameAchievement = async (screen, level) => {
+  const awardGameAchievement = useCallback(async (screen, level) => {
     await grantGameAchievement({
       screen,
       level,
@@ -81,7 +87,7 @@ useEffect(() => {
       setNotification,
       saveProfile,
     });
-  };
+  }, [profile, achievements, setAchievements, setNotification, saveProfile]);
 
   return {
     achievements,

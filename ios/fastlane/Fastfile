@@ -6,16 +6,7 @@ platform :ios do
     # Print environment variables to verify they load correctly (optional)
     UI.message "🚀 Using API_URL: #{ENV['API_URL']}"
 
-    # Authenticate with App Store Connect via API key (recommended for CI)
-    # Require a file path to the .p8 key to avoid OpenSSL curve issues on CI
-    unless ENV['ASC_KEY_PATH'] && File.exist?(ENV['ASC_KEY_PATH'])
-      UI.user_error!("ASC_KEY_PATH not set or file not found. Ensure workflow creates ios/AuthKey.p8 and exports ASC_KEY_PATH.")
-    end
-    api_key = app_store_connect_api_key(
-      key_id: ENV['ASC_KEY_ID'],
-      issuer_id: ENV['ASC_ISSUER_ID'],
-      key_filepath: ENV['ASC_KEY_PATH']
-    )
+    # Authenticate to Apple using Appfile credentials (no API key)
 
     sh "mkdir -p ios"
     sh "touch ios/Config.xcconfig"
@@ -25,8 +16,7 @@ platform :ios do
       type: "appstore",
       git_url: "git@github.com:rob-blasetti/signing-repo.git",
       app_identifier: "com.liquidspirit.nuri",
-      readonly: true,
-      api_key: api_key
+      readonly: true
     )
 
     # 2. Increment build number
@@ -44,6 +34,17 @@ platform :ios do
     )
 
     # 5. Upload to TestFlight
-    upload_to_testflight(api_key: api_key)
+    upload_to_testflight
+  end
+
+  desc "Dry run of beta lane without side effects"
+  lane :beta_dry do
+    UI.message "[DRY RUN] 🚀 Using API_URL: #{ENV['API_URL']}"
+    UI.message "[DRY RUN] Authenticate with App Store Connect via API key (ASC_KEY_* envs)"
+    UI.message "[DRY RUN] match(appstore) with signing repo, readonly"
+    UI.message "[DRY RUN] increment_build_number on liquid_spirit_memorise.xcodeproj"
+    UI.message "[DRY RUN] build_app workspace: liquid_spirit_memorise.xcworkspace, scheme: liquid_spirit_memorise"
+    UI.message "[DRY RUN] upload_to_testflight"
+    UI.success "[DRY RUN] Completed beta steps successfully"
   end
 end

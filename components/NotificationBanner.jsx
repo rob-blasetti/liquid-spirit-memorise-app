@@ -9,18 +9,20 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 
 const NotificationBanner = ({ title, onPress, onHide }) => {
-  const translateY = useRef(new Animated.Value(-80)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
+  const safeTop = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 44;
 
   useEffect(() => {
     // Slide in
     Animated.timing(translateY, {
-      toValue: 20,
+      toValue: 0,
       duration: 300,
       useNativeDriver: true,
     }).start();
@@ -28,7 +30,7 @@ const NotificationBanner = ({ title, onPress, onHide }) => {
     // Hide after 3s
     const timeout = setTimeout(() => {
       Animated.timing(translateY, {
-        toValue: -80,
+        toValue: -100,
         duration: 300,
         useNativeDriver: true,
       }).start(() => onHide && onHide());
@@ -38,7 +40,7 @@ const NotificationBanner = ({ title, onPress, onHide }) => {
   }, [translateY, onHide]);
 
   return (
-    <Animated.View style={[styles.notification, { transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.notification, { top: safeTop, transform: [{ translateY }] }]}>
       <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
         <View style={styles.content}>
           <View style={styles.textContainer}>
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,                 // smooth corners
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginTop: Platform.OS === 'ios' ? 50 : 20,  // below status bar
+    top: 0,
     // iOS shadow
     shadowColor: '#000',
     shadowOpacity: 0.1,

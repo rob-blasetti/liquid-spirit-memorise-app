@@ -1,4 +1,8 @@
 import { updateAchievementOnServer } from './achievementsService';
+import { achievements as defaultAchievements } from '../data/achievements';
+
+// Prevent re-entrant or repeated awards for the same user/achievement
+const inProgress = new Set();
 
 // Map of game screen to achievement IDs by difficulty level
 const GAME_ACHIEVEMENT_MAP = {
@@ -38,14 +42,29 @@ export async function grantAchievement({
   const alreadyEarned = achievements.some(a => a.id === id && a.earned);
   if (alreadyEarned) return;
 
+  const userId = profile._id || profile.id || profile.nuriUserId || 'local';
+  const key = `${userId}:${id}`;
+  if (inProgress.has(key)) return;
+  inProgress.add(key);
+
   // Optimistically award the achievement locally so the UI can react
-  const optimisticAchievements = achievements.map(a =>
+  let optimisticAchievements = achievements.map(a =>
     a.id === id ? { ...a, earned: true } : a
   );
-  const earned = optimisticAchievements.find(a => a.id === id);
-  if (earned) {
-    setNotification({ id: earned.id, title: earned.title });
+  let earned = optimisticAchievements.find(a => a.id === id);
+  // If the achievement is not present locally, seed it from defaults
+  if (!earned) {
+    const def = defaultAchievements.find(a => a.id === id);
+    const newEntry = {
+      id,
+      title: def?.title || id,
+      points: def?.points || 0,
+      earned: true,
+    };
+    optimisticAchievements = [...optimisticAchievements, newEntry];
+    earned = newEntry;
   }
+  setNotification({ id: earned.id, title: earned.title });
   setAchievements(optimisticAchievements);
   // Persist optimistic profile state including total points if available
   const optimisticProfile = {
@@ -57,6 +76,10 @@ export async function grantAchievement({
 
   try {
     const userId = profile._id || profile.id || profile.nuriUserId;
+    if (!userId) {
+      console.warn('grantAchievement: missing userId, skipping server sync');
+      return; // keep optimistic local state
+    }
     const { user } = await updateAchievementOnServer(userId, id);
 
     // Normalise server achievements into client shape
@@ -77,6 +100,8 @@ export async function grantAchievement({
     saveProfile(updatedProfile);
   } catch (e) {
     console.error('grantAchievement error:', e);
+  } finally {
+    inProgress.delete(key);
   }
 }
 
@@ -90,4 +115,3 @@ export async function grantGameAchievement(opts) {
   if (!id) return;
   await grantAchievement({ ...opts, id });
 }
-

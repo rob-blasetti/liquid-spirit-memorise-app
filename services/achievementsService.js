@@ -2,6 +2,7 @@
 import { achievements as defaultAchievements } from '../data/achievements';
 import { saveProfile as persistProfile } from './profileService';
 import { API_URL } from '../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Initialize achievements list for a profile.
@@ -67,16 +68,19 @@ export async function fetchUserAchievements(userId) {
  */
 export async function updateAchievementOnServer(userId, achievementId) {
   try {
-    // Call existing backend achievement endpoint
-    const response = await fetch(
-      `${API_URL}/api/nuri/achievement`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, achievementId }),
-      }
-    );
+    const token = await AsyncStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(`${API_URL}/api/nuri/achievement`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, achievementId }),
+    });
+
     if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      console.error('Achievement update failed:', response.status, text);
       throw new Error('Failed to update achievement on server');
     }
     return await response.json();

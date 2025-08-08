@@ -2,16 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import ThemedButton from '../components/ThemedButton';
-import PuzzlePiece from '../components/PuzzlePiece';
+import PuzzlePiece from '../components/PuzzlePieceSvg';
+import PuzzleSlotSvg from '../components/PuzzleSlotSvg';
 import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 
 // Dimensions and sizes
 const { width, height } = Dimensions.get('window');
-// Make puzzle pieces and slots same size for accurate fit
-const PIECE_SIZE = 50;
-const SLOT_SIZE = PIECE_SIZE;
 const MARGIN = 10;
 
 const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
@@ -33,6 +31,14 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   const cols = 4;
   // Compute number of rows based on piece count (4 columns)
   const rows = Math.ceil(count / cols);
+  // Dynamically size pieces to keep words on one line and fit the screen
+  // Slightly reduce from max fit to avoid crowding; allow a bit smaller minimum
+  const MAX_AREA_H = Math.floor(height * 0.62);
+  const sizeByW = Math.floor((width - (cols - 1) * MARGIN - 40) / cols);
+  const sizeByH = Math.floor((MAX_AREA_H - (rows - 1) * MARGIN) / rows);
+  const PIECE_SIZE = Math.max(54, Math.floor(Math.min(sizeByW, sizeByH) * 0.92));
+  const SLOT_SIZE = PIECE_SIZE;
+
   const totalW = cols * SLOT_SIZE + (cols - 1) * MARGIN;
   const totalH = rows * SLOT_SIZE + (rows - 1) * MARGIN;
   const startX = (width - totalW) / 2;
@@ -65,43 +71,101 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   // Compute initial positions of pieces scattered around puzzle perimeter (memoized)
   const initialPositions = useMemo(() => {
     const positions = [];
-    const placedPositions = [];
-    const overlaps = (a, b) => Math.abs(a.x - b.x) < PIECE_SIZE && Math.abs(a.y - b.y) < PIECE_SIZE;
-    const spawnEdges = ['top', 'left', 'right'];
-    const spawnMargin = MARGIN;
+    const placed = [];
+    const minDist = PIECE_SIZE; // minimum separation between piece origins
+    const SAFE_TOP = 16;
+    const SAFE_BOTTOM = 140; // avoid bottom nav; adjust if needed
+    const SAFE_SIDE = 10;
+
     const puzzleWidth = cols * SLOT_SIZE + (cols - 1) * MARGIN;
     const puzzleHeight = rows * SLOT_SIZE + (rows - 1) * MARGIN;
     const puzzleMinX = startX;
     const puzzleMinY = startY;
-    const puzzleMaxX = puzzleMinX + puzzleWidth - PIECE_SIZE;
-    const puzzleMaxY = puzzleMinY + puzzleHeight - PIECE_SIZE;
-    puzzleWords.forEach((_, idx) => {
-      let pos;
+    const puzzleMaxX = puzzleMinX + puzzleWidth;
+    const puzzleMaxY = puzzleMinY + puzzleHeight;
+
+    // Define spawn strips: top, left, right, bottom (above safe bottom)
+    const strips = [];
+    // Top strip
+    if (puzzleMinY - SAFE_TOP - PIECE_SIZE > SAFE_TOP) {
+      strips.push({
+        x0: SAFE_SIDE,
+        y0: SAFE_TOP,
+        x1: width - SAFE_SIDE,
+        y1: Math.max(SAFE_TOP, puzzleMinY - MARGIN - PIECE_SIZE),
+      });
+    }
+    // Left strip
+    if (puzzleMinX - SAFE_SIDE - PIECE_SIZE > SAFE_SIDE) {
+      strips.push({
+        x0: SAFE_SIDE,
+        y0: SAFE_TOP,
+        x1: Math.max(SAFE_SIDE, puzzleMinX - MARGIN),
+        y1: Math.min(height - SAFE_BOTTOM, puzzleMaxY),
+      });
+    }
+    // Right strip
+    if (width - puzzleMaxX - SAFE_SIDE - PIECE_SIZE > SAFE_SIDE) {
+      strips.push({
+        x0: Math.min(width - SAFE_SIDE, puzzleMaxX + MARGIN),
+        y0: SAFE_TOP,
+        x1: width - SAFE_SIDE,
+        y1: Math.min(height - SAFE_BOTTOM, puzzleMaxY),
+      });
+    }
+    // Bottom strip (avoid bottom nav)
+    if (height - SAFE_BOTTOM - (puzzleMaxY + MARGIN + PIECE_SIZE) > 0) {
+      strips.push({
+        x0: SAFE_SIDE,
+        y0: Math.min(height - SAFE_BOTTOM, puzzleMaxY + MARGIN),
+        x1: width - SAFE_SIDE,
+        y1: height - SAFE_BOTTOM,
+      });
+    }
+
+    // Fallback: if no strips available (rare), allow top area
+    if (strips.length === 0) {
+      strips.push({ x0: SAFE_SIDE, y0: SAFE_TOP, x1: width - SAFE_SIDE, y1: Math.min(height - SAFE_BOTTOM, puzzleMinY - MARGIN) });
+    }
+
+    const area = (r) => Math.max(0, (r.x1 - r.x0 - PIECE_SIZE)) * Math.max(0, (r.y1 - r.y0 - PIECE_SIZE));
+    const weights = strips.map(area);
+    const totalArea = weights.reduce((a, b) => a + b, 0) || 1;
+    const pickStrip = () => {
+      let r = Math.random() * totalArea;
+      for (let i = 0; i < strips.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return strips[i];
+      }
+      return strips[strips.length - 1];
+    };
+    const overlaps = (a, b, dist) => Math.abs(a.x - b.x) < dist && Math.abs(a.y - b.y) < dist;
+
+    puzzleWords.forEach(() => {
+      let pos = { x: SAFE_SIDE, y: SAFE_TOP };
       let attempts = 0;
-      do {
-        const edge = spawnEdges[Math.floor(Math.random() * spawnEdges.length)];
-        let x = 0, y = 0;
-        if (edge === 'top') {
-          x = puzzleMinX + Math.random() * (puzzleMaxX - puzzleMinX);
-          y = puzzleMinY - PIECE_SIZE - spawnMargin;
-        } else if (edge === 'bottom') {
-          x = puzzleMinX + Math.random() * (puzzleMaxX - puzzleMinX);
-          y = puzzleMinY + puzzleHeight + spawnMargin;
-        } else if (edge === 'left') {
-          x = puzzleMinX - PIECE_SIZE - spawnMargin;
-          y = puzzleMinY + Math.random() * (puzzleMaxY - puzzleMinY);
-        } else {
-          x = puzzleMinX + puzzleWidth + spawnMargin;
-          y = puzzleMinY + Math.random() * (puzzleMaxY - puzzleMinY);
-        }
+      let sep = minDist;
+      while (attempts < 300) {
+        const strip = pickStrip();
+        const xMin = strip.x0;
+        const xMax = strip.x1 - PIECE_SIZE;
+        const yMin = strip.y0;
+        const yMax = strip.y1 - PIECE_SIZE;
+        if (xMax <= xMin || yMax <= yMin) { attempts++; continue; }
+        const x = xMin + Math.random() * (xMax - xMin);
+        const y = yMin + Math.random() * (yMax - yMin);
         pos = { x, y };
+        if (!placed.some(p => overlaps(p, pos, sep))) break;
         attempts++;
-      } while (attempts < 100 && placedPositions.some(p => overlaps(p, pos)));
-      placedPositions.push(pos);
+        if (attempts % 60 === 0 && sep > PIECE_SIZE * 0.6) {
+          sep = Math.floor(sep * 0.9); // relax separation gradually
+        }
+      }
+      placed.push(pos);
       positions.push(pos);
     });
     return positions;
-  }, [puzzleWords, rows, cols, startX, startY]);
+  }, [puzzleWords, rows, cols, startX, startY, SLOT_SIZE, PIECE_SIZE]);
   
   // Randomize which pieces are pre-placed
   const prePlacedIndices = useMemo(() => {
@@ -172,149 +236,16 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
       <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Shape Builder</Text>
       <Text style={styles.description}>Drag each word into its outline slot.</Text>
-      {/* Outline slots with matching connectors */}
-      {slots.map((pos, i) => {
-        const { top: topType, right: rightType, bottom: bottomType, left: leftType } = connectors[i];
-        const bump = PIECE_SIZE / 3;
-        return (
-          <View
-            key={i}
-            style={[
-              styles.slot,
-              { left: pos.x, top: pos.y, width: SLOT_SIZE, height: SLOT_SIZE },
-            ]}
-          >
-            {/* Top connector */}
-            {topType === 'convex' && (
-              <View style={{
-                position: 'absolute',
-                top: 0,
-                left: SLOT_SIZE / 2 - bump / 2,
-                width: bump,
-                height: bump / 2,
-                backgroundColor: themeVariables.neutralDark,
-                borderColor: themeVariables.primaryColor,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderLeftWidth: StyleSheet.hairlineWidth,
-                borderRightWidth: StyleSheet.hairlineWidth,
-                borderTopWidth: 0,
-                borderBottomLeftRadius: bump / 2,
-                borderBottomRightRadius: bump / 2,
-              }} />
-            )}
-            {topType === 'concave' && (
-              <View style={{
-                position: 'absolute',
-                top: -bump / 2,
-                left: SLOT_SIZE / 2 - bump / 2,
-                width: bump,
-                height: bump / 2,
-                backgroundColor: themeVariables.primaryColorLight,
-                borderColor: themeVariables.primaryColor,
-                borderWidth: 1,
-                borderTopLeftRadius: bump / 2,
-                borderTopRightRadius: bump / 2,
-              }} />
-            )}
-            {/* Bottom connector */}
-            {bottomType === 'convex' && (
-              <View style={{
-                position: 'absolute',
-                bottom: 0,
-                left: SLOT_SIZE / 2 - bump / 2,
-                width: bump,
-                height: bump / 2,
-                backgroundColor: themeVariables.neutralDark,
-                borderColor: themeVariables.primaryColor,
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderLeftWidth: StyleSheet.hairlineWidth,
-                borderRightWidth: StyleSheet.hairlineWidth,
-                borderBottomWidth: 0,
-                borderTopLeftRadius: bump / 2,
-                borderTopRightRadius: bump / 2,
-              }} />
-            )}
-            {bottomType === 'concave' && (
-              <View style={{
-                position: 'absolute',
-                bottom: -bump / 2,
-                left: SLOT_SIZE / 2 - bump / 2,
-                width: bump,
-                height: bump / 2,
-                backgroundColor: themeVariables.primaryColorLight,
-                borderColor: themeVariables.primaryColor,
-                borderWidth: 1,
-                borderBottomLeftRadius: bump / 2,
-                borderBottomRightRadius: bump / 2,
-              }} />
-            )}
-            {/* Left connector */}
-            {leftType === 'convex' && (
-              <View style={{
-                position: 'absolute',
-                left: 0,
-                top: SLOT_SIZE / 2 - bump / 2,
-                width: bump / 2,
-                height: bump,
-                backgroundColor: themeVariables.neutralDark,
-                borderColor: themeVariables.primaryColor,
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderLeftWidth: 0,
-                borderRightWidth: StyleSheet.hairlineWidth,
-                borderTopRightRadius: bump / 2,
-                borderBottomRightRadius: bump / 2,
-              }} />
-            )}
-            {leftType === 'concave' && (
-              <View style={{
-                position: 'absolute',
-                left: -bump / 2,
-                top: SLOT_SIZE / 2 - bump / 2,
-                width: bump / 2,
-                height: bump,
-                backgroundColor: themeVariables.primaryColorLight,
-                borderColor: themeVariables.primaryColor,
-                borderWidth: 1,
-                borderTopLeftRadius: bump / 2,
-                borderBottomLeftRadius: bump / 2,
-              }} />
-            )}
-            {/* Right connector */}
-            {rightType === 'convex' && (
-              <View style={{
-                position: 'absolute',
-                right: 0,
-                top: SLOT_SIZE / 2 - bump / 2,
-                width: bump / 2,
-                height: bump,
-                backgroundColor: themeVariables.neutralDark,
-                borderColor: themeVariables.primaryColor,
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderLeftWidth: StyleSheet.hairlineWidth,
-                borderRightWidth: 0,
-                borderTopLeftRadius: bump / 2,
-                borderBottomLeftRadius: bump / 2,
-              }} />
-            )}
-            {rightType === 'concave' && (
-              <View style={{
-                position: 'absolute',
-                right: -bump / 2,
-                top: SLOT_SIZE / 2 - bump / 2,
-                width: bump / 2,
-                height: bump,
-                backgroundColor: themeVariables.primaryColorLight,
-                borderColor: themeVariables.primaryColor,
-                borderWidth: 1,
-                borderTopRightRadius: bump / 2,
-                borderBottomRightRadius: bump / 2,
-              }} />
-            )}
-          </View>
-        );
-      })}
+      {/* Outline slots rendered as true jigsaw silhouettes */}
+      {slots.map((pos, i) => (
+        <PuzzleSlotSvg
+          key={`slot-${i}`}
+          left={pos.x}
+          top={pos.y}
+          size={SLOT_SIZE}
+          connectors={connectors[i]}
+        />
+      ))}
       {/* Draggable puzzle pieces */}
       {puzzleWords.map((word, i) => {
         const { pan, panResponder, placed } = pieces[i];
