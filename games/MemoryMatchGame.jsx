@@ -17,13 +17,12 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
   const [showBanner, setShowBanner] = useState(false);
   const [guessesLeft, setGuessesLeft] = useState(0);
-  // show banner on win
+  // show banner on win; call onWin after banner completes for consistency
   useEffect(() => {
     if (status === 'won') {
       setShowBanner(true);
-      if (onWin) onWin();
     }
-  }, [status, onWin]);
+  }, [status]);
 
   const initGame = useCallback(() => {
     const words = text.split(/\s+/);
@@ -92,8 +91,15 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const rows = Math.ceil(cards.length / columns);
   return (
     <View style={styles.container}>
-      {/* Win overlay */}
-      {showBanner && <RewardBanner onAnimationEnd={() => setShowBanner(false)} />}
+      {/* Win overlay; notify parent on completion */}
+      {showBanner && (
+        <RewardBanner
+          onAnimationEnd={() => {
+            setShowBanner(false);
+            if (onWin) onWin();
+          }}
+        />
+      )}
       <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Memory Match</Text>
       <Text style={styles.description}>Find the matching word pairs.</Text>

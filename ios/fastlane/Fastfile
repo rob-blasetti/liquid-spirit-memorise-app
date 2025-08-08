@@ -3,8 +3,16 @@ default_platform(:ios)
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do
-    # Print environment variables to verify they load correctly
+    # Print environment variables to verify they load correctly (optional)
     UI.message "🚀 Using API_URL: #{ENV['API_URL']}"
+
+    # Authenticate with App Store Connect via API key (recommended for CI)
+    api_key = app_store_connect_api_key(
+      key_id: ENV['ASC_KEY_ID'],
+      issuer_id: ENV['ASC_ISSUER_ID'],
+      key_content: ENV['ASC_KEY_CONTENT'], # Base64 or raw P8 content
+      is_key_content_base64: true
+    )
 
     sh "mkdir -p ios"
     sh "touch ios/Config.xcconfig"
@@ -13,7 +21,9 @@ platform :ios do
     match(
       type: "appstore",
       git_url: "git@github.com:rob-blasetti/signing-repo.git",
-      app_identifier: "com.liquidspirit.nuri"
+      app_identifier: "com.liquidspirit.nuri",
+      readonly: true,
+      api_key: api_key
     )
 
     # 2. Increment build number
@@ -31,6 +41,6 @@ platform :ios do
     )
 
     # 5. Upload to TestFlight
-    upload_to_testflight
+    upload_to_testflight(api_key: api_key)
   end
 end

@@ -1,0 +1,109 @@
+name: Mobile Release (iOS TestFlight & Android Internal)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-testflight:
+    runs-on: macos-14
+    env:
+      # App Store Connect API key (set these in repo Secrets)
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT_BASE64 }}
+      # Match password (if your signing repo is encrypted)
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      # Optional: forwarded to Fastlane for logging
+      API_URL: ${{ secrets.API_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install fastlane -N
+
+      - name: Configure SSH for match signing repo
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
+
+      - name: Add GitHub to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: |
+          bundle install --jobs 4 --retry 3
+          bundle exec pod install --repo-update
+
+      - name: Build and upload to TestFlight (Fastlane)
+        working-directory: ios
+        run: fastlane beta
+
+  android-internal:
+    runs-on: macos-14
+    env:
+      GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+      ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Decode and configure Android keystore
+        working-directory: android/app
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > upload.keystore
+          echo "ANDROID_SIGNING_KEYSTORE_PATH=$PWD/upload.keystore" >> $GITHUB_ENV
+
+      - name: Build and upload to Play Internal (Fastlane)
+        working-directory: android
+        run: |
+          gem install fastlane -N
+          bundletool_version=1.15.6
+          fastlane internal

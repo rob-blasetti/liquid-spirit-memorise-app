@@ -103,15 +103,14 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
     }
   };
 
-  // show banner on win
+  // show banner on win; call onWin after banner completes for consistency
   useEffect(() => {
     if (status === 'won') {
       setShowBanner(true);
       // record difficulty completion
       markDifficultyComplete(level);
-      if (onWin) onWin();
     }
-  }, [status]);
+  }, [status, level, markDifficultyComplete]);
   // prepare letter choices on mount and after each guess
   useEffect(() => {
     if (status === 'playing') {
@@ -141,7 +140,14 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
           </View>
         )}
       </View>
-      {showBanner && <RewardBanner onAnimationEnd={() => setShowBanner(false)} />}
+      {showBanner && (
+        <RewardBanner
+          onAnimationEnd={() => {
+            setShowBanner(false);
+            if (onWin) onWin();
+          }}
+        />
+      )}
     </View>
   );
 };
