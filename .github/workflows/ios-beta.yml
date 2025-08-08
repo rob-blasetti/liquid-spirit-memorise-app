@@ -40,9 +40,10 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true
 
-      - name: Install Fastlane
+      - name: Prepare ASC API key file
         run: |
-          gem install fastlane -N
+          echo "$ASC_KEY_CONTENT_BASE64" | base64 --decode > ios/AuthKey.p8
+          echo "ASC_KEY_PATH=$GITHUB_WORKSPACE/ios/AuthKey.p8" >> $GITHUB_ENV
 
       - name: Configure SSH for match signing repo
         uses: webfactory/ssh-agent@v0.9.0
@@ -63,7 +64,7 @@ jobs:
 
       - name: Build and upload to TestFlight (Fastlane)
         working-directory: ios
-        run: fastlane beta
+        run: bundle exec fastlane beta
 
   android-internal:
     runs-on: macos-14

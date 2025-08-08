@@ -6,13 +6,22 @@ platform :ios do
     # Print environment variables to verify they load correctly (optional)
     UI.message "🚀 Using API_URL: #{ENV['API_URL']}"
 
-    # Authenticate with App Store Connect via API key (recommended for CI)
-    api_key = app_store_connect_api_key(
-      key_id: ENV['ASC_KEY_ID'],
-      issuer_id: ENV['ASC_ISSUER_ID'],
-      key_content: ENV['ASC_KEY_CONTENT'], # Base64 or raw P8 content
-      is_key_content_base64: true
-    )
+    # Authenticate with App Store Connect via API key (recommended for CI).
+    # Prefer file path when provided to avoid OpenSSL curve issues on CI.
+    api_key = if ENV['ASC_KEY_PATH'] && File.exist?(ENV['ASC_KEY_PATH'])
+      app_store_connect_api_key(
+        key_id: ENV['ASC_KEY_ID'],
+        issuer_id: ENV['ASC_ISSUER_ID'],
+        key_filepath: ENV['ASC_KEY_PATH']
+      )
+    else
+      app_store_connect_api_key(
+        key_id: ENV['ASC_KEY_ID'],
+        issuer_id: ENV['ASC_ISSUER_ID'],
+        key_content: ENV['ASC_KEY_CONTENT'],
+        is_key_content_base64: true
+      )
+    end
 
     sh "mkdir -p ios"
     sh "touch ios/Config.xcconfig"
