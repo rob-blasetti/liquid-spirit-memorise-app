@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
-import RewardBanner from '../components/RewardBanner';
 import ThemedButton from '../components/ThemedButton';
 import PuzzlePiece from '../components/PuzzlePiece';
 import { useUser } from '../contexts/UserContext';
@@ -120,14 +119,10 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   // Refs for each piece: pan position, placed flag, and PanResponder
   // Track number of placed pieces (start with pre-placed count)
   const [placedCount, setPlacedCount] = useState(prePlaced);
-  // Show reward banner when puzzle completes
-  const [showReward, setShowReward] = useState(false);
+  // Notify parent when puzzle completes; overlay handled in GameRenderer
   useEffect(() => {
-    if (placedCount === count) {
-      setShowReward(true);
-      if (onWin) onWin();
-    }
-  }, [placedCount, count]);
+    if (placedCount === count && onWin) onWin();
+  }, [placedCount, count, onWin]);
   // Reset placedCount when difficulty changes
   useEffect(() => {
     setPlacedCount(prePlaced);
@@ -335,13 +330,7 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
           />
         );
       })}
-      {/* Reward banner on win */}
-      {showReward && (
-        <RewardBanner
-          text={`Well Done${user?.firstName ? `, ${user.firstName}` : ''}!`}
-          onAnimationEnd={() => setShowReward(false)}
-        />
-      )}
+      {/* Win overlay handled at parent */}
     </View>
   );
 };

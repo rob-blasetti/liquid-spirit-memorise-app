@@ -23,7 +23,10 @@ const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
 const AchievementsScreen = () => {
   const { achievements = [] } = useAchievementsContext();
-  console.log('Achievements screen achievements:', achievements);
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.debug('Achievements screen achievements:', achievements);
+  }
   // compute total points earned (sum of earned achievements)
   const totalPoints = achievements.reduce((sum, ach) => ach.earned ? sum + ach.points : sum, 0);
   // Group achievements into categories based on id prefixes

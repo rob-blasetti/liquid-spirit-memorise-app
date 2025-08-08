@@ -20,7 +20,10 @@ const HomeScreen = ({
   onAvatarPress,
   onJourney,
 }) => {
-  console.log('HomeScreen achievements:', achievements);
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.debug('HomeScreen achievements:', achievements);
+  }
   // Determine prayer and quote based on grade and progress
   let prayerToShow = null;
   let quoteToShow = null;

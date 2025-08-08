@@ -36,7 +36,10 @@ export async function fetchUserAchievements(userId) {
     }
     const { achievements, totalPoints } = await res.json();
 
-    console.log('Fetched achievements:', achievements, 'Total points:', totalPoints);
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);
+    }
     return {
       achievements,
       totalPoints,

@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
-import RewardBanner from '../components/RewardBanner';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
@@ -15,14 +14,12 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const [selected, setSelected] = useState([]);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  const [showBanner, setShowBanner] = useState(false);
+  // Win banner handled by GameRenderer overlay via onWin
   const [guessesLeft, setGuessesLeft] = useState(0);
-  // show banner on win; call onWin after banner completes for consistency
+  // Notify parent on win; overlay is handled in GameRenderer
   useEffect(() => {
-    if (status === 'won') {
-      setShowBanner(true);
-    }
-  }, [status]);
+    if (status === 'won' && onWin) onWin();
+  }, [status, onWin]);
 
   const initGame = useCallback(() => {
     const words = text.split(/\s+/);
@@ -91,15 +88,7 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const rows = Math.ceil(cards.length / columns);
   return (
     <View style={styles.container}>
-      {/* Win overlay; notify parent on completion */}
-      {showBanner && (
-        <RewardBanner
-          onAnimationEnd={() => {
-            setShowBanner(false);
-            if (onWin) onWin();
-          }}
-        />
-      )}
+      {/* Win overlay handled at parent */}
       <GameTopBar onBack={onBack} />
       <Text style={styles.title}>Memory Match</Text>
       <Text style={styles.description}>Find the matching word pairs.</Text>

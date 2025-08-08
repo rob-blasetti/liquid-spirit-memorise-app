@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
-import RewardBanner from '../components/RewardBanner';
 import themeVariables from '../styles/theme';
 
 // Accept onWin callback to award achievements after reward banner
@@ -16,13 +15,10 @@ const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
   const [message, setMessage] = useState('');
   const [guessesLeft, setGuessesLeft] = useState(3);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  const [showBanner, setShowBanner] = useState(false);
-  // show reward banner on win
+  // Notify parent on win; overlay handled in GameRenderer
   useEffect(() => {
-    if (status === 'won') {
-      setShowBanner(true);
-    }
-  }, [status]);
+    if (status === 'won' && onWin) onWin();
+  }, [status, onWin]);
   const starAnimsRef = useRef([]);
 
   useEffect(() => {
@@ -118,14 +114,7 @@ const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
         </>
       )}
       {status === 'lost' && <Text style={styles.message}>Try again</Text>}
-      {showBanner && (
-        <RewardBanner
-          onAnimationEnd={() => {
-            setShowBanner(false);
-            if (onWin) onWin();
-          }}
-        />
-      )}
+      {/* Win overlay handled at parent */}
     </View>
   );
 };

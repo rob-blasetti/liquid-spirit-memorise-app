@@ -29,10 +29,9 @@ import BottomNav from '../navigation/BottomNav';
 import NotificationBanner from './NotificationBanner';
 import ChildSwitcherModal from './ChildSwitcherModal';
 import GameRenderer from './GameRenderer';
+import { isGameScreen } from '../navigation/router';
 import FastImage from 'react-native-fast-image';
-import { grade1Lessons } from '../data/grade1';
-import { quoteMap } from '../data/grade2';
-import { quoteMap as quoteMap2b } from '../data/grade2b';
+import { getCurrentContent, getContentFor } from '../services/contentSelector';
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
 import useProfile from '../hooks/useProfile';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -91,39 +90,13 @@ const MainApp = () => {
   const handleDailyChallenge = () => {
     awardAchievement('daily');
     const { setNumber, lessonNumber } = getCurrentProgress();
-    let content = '';
-    if (profile.grade == 1) {
-      // Grade 1: show prayer for current lesson
-      content = grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '';
-    } else if (profile.grade == 2) {
-      // Grade 2: show quote text for current set and lesson
-      const key = `${setNumber}-${lessonNumber}`;
-      content = quoteMap[key] || '';
-    } else if (profile.grade === '2b') {
-      // Grade 2b: show quote text for current set and lesson from grade2b data
-      const key = `${setNumber}-${lessonNumber}`;
-      const qObj = quoteMap2b[key];
-      content = qObj?.text || '';
-    }
+    const content = getContentFor(profile, setNumber, lessonNumber, { type: 'prayer' });
     goTo('practice', { quote: content, setNumber, lessonNumber });
   };
 
   const playSelectedGame = (gameId) => {
     const { setNumber, lessonNumber } = getCurrentProgress();
-    let content = '';
-    if (profile?.grade == 1) {
-      // Grade 1: use lesson quote
-      const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
-      content = lesson ? lesson.quote : '';
-    } else if (profile?.grade == 2) {
-      // Grade 2: use quote text from grade2 data
-      const qObj = quoteMap[`${setNumber}-${lessonNumber}`];
-      content = qObj?.text || '';
-    } else if (profile?.grade === '2b') {
-      // Grade 2b: use quote text from grade2b data
-      const qObj = quoteMap2b[`${setNumber}-${lessonNumber}`];
-      content = qObj?.text || '';
-    }
+    const content = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
     goTo(gameId, { quote: content, setNumber, lessonNumber, fromGames: true, lessonScreen: nav.screen });
   };
 
@@ -193,7 +166,7 @@ const MainApp = () => {
         </NavigationContainer>
       );
     }
-    if (['practice', 'tapGame', 'scrambleGame', 'nextWordGame', 'memoryGame', 'flashGame', 'revealGame', 'firstLetterGame', 'letterScrambleGame', 'fastTypeGame', 'hangmanGame', 'fillBlankGame', 'shapeBuilderGame', 'colorSwitchGame', 'rhythmRepeatGame', 'silhouetteSearchGame', 'memoryMazeGame', 'sceneChangeGame', 'wordSwapGame', 'buildRecallGame', 'bubblePopOrderGame'].includes(nav.screen)) {
+    if (isGameScreen(nav.screen)) {
       const backHandler = nav.fromGames ? goHome : goBackToLesson;
       return (
         <GameRenderer
@@ -321,21 +294,7 @@ const MainApp = () => {
         );
       default: {
         const { setNumber, lessonNumber } = getCurrentProgress();
-        let content = '';
-        if (profile.grade == 1) {
-          // Grade 1: show prayer for current lesson
-          content = grade1Lessons.find(l => l.lesson === lessonNumber)?.prayer || '';
-        } else if (profile.grade == 2) {
-          // Grade 2: show quote text from grade2 data
-          const key = `${setNumber}-${lessonNumber}`;
-          const qObj = quoteMap[key];
-          content = qObj?.text || '';
-        } else if (profile.grade === '2b') {
-          // Grade 2b: show quote text from grade2b data
-          const key = `${setNumber}-${lessonNumber}`;
-          const qObj = quoteMap2b[key];
-          content = qObj?.text || '';
-        }
+        const content = getCurrentContent(profile, getCurrentProgress, { type: 'prayer' });
         return (
           <HomeScreen
             profile={profile}

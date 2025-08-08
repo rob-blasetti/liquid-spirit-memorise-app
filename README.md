@@ -95,3 +95,25 @@ To learn more about React Native, take a look at the following resources:
 - [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
 - [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+
+## Cloud Demo (Appetize)
+
+You can build and stream the app in a browser without a local simulator using Appetize.
+
+Prerequisites
+- Add a repo secret `APPETIZE_API_TOKEN` (from your Appetize account).
+- Ensure Actions are enabled for this repository.
+
+How to run
+- Go to GitHub → Actions → `Cloud Demo (Appetize)` → `Run workflow`.
+- Leave inputs empty to create new demos, or supply existing Appetize app tokens to update:
+  - `android_update_app_token`
+  - `ios_update_app_token`
+
+What it does
+- Builds Android Debug APK and iOS Simulator app on macOS runners.
+- Uploads artifacts to Appetize and prints shareable links in the run Summary.
+
+Notes
+- iOS uses a Simulator build (no signing required). Android uses a Debug APK.
+- First run can take 5–10 minutes; subsequent runs are faster due to caching.

@@ -4,7 +4,6 @@ import { useUser } from '../contexts/UserContext';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
-import RewardBanner from '../components/RewardBanner';
 import themeVariables from '../styles/theme';
 
 const MAX_WRONG = 8;
@@ -41,14 +40,13 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
   const [wrong, setWrong] = useState(0);
   const [letterChoices, setLetterChoices] = useState([]);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  const [showBanner, setShowBanner] = useState(false);
+  // Win banner handled by GameRenderer overlay via onWin
 
   // Reset game state when difficulty level (or text) changes
   useEffect(() => {
     setGuessed(initGuessed(text, level));
     setWrong(0);
     setStatus('playing');
-    setShowBanner(false);
   }, [level, text]);
   const letters = normalized.split('');
   const masked = letters
@@ -103,14 +101,14 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
     }
   };
 
-  // show banner on win; call onWin after banner completes for consistency
+  // Notify parent on win; overlay is handled in GameRenderer
   useEffect(() => {
     if (status === 'won') {
-      setShowBanner(true);
       // record difficulty completion
       markDifficultyComplete(level);
+      if (onWin) onWin();
     }
-  }, [status, level, markDifficultyComplete]);
+  }, [status, level, markDifficultyComplete, onWin]);
   // prepare letter choices on mount and after each guess
   useEffect(() => {
     if (status === 'playing') {
@@ -140,14 +138,7 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
           </View>
         )}
       </View>
-      {showBanner && (
-        <RewardBanner
-          onAnimationEnd={() => {
-            setShowBanner(false);
-            if (onWin) onWin();
-          }}
-        />
-      )}
+      {/* Win overlay handled at parent */}
     </View>
   );
 };
