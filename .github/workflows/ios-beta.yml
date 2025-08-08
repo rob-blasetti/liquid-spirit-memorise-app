@@ -38,7 +38,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install fastlane -N
 
       - name: Prepare ASC API key file
         run: |
@@ -64,7 +67,7 @@ jobs:
 
       - name: Build and upload to TestFlight (Fastlane)
         working-directory: ios
-        run: bundle exec fastlane beta
+        run: fastlane beta
 
   android-internal:
     runs-on: macos-14

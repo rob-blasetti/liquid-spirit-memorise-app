@@ -15,5 +15,4 @@ gem 'logger'
 gem 'benchmark'
 gem 'mutex_m'
 
-# iOS release pipeline
-gem 'fastlane', '~> 2.228'
+# Note: fastlane is installed via CI, not bundled here.
