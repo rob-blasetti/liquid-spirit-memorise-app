@@ -47,6 +47,11 @@ jobs:
         run: |
           echo "$ASC_KEY_CONTENT_BASE64" | base64 --decode > ios/AuthKey.p8
           echo "ASC_KEY_PATH=$GITHUB_WORKSPACE/ios/AuthKey.p8" >> $GITHUB_ENV
+          chmod 600 ios/AuthKey.p8
+      - name: Verify ASC key file exists
+        run: |
+          test -f ios/AuthKey.p8 && echo "AuthKey present." || (echo "AuthKey missing" && exit 1)
+          ls -l ios/AuthKey.p8
 
       - name: Configure SSH for match signing repo
         uses: webfactory/ssh-agent@v0.9.0
