@@ -1,0 +1,137 @@
+name: Cloud Demo (Appetize)
+
+on:
+  workflow_dispatch:
+    inputs:
+      android_update_app_token:
+        description: "Optional: existing Appetize app token to update (Android)"
+        required: false
+      ios_update_app_token:
+        description: "Optional: existing Appetize app token to update (iOS)"
+        required: false
+
+jobs:
+  android-demo:
+    runs-on: macos-14
+    env:
+      APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Build Android debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK to Appetize
+        id: upload_android
+        env:
+          APP_TOKEN: ${{ github.event.inputs.android_update_app_token }}
+        run: |
+          APK=$(ls -1 app/build/outputs/apk/debug/*-debug.apk | head -n1)
+          test -n "$APK" || (echo "No APK found" && exit 1)
+          echo "APK path: $APK"
+          if [ -n "$APP_TOKEN" ]; then
+            RESP=$(curl -s -X POST \
+              -H "Authorization: Bearer ${APPETIZE_API_TOKEN}" \
+              -F "file=@${APK}" \
+              -F "platform=android" \
+              -F "appToken=${APP_TOKEN}" \
+              https://api.appetize.io/v1/apps)
+          else
+            RESP=$(curl -s -X POST \
+              -H "Authorization: Bearer ${APPETIZE_API_TOKEN}" \
+              -F "file=@${APK}" \
+              -F "platform=android" \
+              -F "public=true" \
+              https://api.appetize.io/v1/apps)
+          fi
+          echo "Response: $RESP"
+          URL=$(echo "$RESP" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("publicURL") or json.load(sys.stdin).get("url") or "")') || true
+          echo "android_url=$URL" >> $GITHUB_OUTPUT
+          echo "\nAndroid demo: $URL" >> $GITHUB_STEP_SUMMARY
+
+  ios-demo:
+    runs-on: macos-14
+    needs: android-demo
+    env:
+      APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: |
+          bundle install --jobs 4 --retry 3 || true
+          bundle exec pod install || pod install
+
+      - name: Build iOS Simulator .app
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -workspace liquid_spirit_memorise.xcworkspace \
+            -scheme liquid_spirit_memorise \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            build | xcpretty || true
+          APP_PATH=$(ls -1d build/Build/Products/Debug-iphonesimulator/*.app | head -n1)
+          test -d "$APP_PATH" || (echo "Simulator .app not found" && exit 1)
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+
+      - name: Zip Simulator app
+        working-directory: ios
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ios-sim-app.zip
+
+      - name: Upload iOS app to Appetize
+        id: upload_ios
+        env:
+          APP_TOKEN: ${{ github.event.inputs.ios_update_app_token }}
+        run: |
+          if [ -n "$APP_TOKEN" ]; then
+            RESP=$(curl -s -X POST \
+              -H "Authorization: Bearer ${APPETIZE_API_TOKEN}" \
+              -F "file=@ios/ios-sim-app.zip" \
+              -F "platform=ios" \
+              -F "appToken=${APP_TOKEN}" \
+              https://api.appetize.io/v1/apps)
+          else
+            RESP=$(curl -s -X POST \
+              -H "Authorization: Bearer ${APPETIZE_API_TOKEN}" \
+              -F "file=@ios/ios-sim-app.zip" \
+              -F "platform=ios" \
+              -F "public=true" \
+              https://api.appetize.io/v1/apps)
+          fi
+          echo "Response: $RESP"
+          URL=$(echo "$RESP" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("publicURL") or json.load(sys.stdin).get("url") or "")') || true
+          echo "ios_url=$URL" >> $GITHUB_OUTPUT
+          echo "iOS demo: $URL" >> $GITHUB_STEP_SUMMARY
+
