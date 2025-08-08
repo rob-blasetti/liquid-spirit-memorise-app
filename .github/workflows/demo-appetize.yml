@@ -74,7 +74,8 @@ jobs:
               https://api.appetize.io/v1/apps)
           fi
           echo "Response: $RESP"
-          URL=$(echo "$RESP" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("publicURL") or json.load(sys.stdin).get("url") or "")') || true
+          # Parse response once to avoid JSONDecodeError when stdin is read twice
+          URL=$(echo "$RESP" | python3 -c 'import sys, json; d=json.load(sys.stdin); print(d.get("publicURL") or d.get("url") or "")') || true
           echo "ios_url=$URL" >> $GITHUB_OUTPUT
           echo "iOS demo: $URL" >> $GITHUB_STEP_SUMMARY
 
@@ -112,9 +113,15 @@ jobs:
         id: upload_android
         env:
           APP_TOKEN: ${{ github.event.inputs.android_update_app_token }}
+        working-directory: android
         run: |
-          APK=$(ls -1 app/build/outputs/apk/debug/*-debug.apk | head -n1)
-          test -n "$APK" || (echo "No APK found" && exit 1)
+          # Find a debug APK produced by assembleDebug
+          APK=$(ls -1 app/build/outputs/apk/debug/*debug.apk 2>/dev/null | head -n1)
+          if [ -z "$APK" ]; then
+            echo "No APK found under app/build/outputs/apk/debug. Listing outputs for debugging:" 
+            find app/build/outputs -maxdepth 4 -type f -print || true
+            exit 1
+          fi
           echo "APK path: $APK"
           if [ -n "$APP_TOKEN" ]; then
             RESP=$(curl -s -X POST \
@@ -132,6 +139,7 @@ jobs:
               https://api.appetize.io/v1/apps)
           fi
           echo "Response: $RESP"
-          URL=$(echo "$RESP" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("publicURL") or json.load(sys.stdin).get("url") or "")') || true
+          # Parse response once to avoid JSONDecodeError when stdin is read twice
+          URL=$(echo "$RESP" | python3 -c 'import sys, json; d=json.load(sys.stdin); print(d.get("publicURL") or d.get("url") or "")') || true
           echo "android_url=$URL" >> $GITHUB_OUTPUT
           echo "\nAndroid demo: $URL" >> $GITHUB_STEP_SUMMARY
