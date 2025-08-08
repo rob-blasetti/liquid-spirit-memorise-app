@@ -117,3 +117,4 @@ What it does
 Notes
 - iOS uses a Simulator build (no signing required). Android uses a Debug APK.
 - First run can take 5–10 minutes; subsequent runs are faster due to caching.
+- For Android cloud demos, `lottie-react-native` is excluded via `react-native.config.js` to avoid a Kotlin nullability build error. If you add Lottie animations, remove that override and pin a compatible Lottie version.
