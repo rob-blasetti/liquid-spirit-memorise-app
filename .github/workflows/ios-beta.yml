@@ -1,9 +1,7 @@
 name: Mobile Release (iOS TestFlight & Android Internal)
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 concurrency:
   group: mobile-release-${{ github.ref }}
