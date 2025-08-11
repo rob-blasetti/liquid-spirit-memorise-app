@@ -24,5 +24,6 @@ export const lazyGameScreens = {
   wordSwapGame: lazy(() => import('./WordSwapGame')),
   buildRecallGame: lazy(() => import('./BuildRecallGame')),
   bubblePopOrderGame: lazy(() => import('./BubblePopOrderGame')),
+  wordRacerGame: lazy(() => import('./WordRacerGame')),
 };
 

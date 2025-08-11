@@ -7,6 +7,7 @@ export const gameIds = [
   'shapeBuilderGame',
   'hangmanGame',
   'bubblePopOrderGame',
+  'wordRacerGame',
   // 'practice',
   // 'tapGame',
   // 'scrambleGame',

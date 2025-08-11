@@ -298,4 +298,31 @@ export const achievements = [
     prereq: 'bubble2',
     earned: false,
   },
+  // Word Racer achievements by difficulty
+  {
+    id: 'wordRacer1',
+    title: 'Word Racer Novice',
+    description: 'Complete Word Racer on Easy difficulty',
+    icon: 'trophy',
+    points: 5,
+    earned: false,
+  },
+  {
+    id: 'wordRacer2',
+    title: 'Word Racer Intermediate',
+    description: 'Complete Word Racer on Medium difficulty',
+    icon: 'trophy',
+    points: 10,
+    prereq: 'wordRacer1',
+    earned: false,
+  },
+  {
+    id: 'wordRacer3',
+    title: 'Word Racer Master',
+    description: 'Complete Word Racer on Hard difficulty',
+    icon: 'trophy',
+    points: 15,
+    prereq: 'wordRacer2',
+    earned: false,
+  },
 ];
