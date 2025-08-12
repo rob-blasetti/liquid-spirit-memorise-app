@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
@@ -16,6 +16,11 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
   // Win banner handled by GameRenderer overlay via onWin
   const [guessesLeft, setGuessesLeft] = useState(0);
+  const [pairWords, setPairWords] = useState([]);
+  const [revealedWords, setRevealedWords] = useState(new Set());
+  const [preview, setPreview] = useState(null); // { word: string, revealed: boolean }
+  const previewFlip = useRef(new Animated.Value(0)).current; // 0 => 90deg, 1 => 0deg
+  const previewTimer = useRef(null);
   // Notify parent on win; overlay is handled in GameRenderer
   useEffect(() => {
     if (status === 'won' && onWin) onWin();
@@ -24,8 +29,8 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const initGame = useCallback(() => {
     const words = text.split(/\s+/);
     const uniqueWords = Array.from(new Set(words));
-    const dimension = level + 3; // 4x4, 5x5, 6x6
-    const totalTiles = dimension * dimension;
+    const dimension = level + 3; // base difficulty factor
+    const totalTiles = dimension * dimension; // used only to scale difficulty
     const numPairs = Math.floor(totalTiles / 2);
     const selectedWords = uniqueWords.slice(0, numPairs);
     const initialGuesses = numPairs * 2;
@@ -35,15 +40,14 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
         { id: `${w}-2`, word: w, matched: false },
       ]),
     );
-    // If odd total tiles, add a blank placeholder
-    if (pairs.length < totalTiles) {
-      pairs.push({ id: 'blank', word: '', matched: true });
-    }
+    // Do not add any blank placeholder tiles; only actual word pairs are included
     setCards(pairs);
     setSelected([]);
     setMessage('');
     setStatus('playing');
     setGuessesLeft(initialGuesses);
+    setPairWords(selectedWords);
+    setRevealedWords(new Set());
   }, [text, level]);
   useEffect(() => {
     initGame();
@@ -52,6 +56,34 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   const handlePress = (card) => {
     if (status !== 'playing' || card.matched || selected.find((c) => c.id === card.id)) return;
     const newSelected = [...selected, card];
+    // Show enlarged preview (as a flipped front) if cards are small
+    const isSmall = cardWidth < 60;
+    if (isSmall) {
+      if (previewTimer.current) {
+        clearTimeout(previewTimer.current);
+        previewTimer.current = null;
+      }
+      setPreview({ word: card.word, revealed: true });
+      previewFlip.setValue(0);
+      // animate flip-in to front
+      Animated.timing(previewFlip, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+      // hold then flip-out and clear
+      previewTimer.current = setTimeout(() => {
+        Animated.timing(previewFlip, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) setPreview(null);
+        });
+      }, 650);
+    }
     setSelected(newSelected);
     if (newSelected.length === 2) {
       if (newSelected[0].word === newSelected[1].word) {
@@ -65,6 +97,12 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
             setMessage('Great job!');
           }
           return updated;
+        });
+        // reveal this word in the slate to a highly legible color
+        setRevealedWords((prev) => {
+          const next = new Set(prev);
+          next.add(card.word);
+          return next;
         });
         setSelected([]);
       } else {
@@ -83,16 +121,93 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
     card.matched || selected.find((c) => c.id === card.id) || status !== 'playing';
 
   // Compute rows/columns for layout
-  const dimension = level + 3; // base dimension for total tiles
-  const columns = level === 3 ? 4 : dimension;
-  const rows = Math.ceil(cards.length / columns);
+  const dimension = level + 3; // base dimension for total tiles used to seed pairs
+  const totalCards = cards.length || 0;
+  let columns = 1;
+  let rows = 0;
+  if (totalCards > 0) {
+    const root = Math.floor(Math.sqrt(totalCards));
+    if (root * root === totalCards) {
+      columns = root;
+      rows = root;
+    } else {
+      columns = Math.ceil(Math.sqrt(totalCards)); // extend horizontally first
+      rows = Math.ceil(totalCards / columns);
+    }
+  }
+  const SCREEN_WIDTH = Dimensions.get('window').width;
+  const [gridLayout, setGridLayout] = useState({ width: SCREEN_WIDTH, height: 400 });
+  const cardMargin = 4;
+  // compute card size constrained by both width and height so cards always fit within grid width
+  const widthBound = Math.max(40, Math.floor((gridLayout.width - cardMargin * 2 * columns) / columns));
+  // reserve space at bottom for guesses card; align with FAB bottom (54)
+  const bottomOffset = 54; // align bottom edge with Difficulty FAB
+  const guessesCardHeightEst = Math.max(48, Math.min(72, Math.floor((widthBound * 1.35) * 0.8)));
+  const bottomReserve = guessesCardHeightEst + bottomOffset + 8; // ensure space for guesses bubble at bottom
+  const usableHeight = Math.max(120, gridLayout.height - bottomReserve);
+  const heightBoundPerCard = Math.max(40, Math.floor((usableHeight - cardMargin * 2 * rows) / rows));
+  // maintain aspect ratio ~1:1.35 (w:h)
+  const widthFromHeight = Math.floor(heightBoundPerCard / 1.35);
+  const cardWidth = Math.max(40, Math.min(widthBound, widthFromHeight));
+  const cardHeight = Math.floor(cardWidth * 1.35);
+
+  const words = text.split(/\s+/);
+  // Derive pair words immediately for initial render to avoid slate flashing full quote
+  const computedDefaultPairWords = (() => {
+    const uniq = Array.from(new Set(words));
+    const dimensionBase = level + 3;
+    const targetPairs = Math.floor((dimensionBase * dimensionBase) / 2);
+    return uniq.slice(0, targetPairs);
+  })();
+  const effectivePairWords = pairWords && pairWords.length > 0 ? pairWords : computedDefaultPairWords;
+  const pairWordSet = new Set(effectivePairWords);
+  const [topArea, setTopArea] = useState({ y: 0, height: 160 });
+  // Preview sizing/position: 2x card size but constrained to top area and screen width
+  const previewBaseW = cardWidth * 2.5;
+  const previewBaseH = cardHeight * 2.5;
+  const availableW = SCREEN_WIDTH * 0.9;
+  const availableH = Math.max(80, topArea.height - 8);
+  const previewScale = Math.min(1, availableW / previewBaseW, availableH / previewBaseH);
+  const previewW = Math.max(80, Math.floor(previewBaseW * previewScale));
+  const previewH = Math.max(80, Math.floor(previewBaseH * previewScale));
+  const previewTop = Math.max(0, topArea.y + Math.floor((topArea.height - previewH) / 2));
   return (
     <View style={styles.container}>
       {/* Win overlay handled at parent */}
       <GameTopBar onBack={onBack} />
-      <Text style={styles.title}>Memory Match</Text>
-      <Text style={styles.description}>Find the matching word pairs.</Text>
-      <View style={styles.grid}>
+      <View onLayout={(e) => setTopArea({ y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height })}>
+        <View style={styles.titleRow}>
+          <View style={styles.titleCards}>
+            <View style={[styles.titleCard, styles.titleCardBack]} />
+            <View style={[styles.titleCard, styles.titleCardFront]} />
+          </View>
+          <Text style={styles.title}>Memory Match</Text>
+        </View>
+        <View style={styles.titleUnderline} />
+        {/* Slate showing the quote for context */}
+        <View style={styles.slate}>
+          <View style={styles.slateInner}>
+            {words.map((w, i) => {
+              const isPairWord = pairWordSet.has(w);
+              const isRevealedWord = revealedWords.has(w);
+              const showWord = !isPairWord || isRevealedWord;
+              return (
+                <View key={`slate-${i}`} style={styles.slateWordWrap}>
+                  {showWord ? (
+                    <Text style={[styles.slateWord, isPairWord && isRevealedWord ? styles.slateWordRevealed : styles.slateWordDim]}>{w}</Text>
+                  ) : (
+                    <Text style={styles.slateWordPlaceholder}>{Array(w.length).fill('_').join('')}</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+      <View
+        style={[styles.grid, { paddingBottom: bottomReserve }]}
+        onLayout={(e) => setGridLayout({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+      >
         {Array.from({ length: rows }).map((_, rowIdx) => {
           const rowCards = cards.slice(rowIdx * columns, (rowIdx + 1) * columns);
           return (
@@ -100,18 +215,98 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
               {rowCards.map((card) => (
                 <TouchableOpacity
                   key={card.id}
-                  style={styles.card}
+                  style={[
+                    styles.card,
+                    {
+                      width: cardWidth,
+                      height: cardHeight,
+                      borderRadius: Math.round(cardWidth * 0.12),
+                      backgroundColor: isRevealed(card)
+                        ? themeVariables.whiteColor
+                        : themeVariables.primaryColor,
+                      borderColor: isRevealed(card)
+                        ? themeVariables.borderColor
+                        : 'rgba(255,255,255,0.7)',
+                      shadowOpacity: 0.2,
+                    },
+                  ]}
                   onPress={() => handlePress(card)}
                 >
-                  <Text style={styles.cardText}>{isRevealed(card) ? card.word : '?'}</Text>
+                  {!isRevealed(card) && (
+                    <View pointerEvents="none" style={{ ...StyleSheet.absoluteFillObject }}>
+                      {/* diagonal soft shine band */}
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.cardBackShineDiag,
+                          { borderRadius: Math.round(cardWidth * 0.12) },
+                        ]}
+                      />
+                      {/* subtle inner border glow */}
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.cardInnerBorder,
+                          { borderRadius: Math.round(cardWidth * 0.1) },
+                        ]}
+                      />
+                      {/* decorative stripes */}
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <View
+                          key={`stripe-${card.id}-${i}`}
+                          pointerEvents="none"
+                          style={[
+                            styles.cardStripe,
+                            {
+                              left: -cardHeight + i * Math.max(18, Math.floor(cardWidth * 0.22)),
+                              height: cardHeight * 2.2,
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  )}
+                  <Text
+                    style={[
+                      styles.cardText,
+                      {
+                        color: isRevealed(card)
+                          ? themeVariables.primaryColor
+                          : themeVariables.whiteColor,
+                        fontSize: cardWidth > 60 ? 14 : 12,
+                        paddingHorizontal: 6,
+                        alignSelf: 'stretch',
+                      },
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
+                    {isRevealed(card) ? card.word : '?'}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           );
         })}
       </View>
+      {/* Guesses card at bottom-left styled like a card */}
       {status === 'playing' && (
-        <Text style={styles.guessCount}>Guesses left: {guessesLeft}</Text>
+        <View style={[styles.guessCardContainer, { bottom: bottomOffset }]} pointerEvents="none">
+          <View
+            style={[
+              styles.card,
+              styles.guessCard,
+              {
+                width: Math.max(84, Math.min(120, cardWidth * 2)),
+                height: guessesCardHeightEst,
+              },
+            ]}
+          >
+            <Text style={[styles.cardText, { color: themeVariables.primaryColor }]}>Guesses: {guessesLeft}</Text>
+          </View>
+        </View>
       )}
       {message !== '' && status === 'won' && (
         <Text style={styles.message}>{message}</Text>
@@ -122,6 +317,52 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
       {status !== 'playing' && (
         <ThemedButton title="Play Again" onPress={initGame} style={styles.playButton} />
       )}
+      {/* Enlarged preview overlay when cards are tiny */}
+      {preview && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.previewOverlay,
+            { top: previewTop, height: previewH, left: 0, right: 0 },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.previewCard,
+              {
+                width: previewW,
+                height: previewH,
+                backgroundColor: themeVariables.whiteColor,
+                borderColor: themeVariables.borderColor,
+                transform: [
+                  { perspective: 800 },
+                  {
+                    rotateY: previewFlip.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['90deg', '0deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.cardText,
+                {
+                  color: themeVariables.primaryColor,
+                  fontSize: 24,
+                },
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {preview.word}
+            </Text>
+          </Animated.View>
+        </View>
+      )}
     </View>
   );
 };
@@ -130,21 +371,108 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 16,
     backgroundColor: themeVariables.neutralLight,
   },
   title: {
     fontSize: 28,
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 10,
     textAlign: 'center',
+    fontFamily: 'Noto Sans',
+    fontWeight: '900',
+    color: themeVariables.primaryColor,
   },
-  description: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  titleUnderline: {
+    alignSelf: 'center',
+    width: 180,
+    borderBottomWidth: 2,
+    borderColor: 'rgba(0,0,0,0.15)',
+    borderStyle: 'dashed',
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  titleCards: {
+    width: 54,
+    height: 40,
+    marginRight: 6,
+    position: 'relative',
+  },
+  titleCard: {
+    position: 'absolute',
+    width: 40,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  titleCardBack: {
+    backgroundColor: themeVariables.primaryColor,
+    borderColor: 'rgba(255,255,255,0.7)',
+    left: 6,
+    top: 8,
+    transform: [{ rotate: '-14deg' }],
+  },
+  titleCardFront: {
+    backgroundColor: themeVariables.whiteColor,
+    borderColor: themeVariables.borderColor,
+    left: 16,
+    top: 2,
+    transform: [{ rotate: '10deg' }],
+  },
+  slate: {
+    width: '100%',
+    height: 96,
+    borderRadius: 16,
+    padding: 12,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  slateInner: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  slateWordWrap: {
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  slateWord: {
+    color: themeVariables.primaryColor,
     fontSize: 16,
-    marginBottom: 8,
-    textAlign: 'center',
+    fontWeight: '600',
+    fontFamily: 'Noto Sans',
+  },
+  slateWordDim: {
+    color: 'rgba(0,0,0,0.65)',
+  },
+  slateWordRevealed: {
+    color: themeVariables.primaryColor,
+  },
+  slateWordPlaceholder: {
+    color: 'rgba(0,0,0,0.35)',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Noto Sans',
+    letterSpacing: 1,
   },
   grid: {
+    flex: 1,
+    width: '100%',
+    marginHorizontal: -16, // consume horizontal padding so grid spans full width
     flexDirection: 'column',
     alignItems: 'center',
     marginVertical: 16,
@@ -156,28 +484,79 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
-    borderColor: themeVariables.primaryColor,
-    width: 50,
-    height: 50,
+    borderColor: themeVariables.borderColor,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 4,
-    borderRadius: themeVariables.borderRadiusPill,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardInnerBorder: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    right: 6,
+    bottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  cardBackShineDiag: {
+    position: 'absolute',
+    top: -20,
+    left: -40,
+    width: '180%',
+    height: '60%',
+    transform: [{ rotate: '-18deg' }],
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  cardStripe: {
+    position: 'absolute',
+    top: -20,
+    width: 14,
+    transform: [{ rotate: '40deg' }],
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   cardText: {
-    fontSize: 10,
+    fontSize: 12,
     color: themeVariables.primaryColor,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    textAlign: 'center',
+    fontFamily: 'Noto Sans',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
     marginVertical: 8,
   },
-  guessCount: {
-    fontSize: 16,
-    color: themeVariables.primaryColor,
-    marginVertical: 8,
+  guessCardContainer: {
+    position: 'absolute',
+    left: 16,
+  },
+  guessCard: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  previewOverlay: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    },
+  previewCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   buttonContainer: {
     width: '80%',

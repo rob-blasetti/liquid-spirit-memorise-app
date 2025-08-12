@@ -19,7 +19,8 @@ const PuzzleSlotSvg = ({ left, top, size, connectors }) => {
         viewBox={`${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}`}
         style={{ position: 'absolute', left: -pad, top: -pad }}
       >
-        <Path d={d} fill="none" stroke={themeVariables.primaryColor} strokeDasharray="6,4" strokeWidth={2} />
+        {/* Soft filled slot so neighboring insets visually interlock */}
+        <Path d={d} fill="rgba(255,255,255,0.18)" stroke={themeVariables.primaryColor} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       </Svg>
     </View>
   );

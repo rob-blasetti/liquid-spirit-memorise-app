@@ -167,7 +167,7 @@ const MainApp = () => {
       );
     }
     if (isGameScreen(nav.screen)) {
-      const backHandler = nav.fromGames ? goHome : goBackToLesson;
+      const backHandler = nav.fromGames ? () => goTo('games') : goBackToLesson;
       return (
         <GameRenderer
           screen={nav.screen}

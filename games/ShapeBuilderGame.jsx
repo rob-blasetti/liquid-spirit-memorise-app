@@ -73,7 +73,7 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
     const positions = [];
     const placed = [];
     const minDist = PIECE_SIZE; // minimum separation between piece origins
-    const SAFE_TOP = 16;
+    const SAFE_TOP = 140; // keep clear of title/description area
     const SAFE_BOTTOM = 140; // avoid bottom nav; adjust if needed
     const SAFE_SIDE = 10;
 
@@ -84,17 +84,8 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
     const puzzleMaxX = puzzleMinX + puzzleWidth;
     const puzzleMaxY = puzzleMinY + puzzleHeight;
 
-    // Define spawn strips: top, left, right, bottom (above safe bottom)
+    // Define spawn strips: left, right, bottom (avoid top near heading)
     const strips = [];
-    // Top strip
-    if (puzzleMinY - SAFE_TOP - PIECE_SIZE > SAFE_TOP) {
-      strips.push({
-        x0: SAFE_SIDE,
-        y0: SAFE_TOP,
-        x1: width - SAFE_SIDE,
-        y1: Math.max(SAFE_TOP, puzzleMinY - MARGIN - PIECE_SIZE),
-      });
-    }
     // Left strip
     if (puzzleMinX - SAFE_SIDE - PIECE_SIZE > SAFE_SIDE) {
       strips.push({

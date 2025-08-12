@@ -28,13 +28,18 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
         visible={gameWon}
         onNextLevel={() => {
           const next = Math.min(currLevel + 1, 3);
-          setLevel(next);
+          // Hide the overlay first to avoid it persisting across re-renders
           setGameWon(false);
+          // Remount game at new level on next tick to reset internal timers/state
+          setTimeout(() => setLevel(next), 0);
         }}
-        onHome={onBack}
+        onHome={() => {
+          setGameWon(false);
+          onBack();
+        }}
       />
       <Suspense fallback={<ActivityIndicator style={{ marginTop: 24 }} size="large" />}>
-        <GameComponent {...gameProps} />
+        <GameComponent key={`${screen}-${currLevel}`} {...gameProps} />
       </Suspense>
       <DifficultyFAB />
     </View>
