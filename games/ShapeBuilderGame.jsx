@@ -1,31 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
-import ThemedButton from '../components/ThemedButton';
 import PuzzlePiece from '../components/PuzzlePieceSvg';
 import PuzzleSlotSvg from '../components/PuzzleSlotSvg';
-import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 
 // Dimensions and sizes
 const { width, height } = Dimensions.get('window');
-const MARGIN = 10;
+const MARGIN = 0;
 
 const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
-  // Get current user for personalized messages
-  const { user } = useUser();
   // Difficulty settings: number of pieces and pre-completed count from global context
-  const { level: difficulty, setLevel: setDifficulty } = useDifficulty();
+  const { level: difficulty } = useDifficulty();
   const pieceCounts = { 1: 8, 2: 16, 3: 24 };
   const prePlacedCounts = { 1: 2, 2: 4, 3: 6 };
   const pieceCount = pieceCounts[difficulty] || 8;
   const prePlaced = prePlacedCounts[difficulty] || 2;
-  // Prepare words (slice according to difficulty)
+  // Prepare words and split into interactive and pre-placed sets
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const allWords = text.split(/\s+/).filter(w => w.length > 0);
-  const puzzleWords = allWords.slice(0, pieceCount);
-  const count = puzzleWords.length;
+  const interactiveCount = Math.min(pieceCount, allWords.length);
+  const puzzleWords = allWords.slice(0, interactiveCount);
+  const count = allWords.length;
 
   // Compute outline slot positions in 4x4 grid centered
   const cols = 4;
@@ -43,7 +40,7 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   const totalH = rows * SLOT_SIZE + (rows - 1) * MARGIN;
   const startX = (width - totalW) / 2;
   const startY = (height - totalH) / 2;
-  const slots = puzzleWords.map((_, idx) => {
+  const slots = allWords.map((_, idx) => {
     const r = Math.floor(idx / cols);
     const c = idx % cols;
     return {
@@ -160,66 +157,68 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   
   // Randomize which pieces are pre-placed
   const prePlacedIndices = useMemo(() => {
-    const indices = Array.from({ length: count }, (_, i) => i);
-    // Shuffle indices array
+    const indices = Array.from({ length: interactiveCount }, (_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
-    // Select first 'prePlaced' indices as pre-placed pieces
-    return indices.slice(0, prePlaced);
-  }, [count, prePlaced]);
+    const chosen = indices.slice(0, prePlaced);
+    const staticIndices = Array.from({ length: count - interactiveCount }, (_, i) => i + interactiveCount);
+    return [...chosen, ...staticIndices];
+  }, [count, interactiveCount, prePlaced]);
 
   // Refs for each piece: pan position, placed flag, and PanResponder
   // Refs for each piece: pan position, placed flag, and PanResponder
   // Track number of placed pieces (start with pre-placed count)
-  const [placedCount, setPlacedCount] = useState(prePlaced);
+  const [placedCount, setPlacedCount] = useState(prePlacedIndices.length);
   // Notify parent when puzzle completes; overlay handled in GameRenderer
   useEffect(() => {
     if (placedCount === count && onWin) onWin();
   }, [placedCount, count, onWin]);
   // Reset placedCount when difficulty changes
   useEffect(() => {
-    setPlacedCount(prePlaced);
-  }, [prePlaced]);
+    setPlacedCount(prePlacedIndices.length);
+  }, [prePlacedIndices]);
   // Generate piece data (pan, placement flag, panResponder) per difficulty
   const pieces = useMemo(() => {
-    return puzzleWords.map((_, i) => {
+    return allWords.map((_, i) => {
       const isPrePlaced = prePlacedIndices.includes(i);
       const startPos = isPrePlaced ? slots[i] : initialPositions[i];
       const pan = new Animated.ValueXY({ x: startPos.x, y: startPos.y });
       const piece = { pan, placed: isPrePlaced, panResponder: null };
-      piece.panResponder = PanResponder.create({
-        onStartShouldSetPanResponder: () => !piece.placed,
-        onMoveShouldSetPanResponder: () => !piece.placed,
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderGrant: () => {
-          pan.setOffset({ x: pan.x._value, y: pan.y._value });
-          pan.setValue({ x: 0, y: 0 });
-        },
-        onPanResponderMove: Animated.event(
-          [null, { dx: pan.x, dy: pan.y }],
-          { useNativeDriver: false }
-        ),
-        onPanResponderRelease: () => {
-          pan.flattenOffset();
-          const { x: px, y: py } = pan.__getValue();
-          const cx = px + PIECE_SIZE / 2;
-          const cy = py + PIECE_SIZE / 2;
-          const slot = slots[i];
-          if (
-            cx >= slot.x && cx <= slot.x + SLOT_SIZE &&
-            cy >= slot.y && cy <= slot.y + SLOT_SIZE
-          ) {
-            Animated.spring(pan, { toValue: { x: slot.x, y: slot.y }, useNativeDriver: false }).start();
-            piece.placed = true;
-            setPlacedCount(c => c + 1);
-          }
-        },
-      });
+      if (!isPrePlaced) {
+        piece.panResponder = PanResponder.create({
+          onStartShouldSetPanResponder: () => !piece.placed,
+          onMoveShouldSetPanResponder: () => !piece.placed,
+          onPanResponderTerminationRequest: () => false,
+          onPanResponderGrant: () => {
+            pan.setOffset({ x: pan.x._value, y: pan.y._value });
+            pan.setValue({ x: 0, y: 0 });
+          },
+          onPanResponderMove: Animated.event(
+            [null, { dx: pan.x, dy: pan.y }],
+            { useNativeDriver: false }
+          ),
+          onPanResponderRelease: () => {
+            pan.flattenOffset();
+            const { x: px, y: py } = pan.__getValue();
+            const cx = px + PIECE_SIZE / 2;
+            const cy = py + PIECE_SIZE / 2;
+            const slot = slots[i];
+            if (
+              cx >= slot.x && cx <= slot.x + SLOT_SIZE &&
+              cy >= slot.y && cy <= slot.y + SLOT_SIZE
+            ) {
+              Animated.spring(pan, { toValue: { x: slot.x, y: slot.y }, useNativeDriver: false }).start();
+              piece.placed = true;
+              setPlacedCount(c => c + 1);
+            }
+          },
+        });
+      }
       return piece;
     });
-  }, [difficulty, prePlacedIndices]);
+  }, [allWords, prePlacedIndices, initialPositions, slots, PIECE_SIZE, SLOT_SIZE]);
 
 
   return (
@@ -237,8 +236,8 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
           connectors={connectors[i]}
         />
       ))}
-      {/* Draggable puzzle pieces */}
-      {puzzleWords.map((word, i) => {
+      {/* Puzzle pieces including pre-placed ones */}
+      {allWords.map((word, i) => {
         const { pan, panResponder, placed } = pieces[i];
         return (
           <PuzzlePiece

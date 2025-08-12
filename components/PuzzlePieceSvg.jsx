@@ -92,6 +92,11 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     overflow: 'visible',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1.5,
+    elevation: 3,
   },
   svgWrap: {
     flex: 1,
