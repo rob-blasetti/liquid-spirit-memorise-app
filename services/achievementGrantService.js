@@ -99,7 +99,15 @@ export async function grantAchievement({
     setAchievements(updatedAchievements);
     saveProfile(updatedProfile);
   } catch (e) {
-    console.error('grantAchievement error:', e);
+    if (e?.code === 'ALREADY_EARNED') {
+      // No-op: already granted on server, keep optimistic local state
+      console.warn('grantAchievement: already earned on server, skipping');
+    } else if (e?.code === 'USER_NOT_FOUND') {
+      // Dev/guest accounts may not exist server-side; keep optimistic local state
+      console.warn('grantAchievement: user not found on server, skipping');
+    } else {
+      console.error('grantAchievement error:', e);
+    }
   } finally {
     inProgress.delete(key);
   }

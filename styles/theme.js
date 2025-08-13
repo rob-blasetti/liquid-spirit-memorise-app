@@ -26,6 +26,11 @@ const themeVariables = {
     tertiaryLightColor: '#ff85fc', // Lighter pink
     tertiaryDarkColor: '#e046d1',  // Darker pink
     
+    // Wood tones for puzzle pieces
+    woodLight: '#e4cda0',
+    woodMid: '#c8a26a',
+    woodDark: '#8b5a2b',
+    
     neutralLight: '#f3f3f3',  // General light grey
     neutralDark: '#e0e0e0',   // General dark grey
     

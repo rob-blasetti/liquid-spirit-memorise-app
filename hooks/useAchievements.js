@@ -3,7 +3,7 @@ import {
   initAchievements,
   fetchUserAchievements,
 } from '../services/achievementsService';
-import { grantAchievement, grantGameAchievement } from '../services/achievementGrantService';
+import { grantAchievement, grantGameAchievement, getAchievementIdForGame } from '../services/achievementGrantService';
 
 export default function useAchievements(profile, saveProfile) {
   if (__DEV__) {
@@ -78,6 +78,15 @@ useEffect(() => {
 
   // Award achievement for a game win based on screen and level
   const awardGameAchievement = useCallback(async (screen, level) => {
+    // Pre-check: if user already has this achievement locally, skip
+    const id = getAchievementIdForGame(screen, level);
+    if (id) {
+      const already = achievements.some(a => a.id === id && a.earned);
+      if (already) {
+        if (__DEV__) console.debug('awardGameAchievement: already earned, skipping', { screen, level, id });
+        return;
+      }
+    }
     await grantGameAchievement({
       screen,
       level,

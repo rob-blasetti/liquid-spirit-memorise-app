@@ -1,14 +1,14 @@
 // Lightweight utility to build a jigsaw-like path for a square piece
 // using cubic curves to approximate knobs/holes on each side.
 
-export function buildJigsawPath(size, connectors, knobRatio = 0.22, cornerRadius = 0.06) {
+export function buildJigsawPath(size, connectors, knobRatio = 0.22, cornerRadius = 0.12) {
   const k = size * knobRatio; // knob amplitude
   const s = size;
-  const r = Math.max(3, Math.floor(s * cornerRadius));
+  const r = Math.max(3, Math.min(Math.floor(s * cornerRadius), Math.floor(s * 0.2)));
   const { top, right, bottom, left } = connectors;
 
   const parts = [];
-  // Start point: round the top-left outer corner if both top/left are flat
+  // Start point: round the top-left outer corner only if both top and left are flat (true corner piece)
   if (top === 'flat' && left === 'flat') {
     parts.push(`M ${r} 0`);
   } else {
@@ -18,6 +18,7 @@ export function buildJigsawPath(size, connectors, knobRatio = 0.22, cornerRadius
   // Top edge
   if (top === 'flat') {
     if (right === 'flat') {
+      // Top-right is a true outer corner; round it
       parts.push(`L ${s - r} 0 Q ${s} 0 ${s} ${r}`);
     } else {
       parts.push(`L ${s} 0`);
@@ -32,6 +33,7 @@ export function buildJigsawPath(size, connectors, knobRatio = 0.22, cornerRadius
   // Right edge
   if (right === 'flat') {
     if (bottom === 'flat') {
+      // Bottom-right is a true outer corner; round it
       parts.push(`L ${s} ${s - r} Q ${s} ${s} ${s - r} ${s}`);
     } else {
       parts.push(`L ${s} ${s}`);
@@ -46,6 +48,7 @@ export function buildJigsawPath(size, connectors, knobRatio = 0.22, cornerRadius
   // Bottom edge
   if (bottom === 'flat') {
     if (left === 'flat') {
+      // Bottom-left is a true outer corner; round it
       parts.push(`L ${r} ${s} Q 0 ${s} 0 ${s - r}`);
     } else {
       parts.push(`L 0 ${s}`);
@@ -60,6 +63,7 @@ export function buildJigsawPath(size, connectors, knobRatio = 0.22, cornerRadius
   // Left edge
   if (left === 'flat') {
     if (top === 'flat') {
+      // Top-left is a true outer corner; round it
       parts.push(`L 0 ${r} Q 0 0 ${r} 0`);
     } else {
       parts.push('L 0 0');

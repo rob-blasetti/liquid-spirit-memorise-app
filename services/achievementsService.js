@@ -35,16 +35,46 @@ export async function fetchUserAchievements(userId) {
     if (!res.ok) {
       throw new Error('Failed to fetch achievements');
     }
-    const { achievements, totalPoints } = await res.json();
+    const raw = await res.json();
+    const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
+    // Normalize server achievements into client shape { id, title, points, earned: true }
+    const achievements = (serverAchievements || []).map((a) => {
+      // Common server shape: { achievement: { _id, title, points }, ... }
+      if (a && a.achievement) {
+        return {
+          id: a.achievement._id || a.achievement.id,
+          title: a.achievement.title,
+          points: a.achievement.points || 0,
+          earned: true,
+        };
+      }
+      // If server returns {_id, title, points}
+      if (a && (a._id || a.id)) {
+        return {
+          id: a._id || a.id,
+          title: a.title,
+          points: a.points || 0,
+          earned: true,
+        };
+      }
+      // If server returns just an id string
+      if (typeof a === 'string') {
+        const def = defaultAchievements.find((d) => d.id === a);
+        return {
+          id: a,
+          title: def?.title || a,
+          points: def?.points || 0,
+          earned: true,
+        };
+      }
+      return null;
+    }).filter(Boolean);
 
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);
     }
-    return {
-      achievements,
-      totalPoints,
-    };
+    return { achievements, totalPoints };
   } catch (err) {
     console.error('fetchUserAchievements error:', err);
     return { achievements: [], totalPoints: 0 };
@@ -80,12 +110,30 @@ export async function updateAchievementOnServer(userId, achievementId) {
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      console.error('Achievement update failed:', response.status, text);
-      throw new Error('Failed to update achievement on server');
+      let info;
+      try { info = JSON.parse(text); } catch { info = { message: text }; }
+      const message = (info && info.message ? String(info.message) : '').toLowerCase();
+      const err = new Error('Failed to update achievement on server');
+      if (message.includes('already earned')) err.code = 'ALREADY_EARNED';
+      else if (message.includes('user not found')) err.code = 'USER_NOT_FOUND';
+      err.status = response.status;
+      // Log non-noisy errors only
+      if (err.code === 'ALREADY_EARNED') {
+        console.warn('Achievement already earned; skipping server update');
+      } else if (err.code === 'USER_NOT_FOUND') {
+        console.warn('Achievement update skipped: user not found');
+      } else {
+        console.error('Achievement update failed:', response.status, text);
+      }
+      throw err;
     }
     return await response.json();
   } catch (err) {
-    console.error('updateAchievementOnServer error:', err);
+    if (err?.code === 'ALREADY_EARNED' || err?.code === 'USER_NOT_FOUND') {
+      // Swallow noisy logs; propagate for caller to decide
+    } else {
+      console.error('updateAchievementOnServer error:', err);
+    }
     throw err;
   }
 }
