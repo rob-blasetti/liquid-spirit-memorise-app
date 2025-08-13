@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -12,113 +12,200 @@ import FastImage from 'react-native-fast-image';
 import { TabView, TabBar } from 'react-native-tab-view';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import ScreenBackground from '../components/ScreenBackground';
+import LinearGradient from 'react-native-linear-gradient';
+import Chip from '../components/Chip';
+
+const SectionScrollableGrid = ({ title, items = [], emptyText, maxHeight = 180 }) => {
+  const [contentHeight, setContentHeight] = useState(0);
+  const showHint = contentHeight > maxHeight;
+
+  return (
+    <View style={styles.sectionBlock}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionContainer}>
+        <ScrollView
+          style={[styles.sectionScrollable, { maxHeight }]}
+          contentContainerStyle={styles.gridList}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={showHint}
+          onContentSizeChange={(_, h) => setContentHeight(h)}
+        >
+          {items?.length ? (
+            items.map((person, idx) => (
+              <View key={person.id || person._id || idx} style={styles.studentPill}>
+                {person.profilePicture ? (
+                  <FastImage
+                    source={{
+                      uri: person.profilePicture,
+                      priority: FastImage.priority.normal,
+                      cache: FastImage.cacheControl.immutable,
+                    }}
+                    style={styles.studentAvatar}
+                  />
+                ) : (
+                  <Avatar size={36} name={`${person.firstName} ${person.lastName}`} variant="beam" />
+                )}
+                <Text style={styles.studentName} numberOfLines={1}>
+                  {`${person.firstName} ${person.lastName}`}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>{emptyText}</Text>
+          )}
+        </ScrollView>
+        {showHint && (
+          <LinearGradient
+            pointerEvents="none"
+            colors={[
+              'rgba(0,0,0,0)',
+              'rgba(0,0,0,0.12)',
+              'rgba(0,0,0,0.22)'
+            ]}
+            style={styles.sectionFade}
+          >
+            <View style={styles.fadeHintRow}>
+              <Ionicons name="chevron-down" size={16} color={themeVariables.whiteColor} />
+              <Text style={styles.fadeHintText}>Scroll</Text>
+            </View>
+          </LinearGradient>
+        )}
+      </View>
+    </View>
+  );
+};
 
 const ClassScreen = ({ childEntries = [], onBack }) => {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
 
-  console.log('Child Entries:', childEntries);
-
   const routes = childEntries.map(entry => ({
     key: entry._id,
-    title: `${entry.firstName} ${entry.lastName}`,
+    title: entry.firstName || '',
   }));
 
   const renderScene = ({ route }) => {
     const entry = childEntries.find(e => e._id === route.key);
     const classes = entry?.classes || [];
 
-    return (
-      <ScrollView style={styles.scene}>
-        {classes.map((cls, classIndex) => (
-          <View key={cls.id || cls._id || classIndex} style={styles.card}>
-            {cls.imageUrl && (
-              <View style={styles.banner}>
-                <FastImage
-                  source={{ uri: cls.imageUrl, priority: FastImage.priority.normal, cache: FastImage.cacheControl.immutable }}
-                  style={styles.bannerImage}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
-                <Text style={styles.classTitle}>{cls.title}</Text>
-              </View>
-            )}
-            <Text style={styles.curriculumLesson}>
-              {cls.curriculumLesson
-                ? `Grade: ${cls.curriculumLesson.grade}, Lesson: ${cls.curriculumLesson.lessonNumber}`
-                : ''}
-            </Text>
-            <Text style={styles.sectionTitle}>Teachers</Text>
-            {cls.facilitators?.map((f, facIndex) => (
-              <View key={f.id || f._id || facIndex} style={styles.personContainer}>
-                {f.profilePicture ? (
-                  <FastImage
-                    source={{ uri: f.profilePicture, priority: FastImage.priority.normal, cache: FastImage.cacheControl.immutable }}
-                    style={styles.profileImage}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
-                ) : (
-                  <Avatar
-                    size={40}
-                    name={`${f.firstName} ${f.lastName}`}
-                    variant="beam"
-                  />
-                )}
-                <Text style={styles.personName}>
-                  {f.firstName} {f.lastName}
-                </Text>
-              </View>
-            ))}
+    const studentCount = classes.reduce((acc, c) => acc + (c.participants?.length || 0), 0);
+    const teacherCount = classes.reduce((acc, c) => acc + (c.facilitators?.length || 0), 0);
 
-            <Text style={styles.sectionTitle}>Students</Text>
-            {cls.participants?.map((p, partIndex) => (
-              <View key={p.id || p._id || partIndex} style={styles.personContainer}>
-                {p.profilePicture ? (
+    // Try to fill available vertical space without overlapping bottom nav
+    const HEADER_BLOCK = 70; // approx header area
+    const TABBAR_HEIGHT = 48; // default TabBar height
+    const BOTTOM_NAV_GUARD = 140; // ensure card clears floating bottom nav
+    const VERTICAL_PADDING = 24; // padding & margins
+    const availableHeight = layout.height - HEADER_BLOCK - TABBAR_HEIGHT - BOTTOM_NAV_GUARD - VERTICAL_PADDING;
+    const minCardHeight = Math.max(320, availableHeight);
+
+    return (
+      <View style={styles.scene}>
+        {(classes && classes.length ? classes.slice(0, 1) : []).map((cls, classIndex) => {
+          const grade = cls?.curriculumLesson?.grade;
+          const lesson = cls?.curriculumLesson?.lessonNumber;
+          return (
+            <View
+              key={cls.id || cls._id || classIndex}
+              style={[styles.card, { minHeight: minCardHeight }]}
+            >
+              <View style={styles.cardHeader}>
+                {cls.imageUrl ? (
                   <FastImage
-                    source={{ uri: p.profilePicture, priority: FastImage.priority.normal, cache: FastImage.cacheControl.immutable }}
-                    style={styles.profileImage}
+                    source={{
+                      uri: cls.imageUrl,
+                      priority: FastImage.priority.normal,
+                      cache: FastImage.cacheControl.immutable,
+                    }}
+                    style={styles.headerImage}
                     resizeMode={FastImage.resizeMode.cover}
                   />
-                ) : (
-                  <Avatar
-                    size={40}
-                    name={`${p.firstName} ${p.lastName}`}
-                    variant="beam"
-                  />
-                )}
-                <Text style={styles.personName}>
-                  {p.firstName} {p.lastName}
-                </Text>
+                ) : null}
+                <View style={styles.headerOverlay} />
+                <View style={styles.headerContent}>
+                  <Text style={styles.classTitle}>{cls.title}</Text>
+                  <View style={styles.chipsRow}>
+                    {grade ? (
+                      <Chip icon="school" text={`Grade ${grade}`} />
+                    ) : null}
+                    {lesson ? (
+                      <Chip icon="book" text={`Lesson ${lesson}`} />
+                    ) : null}
+                    <Chip icon="people" text={`${cls.participants?.length || 0} students`} />
+                  </View>
+                </View>
               </View>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
+
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Ionicons name="people" size={18} color={themeVariables.whiteColor} />
+                  <Text style={styles.summaryText}>{cls.participants?.length || 0} Students</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Ionicons name="person" size={18} color={themeVariables.whiteColor} />
+                  <Text style={styles.summaryText}>{cls.facilitators?.length || 0} Teachers</Text>
+                </View>
+              </View>
+
+              <SectionScrollableGrid
+                title="Teachers"
+                items={cls.facilitators}
+                emptyText="No teachers listed"
+              />
+
+              <SectionScrollableGrid
+                title="Students"
+                items={cls.participants}
+                emptyText="No students enrolled"
+              />
+            </View>
+          );
+        })}
+      </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Your Childrens Classes</Text>
-      </View>
+    <ScreenBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Your Classes</Text>
+          <TouchableOpacity>
+            <Ionicons name="school-outline" size={24} color={themeVariables.whiteColor} />
+          </TouchableOpacity>
+        </View>
 
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={{ width: layout.width }}
-        renderTabBar={(props) => (
-          <TabBar
-            {...props}
-            indicatorStyle={styles.indicator}
-            style={styles.tabBar}
-            activeColor={themeVariables.primaryColor}
-            inactiveColor="#333"
-            labelStyle={styles.tabLabel}
-          />
-        )}
-      />
-    </SafeAreaView>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          initialLayout={{ width: layout.width }}
+          renderTabBar={(props) => (
+            <TabBar
+              {...props}
+              indicatorStyle={styles.indicator}
+              style={styles.tabBar}
+              activeColor={themeVariables.whiteColor}
+              inactiveColor="rgba(255,255,255,0.7)"
+              scrollEnabled
+              tabStyle={styles.tabStyle}
+              labelStyle={styles.tabLabel}
+              contentContainerStyle={styles.tabContent}
+              renderLabel={({ route, focused, color }) => (
+                <Text
+                  numberOfLines={1}
+                  style={[styles.tabTextOnly, focused ? styles.tabLabelActive : null, { color }]}
+                >
+                  {route.title}
+                </Text>
+              )}
+            />
+          )}
+        />
+      </SafeAreaView>
+    </ScreenBackground>
   );
 };
 
@@ -130,8 +217,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    padding: 16,
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     backgroundColor: 'transparent',
   },
   backButton: {
@@ -142,47 +232,98 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   title: {
-    flex: 1,
-    textAlign: 'left',
-    fontSize: 20,
-    fontWeight: 'bold',
-    backgroundColor: 'transparent',
     color: themeVariables.whiteColor,
+    fontSize: 24,
+    fontWeight: '600',
+    backgroundColor: 'transparent',
   },
-  scene: { flex: 1, padding: 16 },
+  scene: { flex: 1, paddingHorizontal: 16 },
+  sceneContent: { paddingBottom: 140, paddingTop: 8 },
   card: {
     marginBottom: 24,
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
     overflow: 'hidden',
-    elevation: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)'
   },
-  banner: {
-    height: 120,
-    width: '100%',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  bannerImage: {
+  cardHeader: { height: 140, width: '100%', overflow: 'hidden' },
+  headerImage: { ...StyleSheet.absoluteFillObject, opacity: 0.8 },
+  headerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.8,
+    backgroundColor: 'rgba(49,39,131,0.15)',
   },
+  headerContent: { position: 'absolute', left: 12, bottom: 12, right: 12 },
   classTitle: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-    padding: 8,
+    marginBottom: 8,
   },
-  curriculumLesson: { margin: 12, fontSize: 16 },
-  group: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 },
-  groupText: { fontSize: 14 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', marginHorizontal: 12, marginTop: 12 },
-  personContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 8, marginHorizontal: 12 },
-  profileImage: { width: 40, height: 40, borderRadius: 20 },
-  personName: { marginLeft: 8, fontSize: 14 },
-  tabBar: { backgroundColor: '#fff' },
-  tabLabel: { fontSize: 14, fontWeight: '600' },
-  indicator: { backgroundColor: themeVariables.primaryColor },
+  chipsRow: { flexDirection: 'row', alignItems: 'center' },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  summaryItem: { flexDirection: 'row', alignItems: 'center' },
+  summaryText: { color: themeVariables.whiteColor, marginLeft: 8, fontWeight: '600' },
+  sectionBlock: { paddingHorizontal: 12, paddingBottom: 16 },
+  sectionContainer: { position: 'relative' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: themeVariables.whiteColor, marginBottom: 8 },
+  horizontalList: { flexDirection: 'row', alignItems: 'center' },
+  gridList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  sectionScrollable: {
+    maxHeight: 180,
+  },
+  sectionFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  fadeHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  fadeHintText: {
+    color: themeVariables.whiteColor,
+    fontSize: 12,
+    marginLeft: 4,
+    opacity: 0.8,
+  },
+  studentPill: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexBasis: '48%',
+    maxWidth: '48%',
+  },
+  studentAvatar: { width: 36, height: 36, borderRadius: 18 },
+  studentName: { color: themeVariables.whiteColor, marginLeft: 8, flexShrink: 1 },
+  emptyText: { color: 'rgba(255,255,255,0.7)' },
+  tabBar: { backgroundColor: 'transparent' },
+  tabContent: { alignItems: 'flex-start', paddingLeft: 16 },
+  tabStyle: { width: 'auto', paddingHorizontal: 12, alignItems: 'flex-start' },
+  tabLabel: { textAlign: 'left' },
+  tabTextOnly: { fontSize: 14, fontWeight: '600', textAlign: 'left' },
+  tabLabelActive: { color: themeVariables.whiteColor },
+  indicator: { backgroundColor: themeVariables.whiteColor },
 });
 
 export default ClassScreen;
