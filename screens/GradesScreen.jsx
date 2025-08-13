@@ -13,7 +13,7 @@ import themeVariables from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
-const TILE_HEIGHT = 120;
+const TILE_HEIGHT = 115; // reduced slightly so bottom item clears nav
 
 const GradesScreen = ({ onGradeSelect }) => {
   const data = [
@@ -83,7 +83,7 @@ export default GradesScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: themeVariables.primaryColor,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',

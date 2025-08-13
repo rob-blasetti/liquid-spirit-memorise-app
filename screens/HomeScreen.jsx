@@ -88,10 +88,6 @@ const HomeScreen = ({
 
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity style={styles.customButton} onPress={onJourney}>
-          <Text style={styles.customButtonText}>Lesson Journey</Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
-        </TouchableOpacity>
         <TouchableOpacity style={styles.customButton} onPress={onDailyChallenge}>
           <Text style={styles.customButtonText}>Daily Challenge</Text>
           <Ionicons name="arrow-forward" size={20} color="white" />
@@ -106,7 +102,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     alignItems: 'center',
-    backgroundColor: themeVariables.primaryColor,
+    // Let the global ScreenBackground gradient show through
+    backgroundColor: 'transparent',
   },
   contentContainer: {
     flex: 1,

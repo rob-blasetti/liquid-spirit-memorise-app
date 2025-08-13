@@ -1,5 +1,6 @@
 import React, { useState, Suspense, useMemo, useRef, useEffect } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import themeVariables from '../styles/theme';
 // NotificationBanner display is handled at the root (MainApp)
 import { lazyGameScreens } from '../games/lazyGameRoutes';
 import DifficultyFAB from './DifficultyFAB';
@@ -102,5 +103,5 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
 export default GameRenderer;
 // Styles for game renderer overlay
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: 'transparent' },
 });

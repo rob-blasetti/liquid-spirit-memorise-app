@@ -6,7 +6,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    backgroundColor: theme.primaryColor,
+    backgroundColor: 'transparent',
+  },
+  // containerNeutral retained for legacy usage; matches default
+  containerNeutral: {
+    backgroundColor: theme.neutralLight,
   },
   title: {
     fontSize: 24,

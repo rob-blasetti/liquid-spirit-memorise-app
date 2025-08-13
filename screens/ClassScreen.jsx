@@ -125,14 +125,14 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: themeVariables.primaryColor
+    backgroundColor: 'transparent'
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     padding: 16,
-    backgroundColor: themeVariables.primaryColor,
+    backgroundColor: 'transparent',
   },
   backButton: {
     padding: 8,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontSize: 20,
     fontWeight: 'bold',
-    backgroundColor: themeVariables.primaryColor,
+    backgroundColor: 'transparent',
     color: themeVariables.whiteColor,
   },
   scene: { flex: 1, padding: 16 },

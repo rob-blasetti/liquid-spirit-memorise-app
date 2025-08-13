@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
 import { gameIds } from '../games';
 import themeVariables from '../styles/theme';
 
@@ -66,12 +66,6 @@ const iconMap = {
 };
 
 const GamesListScreen = ({ onSelect }) => (
-  <LinearGradient
-    start={{ x: 0, y: 0 }}
-    end={{ x: 0, y: 1 }}
-    colors={[themeVariables.gradientStart, themeVariables.gradientEnd]}
-    style={styles.background}
-  >
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Games</Text>
       <ScrollView
@@ -104,16 +98,11 @@ const GamesListScreen = ({ onSelect }) => (
         </View>
       </ScrollView>
     </SafeAreaView>
-  </LinearGradient>
 );
 
 export default GamesListScreen;
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    marginBottom: -40,
-  },
   container: {
     flex: 1,
     paddingHorizontal: HORIZONTAL_PADDING,

@@ -30,6 +30,7 @@ import NotificationBanner from './NotificationBanner';
 import ChildSwitcherModal from './ChildSwitcherModal';
 import GameRenderer from './GameRenderer';
 import { isGameScreen } from '../navigation/router';
+import ScreenBackground from './ScreenBackground';
 import FastImage from 'react-native-fast-image';
 import { getCurrentContent, getContentFor } from '../services/contentSelector';
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
@@ -313,6 +314,7 @@ const MainApp = () => {
 
   return (
     <AchievementsProvider value={achievementsState}>
+    <ScreenBackground>
     <SafeAreaView style={styles.container}>
       {notification && (
         <NotificationBanner
@@ -348,6 +350,7 @@ const MainApp = () => {
         />
       )}
     </SafeAreaView>
+    </ScreenBackground>
     </AchievementsProvider>
   );
 };
