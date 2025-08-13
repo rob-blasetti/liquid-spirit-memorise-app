@@ -2,6 +2,8 @@ const preset = require('react-native/jest-preset');
 
 module.exports = {
   ...preset,
+  watchman: false,
+  setupFiles: ['<rootDir>/jest.globals.js'],
   transform: {
     ...preset.transform,
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',

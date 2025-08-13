@@ -6,6 +6,9 @@ import Avatar from '@liquidspirit/react-native-boring-avatars';
 import LinearGradient from 'react-native-linear-gradient';
 import themeVariables from '../styles/theme';
 
+const AVATAR_SIZE = 84; // larger avatar to fit the rounded container
+const STAR_SIZE = 60; // bigger star for the score
+
 const ProfileDisplay = ({
   profile,
   currentSet,
@@ -18,6 +21,11 @@ const ProfileDisplay = ({
     .filter(part => typeof part === 'string' && part.trim().length > 0)
     .join(' ');
   const displayName = fullName || username;
+
+  // lesson pattern: Lesson {set}.{lesson} (falls back to just lesson if no set)
+  const lessonDisplay = (typeof currentSet !== 'undefined' && currentSet !== null)
+    ? `${currentSet}.${currentLesson}`
+    : (typeof currentLesson !== 'undefined' && currentLesson !== null ? `${currentLesson}` : 'N/A');
 
   return (
     <LinearGradient
@@ -42,7 +50,7 @@ const ProfileDisplay = ({
                   resizeMode={FastImage.resizeMode.cover}
                 />
               ) : (
-                <Avatar size={64} name={displayName} variant="beam" />
+                <Avatar size={AVATAR_SIZE} name={displayName} variant="beam" />
               );
             })()}
             <View style={styles.avatarOverlay}>
@@ -57,19 +65,18 @@ const ProfileDisplay = ({
                 <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
               )}
             </View>
+
             <Text style={styles.profileGrade}>Grade {profile.grade?.toString() || 'N/A'}</Text>
-          {/* Show only lesson for Grade 1, otherwise include set */}
-          {profile.grade == 1 ? (
-            <Text style={styles.progressText}>Lesson {currentLesson}</Text>
-          ) : (
-            <Text style={styles.progressText}>Set {currentSet}, Lesson {currentLesson}</Text>
-          )}
+
+            <Text style={styles.progressText}>Lesson {lessonDisplay}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.pointsContainer}>
-          <Ionicons name="star" size={20} color="#f1c40f" />
-          <Text style={styles.pointsText}>{totalPoints}</Text>
+          <View style={styles.starWrapper}>
+            <Ionicons name="star" size={STAR_SIZE} color="#f1c40f" />
+            <Text style={styles.pointsBadge}>{totalPoints ?? 0}</Text>
+          </View>
         </View>
       </View>
     </LinearGradient>
@@ -81,7 +88,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    borderRadius: 20,
+    borderRadius: 80, // more rounded
     overflow: 'hidden',
   },
   headerContent: {
@@ -90,7 +97,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    padding: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
   },
   profileContainer: {
     flexDirection: 'row',
@@ -99,23 +107,26 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     position: 'relative',
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
   },
   profileAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
   },
   avatarOverlay: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    bottom: -2,
+    right: -2,
     backgroundColor: themeVariables.whiteColor,
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: 14,
+    padding: 6,
+    elevation: 2,
   },
   profileTextContainer: {
     justifyContent: 'center',
-    marginLeft: 20,
+    marginLeft: 16,
   },
   profileName: {
     fontSize: 20,
@@ -134,12 +145,27 @@ const styles = StyleSheet.create({
   pointsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 12,
   },
-  pointsText: {
-    fontSize: 16,
-    marginLeft: 4,
-    fontWeight: 'bold',
-    color: themeVariables.whiteColor,
+  starWrapper: {
+    width: STAR_SIZE + 8,
+    height: STAR_SIZE + 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  pointsBadge: {
+    position: 'absolute',
+    textAlign: 'center',
+    alignSelf: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+    color: themeVariables.blackColor,
+    // small shadow so it reads nicely over the star
+    textShadowColor: 'rgba(0,0,0,0.12)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+    marginTop: 4,
   },
   nameContainer: {
     flexDirection: 'row',

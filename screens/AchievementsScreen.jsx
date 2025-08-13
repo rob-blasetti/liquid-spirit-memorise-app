@@ -22,13 +22,16 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
 const AchievementsScreen = () => {
-  const { achievements = [] } = useAchievementsContext();
+  const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0 } = useAchievementsContext();
   if (__DEV__) {
     // eslint-disable-next-line no-console
     console.debug('Achievements screen achievements:', achievements);
+    if (!isPointsSynced) {
+      // eslint-disable-next-line no-console
+      console.warn('AchievementsScreen: points mismatch', { totalPoints, computedPoints });
+    }
   }
-  // compute total points earned (sum of earned achievements)
-  const totalPoints = achievements.reduce((sum, ach) => ach.earned ? sum + ach.points : sum, 0);
+  // totalPoints comes from context (server/profile canonical); computedPoints is derived for verification
   // Group achievements into categories based on id prefixes
   const grouped = achievements.reduce((acc, ach) => {
     // lowercase title for simpler matching
@@ -86,6 +89,9 @@ const AchievementsScreen = () => {
           <Text style={styles.title}>Achievements</Text>
           {/* total points earned */}
           <Text style={styles.totalPoints}>Total Points: {totalPoints}</Text>
+          {__DEV__ && !isPointsSynced && (
+            <Text style={styles.pointsWarning}>Points mismatch (computed {computedPoints})</Text>
+          )}
         </View>
 
         {/* Achievement Cards */}
@@ -242,5 +248,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 8,
     textAlign: 'center',
+  },
+  pointsWarning: {
+    color: '#FFD54F',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

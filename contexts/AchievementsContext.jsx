@@ -2,6 +2,9 @@ import React, { createContext, useContext } from 'react';
 
 const AchievementsContext = createContext({
   achievements: [],
+  totalPoints: 0,
+  isPointsSynced: true,
+  computedPoints: 0,
   notification: null,
   setNotification: () => {},
   awardAchievement: () => {},
