@@ -27,6 +27,7 @@ export function getAchievementIdForGame(screen, level) {
  * @param {Function} opts.setAchievements - Setter from AchievementsContext
  * @param {Function} opts.setNotification - Setter for notification banner
  * @param {Function} opts.saveProfile - Persists profile to storage
+ * @param {Function} opts.setTotalPoints - Setter for total points in context
  */
 export async function grantAchievement({
   id,
@@ -35,6 +36,7 @@ export async function grantAchievement({
   setAchievements,
   setNotification,
   saveProfile,
+  setTotalPoints,
 }) {
   if (!profile || !id) return;
 
@@ -49,7 +51,7 @@ export async function grantAchievement({
 
   // Optimistically award the achievement locally so the UI can react
   let optimisticAchievements = achievements.map(a =>
-    a.id === id ? { ...a, earned: true } : a
+    a.id === id ? { ...a, earned: true } : a,
   );
   let earned = optimisticAchievements.find(a => a.id === id);
   // If the achievement is not present locally, seed it from defaults
@@ -73,6 +75,9 @@ export async function grantAchievement({
     totalPoints: (profile.totalPoints || 0) + (earned?.points || 0),
   };
   saveProfile(optimisticProfile);
+  if (typeof setTotalPoints === 'function') {
+    setTotalPoints(optimisticProfile.totalPoints);
+  }
 
   try {
     const userId = profile._id || profile.id || profile.nuriUserId;
@@ -98,6 +103,9 @@ export async function grantAchievement({
     };
     setAchievements(updatedAchievements);
     saveProfile(updatedProfile);
+    if (typeof setTotalPoints === 'function') {
+      setTotalPoints(user.totalPoints);
+    }
   } catch (e) {
     if (e?.code === 'ALREADY_EARNED') {
       // No-op: already granted on server, keep optimistic local state
