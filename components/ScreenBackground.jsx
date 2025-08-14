@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, StatusBar } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import themeVariables from '../styles/theme';
 
@@ -10,6 +10,7 @@ const ScreenBackground = ({ children, style }) => (
     colors={[themeVariables.gradientStart, themeVariables.gradientEnd]}
     style={[styles.background, style]}
   >
+    <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
     {children}
   </LinearGradient>
 );

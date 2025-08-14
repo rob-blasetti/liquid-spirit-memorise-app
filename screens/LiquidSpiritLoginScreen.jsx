@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit } from '../services/authService';
 import { loadCredentials, saveCredentials } from '../services/credentialService';
+import ScreenBackground from '../components/ScreenBackground';
+import themeVariables from '../styles/theme';
 
 export default function LiquidSpiritLoginScreen({ onSignIn }) {
   const [bahaiId, setBahaiId] = useState('');
@@ -33,35 +35,81 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Liquid Spirit Login</Text>
-      <TextInput
-        placeholder="Bahá'í ID"
-        value={bahaiId}
-        onChangeText={setBahaiId}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Email"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Password or Token (optional)"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-      />
-      <Button label="Authenticate" onPress={handleLogin} />
-    </View>
+    <ScreenBackground>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
+        <Text style={styles.heading}>Log In With Liquid Spirit</Text>
+
+        <Text style={styles.label}>Bahá'í ID</Text>
+        <TextInput
+          value={bahaiId}
+          onChangeText={setBahaiId}
+          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+        />
+        <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
-  heading: { fontSize: 24, marginBottom: 16 },
-  input: { width: '80%', padding: 10, marginBottom: 12, borderWidth: 1, borderRadius: 4 },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'transparent',
+    width: '100%',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    paddingVertical: 24,
+  },
+  heading: { fontSize: 24, marginBottom: 16, color: themeVariables.whiteColor },
+  label: {
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginBottom: 4,
+    marginTop: 8,
+    color: themeVariables.whiteColor,
+    fontSize: 14,
+  },
+  input: {
+    width: '80%',
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: themeVariables.whiteColor,
+    borderColor: themeVariables.primaryColor,
+  },
+  fullWidthButton: {
+    width: '80%',
+  },
 });

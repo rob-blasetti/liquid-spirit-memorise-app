@@ -1,6 +1,7 @@
 // navigation/AuthNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import themeVariables from '../styles/theme';
 import WelcomeScreen from '../screens/WelcomeScreen.jsx';
 import GuestLoginScreen from '../screens/GuestLoginScreen';
 import LiquidSpiritLoginScreen from '../screens/LiquidSpiritLoginScreen';
@@ -11,11 +12,16 @@ const Stack = createStackNavigator();
 
 export default function AuthNavigator({ onSignIn }) {
   return (
-    <Stack.Navigator screenOptions={{
-      headerShown: true,
-      headerBackTitleVisible: false,
-      headerTitle: ''
-    }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerBackTitleVisible: false,
+        headerTitle: '',
+        headerTransparent: true,
+        headerTintColor: themeVariables.whiteColor,
+        headerStyle: { backgroundColor: 'transparent' },
+      }}
+    >
       {/* Hide header on initial welcome screen */}
       <Stack.Screen name="Welcome" options={{ headerShown: false }}>
         {props => <WelcomeScreen {...props} />}

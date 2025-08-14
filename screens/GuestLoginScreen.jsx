@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { Button } from 'liquid-spirit-styleguide';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
+import ScreenBackground from '../components/ScreenBackground';
 
 export default function GuestLoginScreen({ onSignIn }) {
   const [displayName, setDisplayName] = useState('');
@@ -52,8 +53,11 @@ export default function GuestLoginScreen({ onSignIn }) {
   };
 
   return (
+    <ScreenBackground>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
     <View style={styles.container}>
-      <Text style={styles.heading}>Guest Login</Text>
+      <Text style={styles.heading}>Guest Log In</Text>
       <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
         {avatarPhoto ? (
           <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
@@ -71,11 +75,13 @@ export default function GuestLoginScreen({ onSignIn }) {
           setAvatarSeed(Math.random().toString());
         }}
       />
+      <Text style={styles.label}>Display Name</Text>
       <TextInput
-        placeholder="Display Name"
         value={displayName}
         onChangeText={setDisplayName}
         style={styles.input}
+        autoCapitalize="words"
+        autoCorrect
       />
       {/* Grade selector */}
       <Text style={styles.gradeLabel}>Grade</Text>
@@ -107,15 +113,36 @@ export default function GuestLoginScreen({ onSignIn }) {
           );
         })}
       </View>
-      <Button label="Continue" onPress={handleLogin} />
+      <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
     </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
-  heading: { fontSize: 24, marginBottom: 16 },
-  input: { width: '80%', padding: 10, marginBottom: 12, borderWidth: 1, borderRadius: 4 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16, backgroundColor: 'transparent', width: '100%' },
+  scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'stretch', paddingVertical: 24 },
+  heading: { fontSize: 24, marginBottom: 16, color: themeVariables.whiteColor },
+  label: {
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginBottom: 4,
+    marginTop: 8,
+    color: themeVariables.whiteColor,
+    fontSize: 14,
+  },
+  input: {
+    width: '80%',
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: themeVariables.whiteColor,
+    borderColor: themeVariables.primaryColor,
+  },
   avatarWrapper: { marginBottom: 12, position: 'relative' },
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 12 },
   avatarOverlay: {
@@ -132,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 12,
     marginBottom: 4,
-    color: themeVariables.blackColor,
+    color: themeVariables.whiteColor,
   },
   gradeRow: {
     flexDirection: 'row',
@@ -142,6 +169,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: 'hidden',
     marginBottom: 16,
+    backgroundColor: themeVariables.whiteColor,
   },
   gradeButton: {
     flex: 1,
@@ -166,4 +194,5 @@ const styles = StyleSheet.create({
   gradeTextDisabled: {
     color: themeVariables.buttonDisabledText,
   },
+  fullWidthButton: { width: '80%' },
 });

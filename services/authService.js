@@ -74,3 +74,20 @@ export const loginNuriUser = async (email, password) => {
     throw e;
   }
 };
+
+// Placeholder password reset request; wire to real API when available
+export const requestPasswordReset = async identifier => {
+  try {
+    // If backend endpoint exists, update URL and payload accordingly
+    const response = await fetch(`${API_URL}/api/nuri/request-password-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier }),
+    });
+    if (!response.ok) throw new Error('Password reset request failed');
+    return await response.json();
+  } catch (e) {
+    console.error('Password reset request failed:', e);
+    throw e;
+  }
+};
