@@ -22,7 +22,7 @@ const RevealWordGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Reveal the Quote</Text>
       <Text style={styles.description}>Press the button to show more words.</Text>
       <Text style={styles.quote}>{displayed}</Text>
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,

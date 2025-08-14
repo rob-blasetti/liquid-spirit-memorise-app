@@ -5,9 +5,10 @@
 export const gameIds = [
   'memoryGame',
   'shapeBuilderGame',
-  'hangmanGame',
   'bubblePopOrderGame',
-  'wordRacerGame',
+  // temporarily hide games pending polish
+  // 'hangmanGame',
+  // 'wordRacerGame',
   // 'practice',
   // 'tapGame',
   // 'scrambleGame',

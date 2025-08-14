@@ -46,7 +46,7 @@ const SceneChangeGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Which Scene Changed?</Text>
       <Text style={styles.description}>Tap the word that changed colour.</Text>
       <View style={styles.grid}>
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,

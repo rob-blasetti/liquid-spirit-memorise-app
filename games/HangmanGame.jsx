@@ -124,7 +124,7 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <View style={styles.mainArea}>
         <View style={styles.titleRow}>
           <View style={styles.titleMotif}>
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   mainArea: {
     flex: 1,

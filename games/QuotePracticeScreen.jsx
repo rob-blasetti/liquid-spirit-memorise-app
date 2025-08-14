@@ -78,7 +78,7 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Practice Quote</Text>
       <Text style={styles.description}>Try to type the quote one word at a time.</Text>
       {/* Hint snippet to jog memory */}
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,

@@ -93,7 +93,7 @@ const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Fill in the missing words</Text>
       <Text style={styles.description}>Tap the blanks in the right order.</Text>
       <Text style={styles.quote}>{displayWords.join(' ')}</Text>
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,

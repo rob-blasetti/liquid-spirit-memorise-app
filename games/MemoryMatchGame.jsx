@@ -174,7 +174,7 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   return (
     <View style={styles.container}>
       {/* Win overlay handled at parent */}
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <View onLayout={(e) => setTopArea({ y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height })}>
         <View style={styles.titleRow}>
           <View style={styles.titleCards}>
@@ -373,22 +373,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 28,
-    marginTop: 8,
-    marginBottom: 10,
+    fontSize: 24,
+    marginTop: 0,
+    marginBottom: 0,
     textAlign: 'center',
     fontFamily: 'Noto Sans',
     fontWeight: '900',
-    color: themeVariables.primaryColor,
+    color: themeVariables.whiteColor,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    paddingLeft: 56,
+    marginTop: 0,
   },
   titleUnderline: {
     alignSelf: 'center',
@@ -489,6 +491,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     margin: 4,
     borderRadius: 10,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

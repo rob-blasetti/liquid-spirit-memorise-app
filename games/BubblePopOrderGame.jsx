@@ -187,9 +187,19 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} iconColor={themeVariables.whiteColor} />
-      {/* Remaining wrong taps counter at bottom-left in a bubble */}
-      <Text style={styles.title}>Bubble Pop</Text>
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
+      {/* Heading aligned similarly to Shape Builder */}
+      <View style={styles.titleRow}>
+        <View style={styles.titleBubbles}>
+          <View style={[styles.titleBubble, styles.titleBubbleBack]}>
+            <View pointerEvents="none" style={styles.titleBubbleShine} />
+          </View>
+          <View style={[styles.titleBubble, styles.titleBubbleFront]}>
+            <View pointerEvents="none" style={styles.titleBubbleShine} />
+          </View>
+        </View>
+        <Text style={styles.title}>Bubble Pop</Text>
+      </View>
       {/* Slate showing full quote; bubbled words are hidden until popped */}
       <View style={styles.slate}>
         <View style={styles.slateInner}>
@@ -265,14 +275,65 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: themeVariables.primaryColor,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'top',
   },
-  title: {
-    fontSize: 32,
-    marginBottom: 12,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingLeft: 64,
+    paddingRight: 60, // balance left-side bubble motif so text centers under island
     marginTop: 16,
+  },
+  titleBubbles: {
+    width: 54,
+    height: 40,
+    marginRight: 6,
+    position: 'relative',
+  },
+  titleBubble: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  titleBubbleBack: {
+    left: 6,
+    top: 8,
+  },
+  titleBubbleFront: {
+    left: 16,
+    top: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  titleBubbleShine: {
+    position: 'absolute',
+    top: '12%',
+    left: '16%',
+    width: '42%',
+    height: '28%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    transform: [{ rotate: '-18deg' }],
+  },
+  title: {
+    fontSize: 24,
+    marginTop: 0,
+    marginBottom: 0,
     textAlign: 'center',
     color: themeVariables.whiteColor,
     letterSpacing: 1,
@@ -297,6 +358,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.25)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
+    marginTop: 12,
     marginBottom: 10,
   },
   slateInner: {

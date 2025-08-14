@@ -71,7 +71,7 @@ const FastTypeGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Tap It Fast</Text>
       <Text style={styles.description}>Tap each word in order before time runs out!</Text>
       <Text style={styles.timer}>Time: {time}</Text>
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,

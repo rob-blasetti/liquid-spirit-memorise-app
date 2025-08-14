@@ -75,7 +75,7 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Fill in the Blank</Text>
       <Text style={styles.description}>Tap the words that fit in the blanks.</Text>
       <Text style={styles.quote}>{display}</Text>

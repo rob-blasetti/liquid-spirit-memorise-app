@@ -168,6 +168,7 @@ const MainApp = () => {
         </NavigationContainer>
       );
     }
+    // Render games within the main layout instead of early-returning
     if (isGameScreen(nav.screen)) {
       const backHandler = nav.fromGames ? () => goTo('games') : goBackToLesson;
       return (

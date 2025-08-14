@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import GameTopBar from '../components/GameTopBar';
 import PuzzlePiece from '../components/PuzzlePieceSvg';
 import PuzzleSlotSvg from '../components/PuzzleSlotSvg';
@@ -19,6 +20,10 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
   const prePlacedCounts = { 1: 2, 2: 4, 3: 6 };
   const pieceCount = pieceCounts[difficulty] || 8;
   const prePlaced = prePlacedCounts[difficulty] || 2;
+  // Timer based on difficulty
+  const initialTime = difficulty === 1 ? 30 : difficulty === 2 ? 20 : 10;
+  const [timeLeft, setTimeLeft] = useState(initialTime);
+  const timerRef = useRef(null);
   // Prepare words and split into interactive and pre-placed sets
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const allWords = useMemo(() => text.split(/\s+/).filter(w => w.length > 0), [text]);
@@ -75,6 +80,36 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
     }
     return conns;
   }, [rows, cols]);
+
+  // Start/reset countdown timer on mount and whenever difficulty/quote changes
+  useEffect(() => {
+    // clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setTimeLeft(initialTime);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+          // time up: navigate back after a short delay unless already won
+          if (!winTriggeredRef.current) {
+            setTimeout(() => onBack && onBack(), 300);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [initialTime, quote]);
   // Compute initial positions of pieces scattered around puzzle perimeter (memoized)
   const initialPositions = useMemo(() => {
     const positions = [];
@@ -133,37 +168,51 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
       y1: Math.min(height, height - FAB_BOTTOM + FAB_PAD),
     };
 
+    // Timer exclusion: bottom-left timer piece area
+    const TIMER_LEFT = 16;
+    const TIMER_BOTTOM = 80;
+    const TIMER_W = Math.max(84, Math.floor(PIECE_SIZE * 1.4));
+    const TIMER_H = Math.max(48, Math.floor(PIECE_SIZE * 1.0));
+    const TIMER_PAD = Math.max(12, Math.floor(PIECE_SIZE * 0.2));
+    const timerRect = {
+      x0: Math.max(0, TIMER_LEFT - TIMER_PAD),
+      y0: Math.max(0, height - TIMER_BOTTOM - TIMER_H - TIMER_PAD),
+      x1: Math.min(width, TIMER_LEFT + TIMER_W + TIMER_PAD),
+      y1: Math.min(height, height - TIMER_BOTTOM + TIMER_PAD),
+    };
+
     // Helper: subtract FAB rect from a strip (axis-aligned)
-    const subtractFab = (r) => {
+    const subtractRect = (r, rect) => {
       const out = [];
-      const ox0 = Math.max(r.x0, fabRect.x0);
-      const oy0 = Math.max(r.y0, fabRect.y0);
-      const ox1 = Math.min(r.x1, fabRect.x1);
-      const oy1 = Math.min(r.y1, fabRect.y1);
+      const ox0 = Math.max(r.x0, rect.x0);
+      const oy0 = Math.max(r.y0, rect.y0);
+      const ox1 = Math.min(r.x1, rect.x1);
+      const oy1 = Math.min(r.y1, rect.y1);
       const overlaps = ox0 < ox1 && oy0 < oy1;
       if (!overlaps) return [r];
       const w = r.x1 - r.x0;
       const h = r.y1 - r.y0;
       // If horizontal strip (w >= h): split left/right
       if (w >= h) {
-        if (r.x0 < fabRect.x0) out.push({ x0: r.x0, y0: r.y0, x1: Math.max(r.x0, fabRect.x0), y1: r.y1 });
-        if (fabRect.x1 < r.x1) out.push({ x0: Math.min(r.x1, fabRect.x1), y0: r.y0, x1: r.x1, y1: r.y1 });
+        if (r.x0 < rect.x0) out.push({ x0: r.x0, y0: r.y0, x1: Math.max(r.x0, rect.x0), y1: r.y1 });
+        if (rect.x1 < r.x1) out.push({ x0: Math.min(r.x1, rect.x1), y0: r.y0, x1: r.x1, y1: r.y1 });
       } else {
         // Vertical strip: split above/below
-        if (r.y0 < fabRect.y0) out.push({ x0: r.x0, y0: r.y0, x1: r.x1, y1: Math.max(r.y0, fabRect.y0) });
-        if (fabRect.y1 < r.y1) out.push({ x0: r.x0, y0: Math.min(r.y1, fabRect.y1), x1: r.x1, y1: r.y1 });
+        if (r.y0 < rect.y0) out.push({ x0: r.x0, y0: r.y0, x1: r.x1, y1: Math.max(r.y0, rect.y0) });
+        if (rect.y1 < r.y1) out.push({ x0: r.x0, y0: Math.min(r.y1, rect.y1), x1: r.x1, y1: r.y1 });
       }
       return out;
     };
     // Apply exclusion to all strips and require extra padding for placement
     strips = strips
-      .flatMap(subtractFab)
+      .flatMap((s) => subtractRect(s, fabRect))
+      .flatMap((s) => subtractRect(s, timerRect))
       .filter(s => (s.x1 - s.x0) > (PIECE_SIZE + 12) && (s.y1 - s.y0) > (PIECE_SIZE + 12));
 
     // Fallback: if no strips available (rare), allow top area (still avoid FAB)
     if (strips.length === 0) {
       const topStrip = { x0: SAFE_SIDE, y0: SAFE_TOP, x1: width - SAFE_SIDE, y1: Math.min(height - SAFE_BOTTOM, puzzleMinY - MARGIN) };
-      strips = subtractFab(topStrip);
+      strips = subtractRect(topStrip, fabRect).flatMap((s) => subtractRect(s, timerRect));
     }
 
     const area = (r) => Math.max(0, (r.x1 - r.x0 - PIECE_SIZE)) * Math.max(0, (r.y1 - r.y0 - PIECE_SIZE));
@@ -252,6 +301,11 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
       // eslint-disable-next-line no-console
       console.log('[ShapeBuilder:WIN] firing onWin');
       winTriggeredRef.current = true;
+      // stop timer on win
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       onWin();
     }
   }, [placedSet, interactiveCount, onWin]);
@@ -330,7 +384,7 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
 
   return (
     <View style={styles.container}>
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       <View style={styles.titleRow}>
         <View style={styles.titleIcons}>
           {/* Back puzzle piece icon */}
@@ -393,6 +447,12 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
         );
       })}
       {/* Win overlay handled at parent */}
+      {/* Countdown timer bottom-left shaped like a puzzle piece */}
+      <View style={styles.timerWrapper} pointerEvents="none">
+         <View style={styles.timerFab}>
+           <Text style={styles.timerText}>{timeLeft}s</Text>
+         </View>
+      </View>
     </View>
   );
 };
@@ -400,22 +460,25 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: themeVariables.neutralLight,
+    backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 28,
-    marginTop: 8,
-    marginBottom: 10,
+    fontSize: 24,
+    marginTop: 0,
+    marginBottom: 0,
     textAlign: 'center',
     fontFamily: 'Noto Sans',
     fontWeight: '900',
-    color: themeVariables.primaryColor,
+    color: themeVariables.whiteColor,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    // Leave room for the back button (40px) + margin (12) + outer left margin (20)
+    paddingLeft: 10,
+    marginTop: 16,
   },
   titleUnderline: {
     alignSelf: 'center',
@@ -505,6 +568,38 @@ const styles = StyleSheet.create({
   },
   buttonMargin: {
     marginHorizontal: 8,
+  },
+  timerWrapper: {
+    position: 'absolute',
+    left: 24,         // mirror of FAB_RIGHT
+    bottom: 54,       // same as FAB_BOTTOM
+    width: 56,        // same as FAB diameter
+    height: 56,
+    zIndex: 3,
+  },
+  timerText: {
+    position: 'absolute',
+    color: themeVariables.blackColor,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    top: 20,
+  },
+  timerFab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: themeVariables.secondaryColor, // or whiteColor if you want white background
+    borderColor: themeVariables.blackColor,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });
 

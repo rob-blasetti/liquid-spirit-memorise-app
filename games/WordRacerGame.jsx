@@ -119,7 +119,7 @@ const WordRacerGame = ({ quote, onBack, onWin }) => {
       onResponderGrant={(e) => onTouchAt(e.nativeEvent.locationX, e.nativeEvent.locationY)}
       onResponderMove={(e) => onTouchAt(e.nativeEvent.locationX, e.nativeEvent.locationY)}
     >
-      <GameTopBar onBack={onBack} />
+      <GameTopBar onBack={onBack} variant="whiteShadow" />
       {/* Lives display */}
       <Text style={styles.lives}>Lives: {lives}</Text>
       <View style={[styles.car, { left: car.x, top: car.y }]}>
