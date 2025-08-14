@@ -23,3 +23,4 @@ export { default as ClassScreen } from './ClassScreen';
 export { default as NuriRegisterScreen } from './NuriRegisterScreen';
 export { default as NuriLoginScreen } from './NuriLoginScreen';
 export { default as LessonJourneyScreen } from './LessonJourneyScreen';
+export { default as ShopScreen } from './ShopScreen';

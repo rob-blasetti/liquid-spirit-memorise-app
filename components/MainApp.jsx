@@ -95,6 +95,7 @@ const MainApp = () => {
     goTo('practice', { quote: content, setNumber, lessonNumber });
   };
 
+
   const playSelectedGame = (gameId) => {
     const { setNumber, lessonNumber } = getCurrentProgress();
     const content = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
@@ -296,6 +297,9 @@ const MainApp = () => {
       default: {
         const { setNumber, lessonNumber } = getCurrentProgress();
         const content = getCurrentContent(profile, getCurrentProgress, { type: 'prayer' });
+        // Determine if user can switch accounts (guest, registered, or multiple children)
+        const accountCount = (guestProfile ? 1 : 0) + (registeredProfile ? 1 : 0) + (Array.isArray(children) ? children.length : 0);
+        const canSwitchAccount = accountCount > 1;
         return (
           <HomeScreen
             profile={profile}
@@ -306,6 +310,7 @@ const MainApp = () => {
             onProfilePress={() => setChooseChildVisible(true)}
             onAvatarPress={handleAvatarPress}
             onJourney={() => goTo('lessonJourney')}
+            canSwitchAccount={canSwitchAccount}
           />
         );
       }
@@ -347,6 +352,7 @@ const MainApp = () => {
           goAchievements={() => goTo('achievements')}
           goSettings={() => goTo('settings')}
           activeScreen={nav.screen}
+          showClassTab={profile?.type === 'linked'}
         />
       )}
     </SafeAreaView>

@@ -60,7 +60,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
   const renderVoiceOptions = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>TTS Voice</Text>
+      <Text style={styles.sectionTitle}>Reading Voice</Text>
       {voiceOptions.map((voice) => (
         <View key={voice.value} style={styles.itemWrapper}>
           <TouchableOpacity

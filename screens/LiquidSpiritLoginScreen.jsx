@@ -10,6 +10,7 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
   const [bahaiId, setBahaiId] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -25,12 +26,15 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
   const handleLogin = async () => {
     console.log('Attempting Liquid Spirit login with:', { bahaiId, email, password });
     try {
+      setLoading(true);
       await saveCredentials(email, password);
       const data = await signInWithLiquidSpirit(bahaiId, email, password);
       console.log('Liquid Spirit login successful', data);
       onSignIn(data);
     } catch (err) {
       console.error('Liquid Spirit login failed', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,6 +52,7 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
           style={styles.input}
           autoCapitalize="none"
           autoCorrect={false}
+          editable={!loading}
         />
 
         <Text style={styles.label}>Email</Text>
@@ -58,6 +63,7 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
           style={styles.input}
           autoCapitalize="none"
           autoCorrect={false}
+          editable={!loading}
         />
 
         <Text style={styles.label}>Password</Text>
@@ -66,8 +72,14 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
           value={password}
           onChangeText={setPassword}
           style={styles.input}
+          editable={!loading}
         />
-        <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+        <Button
+          label={loading ? 'Logging in…' : 'Log In'}
+          onPress={handleLogin}
+          disabled={loading}
+          style={styles.fullWidthButton}
+        />
       </View>
         </ScrollView>
       </KeyboardAvoidingView>

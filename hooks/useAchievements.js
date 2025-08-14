@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  initAchievements,
-  fetchUserAchievements,
-} from '../services/achievementsService';
+import { initAchievements, fetchUserAchievements } from '../services/achievementsService';
 import {
   grantAchievement,
   grantGameAchievement,
@@ -16,7 +13,10 @@ export default function useAchievements(profile, saveProfile) {
     console.debug('useAchievements profile:', profile);
   }
 
-  const [achievements, setAchievements] = useState(initAchievements(profile));
+  const [achievements, setAchievements] = useState(() => {
+    const hasServerId = Boolean(profile?._id || profile?.id || profile?.nuriUserId);
+    return hasServerId ? defaultAchievements.map(a => ({ ...a })) : initAchievements(profile);
+  });
   const [totalPoints, setTotalPoints] = useState(
     typeof profile?.totalPoints === 'number'
       ? profile.totalPoints
@@ -26,6 +26,8 @@ export default function useAchievements(profile, saveProfile) {
     getTotalPoints(initAchievements(profile)),
   );
   const [isPointsSynced, setIsPointsSynced] = useState(true);
+
+  // No merging needed now that server returns full catalog with earned flags
 
   useEffect(
     () => {
@@ -42,7 +44,7 @@ export default function useAchievements(profile, saveProfile) {
             totalPoints: serverTotal = 0,
           } = await fetchUserAchievements(userId);
 
-          // 2) if server has none yet, seed them locally
+          // 2) Use the server-provided catalog directly
           const list = serverAchievements.length
             ? serverAchievements
             : initAchievements(profile);
@@ -55,15 +57,13 @@ export default function useAchievements(profile, saveProfile) {
 
             // Use server total if provided; else compute
             const nextComputed = getTotalPoints(list);
-            const nextTotal =
-              typeof serverTotal === 'number' ? serverTotal : nextComputed;
+            const nextTotal = typeof serverTotal === 'number' ? serverTotal : nextComputed;
             setComputedPoints(nextComputed);
             setTotalPoints(nextTotal);
             setIsPointsSynced(nextTotal === nextComputed);
 
             // 3) write back only if it’s new (optional, but helps avoid extra renders)
-            const haveSame =
-              JSON.stringify(profile.achievements) === JSON.stringify(list);
+            const haveSame = JSON.stringify(profile.achievements) === JSON.stringify(list) && profile.totalPoints === nextTotal;
             if (!haveSame) {
               saveProfile({
                 ...profile,
@@ -110,27 +110,46 @@ export default function useAchievements(profile, saveProfile) {
     const hasServerId = Boolean(
       profile?._id || profile?.id || profile?.nuriUserId,
     );
-    if (!hasServerId && totalPoints !== nextComputed) {
-      // For purely local/guest profiles, keep UI total in lockstep
-      setTotalPoints(nextComputed);
+    if (hasServerId) {
+      // When a server user exists, treat the server totalPoints as source of truth.
+      // Do NOT override it with computed; just report sync status.
+      setIsPointsSynced(totalPoints === nextComputed);
+    } else {
+      // For local/guest profiles, keep UI total in lockstep with computed.
+      if (totalPoints !== nextComputed) {
+        setTotalPoints(nextComputed);
+        if (profile) saveProfile({ ...profile, totalPoints: nextComputed });
+      }
+      setIsPointsSynced(true);
     }
-    setIsPointsSynced(totalPoints === nextComputed);
-    if (__DEV__ && totalPoints !== nextComputed) {
-      // eslint-disable-next-line no-console
-      console.warn('Achievements total points mismatch', {
-        totalPoints,
-        computed: nextComputed,
-      });
-    }
-  }, [
-    achievements,
-    totalPoints,
-    profile?._id,
-    profile?.id,
-    profile?.nuriUserId,
-  ]);
+  }, [achievements, totalPoints, profile, saveProfile]);
 
   const [notification, setNotification] = useState(null);
+
+  // Explicit refresh from server, used when entering Achievements screen
+  const refreshFromServer = useCallback(async () => {
+    const userId = profile?._id || profile?.id || profile?.nuriUserId;
+    if (!userId) return;
+    try {
+      const { achievements: serverAchievements = [], totalPoints: serverTotal = 0 } = await fetchUserAchievements(userId);
+      const list = serverAchievements.length ? serverAchievements : initAchievements(profile);
+      setAchievements(list);
+      const nextComputed = getTotalPoints(list);
+      setComputedPoints(nextComputed);
+      const nextTotal = typeof serverTotal === 'number' ? serverTotal : nextComputed;
+      setTotalPoints(nextTotal);
+      setIsPointsSynced(nextTotal === nextComputed);
+      // Persist reconciled profile
+      if (profile) {
+        saveProfile({ ...profile, achievements: list, totalPoints: nextTotal });
+      }
+    } catch (e) {
+      console.error('refreshFromServer failed:', e);
+    }
+  }, [profile, saveProfile]);
+
+  // Alias for external consumers: setAchievements() triggers a server refresh
+  const setAchievementsFromServer = refreshFromServer;
 
   // Award an achievement by ID via service
   const awardAchievement = useCallback(
@@ -202,5 +221,8 @@ export default function useAchievements(profile, saveProfile) {
     setNotification,
     awardAchievement,
     awardGameAchievement,
+    // Public API: call to fetch latest from server and update context
+    setAchievements: setAchievementsFromServer,
+    refreshFromServer,
   };
 }

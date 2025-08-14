@@ -57,8 +57,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: theme.bottomNavBg, // e.g. '#4B2770'
     borderRadius: 30,        // nice pill shape
-    paddingVertical: 8,
-    justifyContent: 'space-around',
+    paddingVertical: 11,
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
     alignItems: 'center',
     // optional shadow for iOS
     shadowColor: '#000',
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   navText: {
-    fontSize: 11,
+    fontSize: 9,
     color: theme.whiteColor,
     opacity: 0.6,            // default dimmed
   },

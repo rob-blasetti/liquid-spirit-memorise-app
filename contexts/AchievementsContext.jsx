@@ -9,6 +9,9 @@ const AchievementsContext = createContext({
   setNotification: () => {},
   awardAchievement: () => {},
   awardGameAchievement: () => {},
+  // Fetches latest achievements/points from server and updates context
+  setAchievements: () => {},
+  refreshFromServer: () => {},
 });
 
 export const AchievementsProvider = ({ value, children }) => (

@@ -19,6 +19,7 @@ const HomeScreen = ({
   onProfilePress,
   onAvatarPress,
   onJourney,
+  canSwitchAccount,
 }) => {
   if (__DEV__) {
     // eslint-disable-next-line no-console
@@ -28,6 +29,13 @@ const HomeScreen = ({
   let prayerToShow = null;
   let quoteToShow = null;
   let references = [];
+  // Compose lesson display once for use below
+  const lessonDisplay =
+    (typeof currentSet !== 'undefined' && currentSet !== null)
+      ? `${currentSet}.${currentLesson}`
+      : (typeof currentLesson !== 'undefined' && currentLesson !== null
+          ? `${currentLesson}`
+          : null);
   if (profile.grade === 1) {
     const lesson = grade1Lessons.find(l => l.lesson === currentLesson);
     prayerToShow = lesson?.prayer;
@@ -60,10 +68,14 @@ const HomeScreen = ({
         currentLesson={currentLesson}
         onAvatarPress={onAvatarPress}
         onProfilePress={onProfilePress}
+        canSwitchAccount={canSwitchAccount}
       />
 
       {/* Prayer and Quote Blocks */}
       <View style={styles.contentContainer}>
+        {lessonDisplay ? (
+          <Text style={styles.currentLessonText}>Current Lesson: {lessonDisplay}</Text>
+        ) : null}
         {prayerToShow ? (
           <PrayerBlock
             prayer={prayerToShow}
@@ -111,6 +123,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     marginTop: 24,
+  },
+  currentLessonText: {
+    color: themeVariables.whiteColor,
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
   },
   bottomButtonContainer: {
     width: '100%',

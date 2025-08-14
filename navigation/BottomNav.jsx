@@ -12,12 +12,13 @@ const BottomNav = ({
   goAchievements,
   goSettings,
   activeScreen,
+  showClassTab = false,
 }) => (
   <View style={styles.bottomNav}>
     {[
       { name: 'home',    label: 'Home',        icon: 'home',         onPress: goHome },
       { name: 'grades',  label: 'Library',     icon: 'library',      onPress: goGrades },
-      { name: 'class',   label: 'Classes',     icon: 'school',       onPress: goClass },
+      ...(showClassTab ? [{ name: 'class',   label: 'Classes',     icon: 'school',       onPress: goClass }] : []),
       { name: 'games',   label: 'Game',        icon: 'game-controller', onPress: goGames },
       { name: 'achievements', label: 'Badges', icon: 'trophy',       onPress: goAchievements },
       { name: 'settings',    label: 'Settings',icon: 'settings',     onPress: goSettings },
@@ -31,7 +32,7 @@ const BottomNav = ({
         >
           <Ionicons
             name={ isActive ? item.icon : `${item.icon}-outline` }
-            size={24}
+            size={20}
             color={theme.whiteColor}
             style={[styles.navIcon, { opacity: isActive ? 1 : 0.6 }]}
           />

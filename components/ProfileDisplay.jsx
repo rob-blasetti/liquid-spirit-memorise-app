@@ -6,8 +6,8 @@ import Avatar from '@liquidspirit/react-native-boring-avatars';
 import LinearGradient from 'react-native-linear-gradient';
 import themeVariables from '../styles/theme';
 
-const AVATAR_SIZE = 84; // larger avatar to fit the rounded container
-const STAR_SIZE = 60; // bigger star for the score
+const AVATAR_SIZE = 68; // slightly smaller avatar
+const STAR_SIZE = 48; // slightly smaller star for the score
 
 const ProfileDisplay = ({
   profile,
@@ -15,6 +15,7 @@ const ProfileDisplay = ({
   currentLesson,
   onAvatarPress,
   onProfilePress,
+  canSwitchAccount,
 }) => {
   const { firstName, lastName, username, totalPoints } = profile;
   const fullName = [ firstName, lastName ]
@@ -61,6 +62,9 @@ const ProfileDisplay = ({
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
             <View style={styles.nameContainer}>
               <Text style={styles.profileName}>{displayName}</Text>
+              {canSwitchAccount ? (
+                <Ionicons name="chevron-down" size={16} color={themeVariables.whiteColor} style={styles.chevronIcon} />
+              ) : null}
               {profile.type === 'linked' && (
                 <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
               )}
@@ -68,7 +72,7 @@ const ProfileDisplay = ({
 
             <Text style={styles.profileGrade}>Grade {profile.grade?.toString() || 'N/A'}</Text>
 
-            <Text style={styles.progressText}>Lesson {lessonDisplay}</Text>
+            {/* Lesson moved out of ProfileDisplay to Home screen */}
           </TouchableOpacity>
         </View>
 
@@ -88,7 +92,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    borderRadius: 80, // more rounded
+    borderRadius: 50, // more rounded
     overflow: 'hidden',
   },
   headerContent: {
@@ -97,8 +101,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   profileContainer: {
     flexDirection: 'row',
@@ -129,17 +133,12 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: themeVariables.whiteColor,
   },
   profileGrade: {
-    fontSize: 16,
-    color: themeVariables.whiteColor,
-  },
-  progressText: {
     fontSize: 14,
-    fontWeight: '500',
     color: themeVariables.whiteColor,
   },
   pointsContainer: {
@@ -173,6 +172,9 @@ const styles = StyleSheet.create({
   },
   linkIcon: {
     marginLeft: 8,
+  },
+  chevronIcon: {
+    marginLeft: 6,
   },
 });
 

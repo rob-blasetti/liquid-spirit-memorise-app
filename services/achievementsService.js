@@ -36,39 +36,48 @@ export async function fetchUserAchievements(userId) {
       throw new Error('Failed to fetch achievements');
     }
     const raw = await res.json();
+    console.log('ACHIEVEMENTS: ', raw);
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
-    // Normalize server achievements into client shape { id, title, points, earned: true }
-    const achievements = (serverAchievements || []).map((a) => {
-      // Common server shape: { achievement: { _id, title, points }, ... }
-      if (a && a.achievement) {
-        return {
-          id: a.achievement._id || a.achievement.id,
-          title: a.achievement.title,
-          points: a.achievement.points || 0,
-          earned: true,
-        };
-      }
-      // If server returns {_id, title, points}
-      if (a && (a._id || a.id)) {
-        return {
-          id: a._id || a.id,
-          title: a.title,
-          points: a.points || 0,
-          earned: true,
-        };
-      }
-      // If server returns just an id string
-      if (typeof a === 'string') {
-        const def = defaultAchievements.find((d) => d.id === a);
-        return {
-          id: a,
-          title: def?.title || a,
-          points: def?.points || 0,
-          earned: true,
-        };
-      }
-      return null;
-    }).filter(Boolean);
+    // Normalize server achievements; preserve earned and description
+    const achievements = (serverAchievements || [])
+      .map((a) => {
+        // Shape A: { achievement: { _id, title, points, description }, earned, dateEarned }
+        if (a && a.achievement) {
+          return {
+            id: a.achievement._id || a.achievement.id,
+            title: a.achievement.title,
+            description: a.achievement.description,
+            points: a.achievement.points || 0,
+            earned: Boolean(a.earned),
+            dateEarned: a.dateEarned || null,
+          };
+        }
+        // Shape B: flat: { id, title, description, points, earned, dateEarned }
+        if (a && (a._id || a.id)) {
+          return {
+            id: a._id || a.id,
+            title: a.title,
+            description: a.description,
+            points: a.points || 0,
+            earned: Boolean(a.earned),
+            dateEarned: a.dateEarned || null,
+          };
+        }
+        // Shape C: legacy string id list (earned-only)
+        if (typeof a === 'string') {
+          const def = defaultAchievements.find((d) => d.id === a);
+          return {
+            id: a,
+            title: def?.title || a,
+            description: def?.description,
+            points: def?.points || 0,
+            earned: true,
+            dateEarned: null,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
 
     if (__DEV__) {
       // eslint-disable-next-line no-console

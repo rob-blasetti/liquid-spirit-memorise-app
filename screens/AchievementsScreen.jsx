@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -7,6 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -22,7 +24,33 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
 const AchievementsScreen = () => {
-  const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0 } = useAchievementsContext();
+  const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0, setAchievements } = useAchievementsContext();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filterOption, setFilterOption] = useState('earned'); // 'earned' | 'unearned' | 'all'
+
+  // Refresh achievements/points from server when entering this screen
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        await setAchievements?.();
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [setAchievements]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await setAchievements?.();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   if (__DEV__) {
     // eslint-disable-next-line no-console
     console.debug('Achievements screen achievements:', achievements);
@@ -87,25 +115,54 @@ const AchievementsScreen = () => {
             style={styles.headerBgIcon}
           />
           <Text style={styles.title}>Achievements</Text>
-          {/* total points earned */}
-          <Text style={styles.totalPoints}>Total Points: {totalPoints}</Text>
+          {/* total points (left) + filter (right) */}
+          <View style={styles.headerRow}>
+            <Text style={styles.totalPointsLeft}>Total Points: {totalPoints}</Text>
+            <View style={styles.filterGroup}>
+              <TouchableOpacity
+                style={[styles.filterBtn, filterOption === 'all' && styles.filterBtnActive]}
+                onPress={() => setFilterOption('all')}
+              >
+                <Text style={[styles.filterText, filterOption === 'all' && styles.filterTextActive]}>All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterBtn, filterOption === 'earned' && styles.filterBtnActive]}
+                onPress={() => setFilterOption('earned')}
+              >
+                <Text style={[styles.filterText, filterOption === 'earned' && styles.filterTextActive]}>Earned</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterBtn, filterOption === 'unearned' && styles.filterBtnActive]}
+                onPress={() => setFilterOption('unearned')}
+              >
+                <Text style={[styles.filterText, filterOption === 'unearned' && styles.filterTextActive]}>Unearned</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           {__DEV__ && !isPointsSynced && (
             <Text style={styles.pointsWarning}>Points mismatch (computed {computedPoints})</Text>
           )}
         </View>
 
         {/* Achievement Cards */}
+        {loading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={themeVariables.whiteColor} />
+            <Text style={styles.loadingText}>Syncing achievements…</Text>
+          </View>
+        ) : (
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeVariables.whiteColor} />}
         >
           {order.flatMap((section) => {
             // group and sort: earned achievements first
             const rawItems = grouped[section] || [];
-            const items = [
-              ...rawItems.filter(a => a.earned),
-              ...rawItems.filter(a => !a.earned),
-            ];
+            const items =
+              filterOption === 'all'
+                ? rawItems
+                : rawItems.filter(a => (filterOption === 'earned' ? a.earned : !a.earned));
             return items.map((item) => {
               const pct = Math.max(0, Math.min(100, item.points));
               return (
@@ -148,6 +205,7 @@ const AchievementsScreen = () => {
             });
           })}
         </ScrollView>
+        )}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -179,6 +237,12 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
     fontSize: 24,
     fontWeight: '700',
+  },
+  headerRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   content: {
     paddingBottom: 24,
@@ -241,18 +305,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  // total points at header
-  totalPoints: {
+  // total points at header (left)
+  totalPointsLeft: {
     color: themeVariables.whiteColor,
-    fontSize: 18,
-    fontWeight: '500',
-    marginTop: 8,
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
   },
   pointsWarning: {
     color: '#FFD54F',
     fontSize: 12,
     textAlign: 'center',
     marginTop: 4,
+  },
+  filterGroup: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'transparent',
+  },
+  filterBtnActive: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderColor: themeVariables.whiteColor,
+  },
+  filterText: {
+    color: themeVariables.whiteColor,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterTextActive: {
+    color: themeVariables.whiteColor,
+  },
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 24,
+  },
+  loadingText: {
+    marginTop: 8,
+    color: themeVariables.whiteColor,
+    fontSize: 14,
   },
 });
