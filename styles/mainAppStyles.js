@@ -55,23 +55,61 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     flexDirection: 'row',
-    backgroundColor: theme.bottomNavBg, // e.g. '#4B2770'
+    // Glass fallback tint behind blur
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 30,        // nice pill shape
-    paddingVertical: 11,
+    paddingVertical: 12,
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     alignItems: 'center',
+    overflow: 'hidden',      // clip blur to rounded shape
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
     // optional shadow for iOS
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
     // optional elevation for Android
-    elevation: 5,
+    elevation: 8,
+  },
+  navGloss: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    zIndex: 0,
+  },
+  navContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 3,
+  },
+  navHighlight: {
+    position: 'absolute',
+    top: 6,
+    bottom: 6,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.25)',
+    zIndex: 1,
+  },
+  navRipple: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    zIndex: 2,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
+    zIndex: 3,
   },
   navIcon: {
     marginBottom: 2,
@@ -83,9 +121,6 @@ const styles = StyleSheet.create({
   },
   navTextActive: {
     opacity: 1,              // full‑bright
-    borderBottomWidth: 2,
-    borderBottomColor: theme.whiteColor,
-    paddingBottom: 2,
   },
   profileContainer: {
     flexDirection: 'row',
