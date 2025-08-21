@@ -26,6 +26,46 @@ jest.mock('react-native-config', () => ({
   PROD_API: 'http://localhost:3000',
 }));
 
+// Mock react-native-sound to avoid native dependency in tests
+jest.mock('react-native-sound', () => {
+  function Sound(path, basePath, onLoad) {
+    this._path = path;
+    setTimeout(() => onLoad && onLoad(null), 0);
+  }
+  Sound.prototype.play = function (cb) { setTimeout(() => cb && cb(true), 0); };
+  Sound.prototype.stop = function (cb) { setTimeout(() => cb && cb(), 0); };
+  Sound.prototype.release = function () {};
+  Sound.prototype.setSpeed = function () {};
+  return Sound;
+});
+
+// Mock RNFS to support cache ops in tests
+jest.mock('react-native-fs', () => {
+  let files = {};
+  const join = (...a) => a.join('/').replace(/\\+/g, '/');
+  const DocumentDirectoryPath = '/doc';
+  const readDir = async (p) => {
+    const list = Object.keys(files).filter(k => k.startsWith(p + '/')).map(k => ({
+      path: k,
+      name: k.split('/').pop(),
+      isFile: () => true,
+      size: files[k].length,
+      mtime: new Date(),
+    }));
+    return list;
+  };
+  return {
+    DocumentDirectoryPath,
+    exists: async (p) => !!Object.keys(files).find(k => k.startsWith(p)),
+    mkdir: async () => {},
+    writeFile: async (p, data) => { files[p] = data; },
+    readDir,
+    unlink: async (p) => { delete files[p]; },
+    stat: async (p) => ({ size: (files[p] || '').length }),
+    touch: async () => {},
+  };
+});
+
 // Basic AsyncStorage mock for tests
 jest.mock('@react-native-async-storage/async-storage', () => {
   let store = {};
@@ -51,12 +91,6 @@ beforeAll(() => {
   jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
-jest.mock('react-native-tts', () => ({
-  addEventListener: jest.fn(),
-  getInitStatus: jest.fn(() => Promise.resolve()),
-  speak: jest.fn(),
-  stop: jest.fn(),
-}));
 jest.mock('react-native-keychain', () => ({
   getGenericPassword: jest.fn(() => Promise.resolve(null)),
   setGenericPassword: jest.fn(() => Promise.resolve()),

@@ -32,6 +32,7 @@ import GameRenderer from './GameRenderer';
 import { isGameScreen } from '../navigation/router';
 import ScreenBackground from './ScreenBackground';
 import FastImage from 'react-native-fast-image';
+import { preloadImages, collectChildAndClassImageUris } from '../services/imageCache';
 import { getCurrentContent, getContentFor } from '../services/contentSelector';
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
 import useProfile from '../hooks/useProfile';
@@ -67,6 +68,20 @@ const MainApp = () => {
     const asset = RNImage.resolveAssetSource(require('../assets/img/pearlina-pointing-right.png'));
     FastImage.preload([{ uri: asset.uri }]);
   }, []);
+
+  // Warm cache with likely avatar + class images when children load/switch
+  useEffect(() => {
+    if (!children || children.length === 0) return;
+    const uris = collectChildAndClassImageUris(children);
+    // Avatars and thumbnails don't need high priority globally
+    preloadImages(uris, { priority: 'low' });
+  }, [children]);
+
+  // Also preload the active profile's avatar if present (switches, uploads)
+  useEffect(() => {
+    const avatarUri = profile?.profilePicture || profile?.avatar;
+    if (avatarUri) preloadImages([avatarUri], { priority: 'normal' });
+  }, [profile?.profilePicture, profile?.avatar]);
 
   if (showSplash) return <Splash />;
 

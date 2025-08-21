@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -15,6 +15,7 @@ import themeVariables from '../styles/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ScreenBackground from '../components/ScreenBackground';
 import LinearGradient from 'react-native-linear-gradient';
+import { preloadImages } from '../services/imageCache';
 import Chip from '../components/Chip';
 
 const SectionScrollableGrid = ({ title, items = [], emptyText, maxHeight = 180 }) => {
@@ -81,6 +82,9 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
 
+  // Warm the cache for the active tab's images
+  usePreloadForActiveTab(childEntries, index);
+
   const routes = childEntries.map(entry => ({
     key: entry._id,
     title: entry.firstName || '',
@@ -116,7 +120,7 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
                   <FastImage
                     source={{
                       uri: cls.imageUrl,
-                      priority: FastImage.priority.normal,
+                      priority: FastImage.priority.high,
                       cache: FastImage.cacheControl.immutable,
                     }}
                     style={styles.headerImage}
@@ -182,6 +186,8 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
           renderScene={renderScene}
           onIndexChange={setIndex}
           initialLayout={{ width: layout.width }}
+          lazy
+          lazyPreloadDistance={1}
           renderTabBar={(props) => (
             <TabBar
               {...props}
@@ -208,6 +214,27 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
     </ScreenBackground>
   );
 };
+
+// Preload images for active tab (header + participant/facilitator avatars)
+// Helps avoid visible loading lag when content mounts
+const usePreloadForActiveTab = (entries, activeIndex) => {
+  useEffect(() => {
+    if (!Array.isArray(entries) || entries.length === 0) return;
+    const active = entries[activeIndex];
+    if (!active) return;
+    const classes = active.classes || [];
+    const cls = classes[0]; // currently, only first class is shown
+    if (!cls) return;
+    const header = cls.imageUrl ? [cls.imageUrl] : [];
+    const avatars = [
+      ...(cls.facilitators || []).map((p) => p?.profilePicture || p?.avatar),
+      ...(cls.participants || []).map((p) => p?.profilePicture || p?.avatar),
+    ].filter(Boolean);
+    preloadImages(header, { priority: 'high' });
+    preloadImages(avatars, { priority: 'low' });
+  }, [entries, activeIndex]);
+};
+
 
 const styles = StyleSheet.create({
   container: { 

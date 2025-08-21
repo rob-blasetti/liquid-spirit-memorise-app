@@ -90,7 +90,7 @@ const QuoteBlock = ({
     try {
       if (isSpeaking) {
         cancelRef.current = true;
-        await speechService.stopTTS();
+        await speechService.hardStop();
         setIsSpeaking(false);
       } else {
         cancelRef.current = false;
@@ -109,7 +109,7 @@ const QuoteBlock = ({
 
     return () => {
       cancelRef.current = true;
-      speechService.stopTTS();
+      speechService.hardStop();
       speechService.cleanupTTSListeners();
     };
   }, []);

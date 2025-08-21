@@ -44,7 +44,7 @@ const ProfileDisplay = ({
                 <FastImage
                   source={{
                     uri: avatarUri,
-                    priority: FastImage.priority.normal,
+                    priority: FastImage.priority.high,
                     cache: FastImage.cacheControl.immutable,
                   }}
                   style={styles.profileAvatar}

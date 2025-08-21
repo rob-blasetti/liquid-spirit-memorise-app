@@ -7,13 +7,7 @@ import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import { Button } from 'liquid-spirit-styleguide';
-import Tts from 'react-native-tts';
-
-const voiceOptions = [
-  { label: 'Samantha (US)', value: 'com.apple.ttsbundle.Samantha-compact' },
-  { label: 'Daniel (UK)', value: 'com.apple.ttsbundle.Daniel-compact' },
-  { label: 'Karen (AU)', value: 'com.apple.ttsbundle.Karen-compact' },
-];
+import elevenLabs from '../services/elevenLabsTTS';
 
 const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset, onSaveProfile }) => {
   const [selectedSet, setSelectedSet] = useState(
@@ -22,7 +16,22 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   const [selectedLesson, setSelectedLesson] = useState(
     overrideProgress?.lessonNumber ?? currentProgress.lessonNumber
   );
-  const [selectedVoice, setSelectedVoice] = useState(profile?.ttsVoice ?? null);
+  // ElevenLabs uses voice id from profile or env; no device voice list
+  const [speed, setSpeed] = useState(profile?.ttsSpeed ?? 1.0);
+  // Slider width for rendering tick marks
+  const [speedSliderWidth, setSpeedSliderWidth] = useState(0);
+  const allowedSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+  const fmtSpeed = (v) => `${Number(v).toFixed(2)}x`;
+  const snapToAllowed = (val) => {
+    const v = Math.max(0.5, Math.min(2.0, Number(val) || 1));
+    let closest = allowedSpeeds[0];
+    let diff = Math.abs(v - closest);
+    for (let i = 1; i < allowedSpeeds.length; i++) {
+      const d = Math.abs(v - allowedSpeeds[i]);
+      if (d < diff) { diff = d; closest = allowedSpeeds[i]; }
+    }
+    return closest;
+  };
   // For grade-1 slider bubble positioning
   const [sliderWidth, setSliderWidth] = useState(0);
   const [bubbleLayout, setBubbleLayout] = useState({ width: 0, height: 0 });
@@ -48,6 +57,47 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson });
   }, [selectedSet, selectedLesson]);
 
+  // Persist and apply playback speed
+  useEffect(() => {
+    const v = Math.max(0.5, Math.min(2.0, Number(speed) || 1));
+    elevenLabs.setSpeed(v);
+    onSaveProfile?.({ ...profile, ttsSpeed: v });
+  }, [speed]);
+
+  // Cache is managed automatically with sensible defaults; no user controls
+
+  // Pre-cache ElevenLabs audio for the selected lesson only (minimize API calls)
+  useEffect(() => {
+    const looksLikeUuid = typeof profile?.ttsVoice === 'string' && /^[a-f0-9-]{10,}$/i.test(profile.ttsVoice);
+    const voiceId = looksLikeUuid ? profile.ttsVoice : undefined;
+
+    const cacheTexts = async (texts) => {
+      const unique = Array.from(new Set(texts.filter(t => typeof t === 'string' && t.trim().length > 0)));
+      for (const t of unique) {
+        try { await elevenLabs.synthesizeToFile({ text: t, voiceId }); } catch {}
+      }
+    };
+
+    // Determine which texts to cache based on grade and selection
+    if (String(profile.grade) === '1') {
+      const lesson = grade1Lessons.find(l => l.lesson === selectedLesson);
+      if (lesson) cacheTexts([lesson.prayer, lesson.quote]);
+      return;
+    }
+    if (String(profile.grade) === '2') {
+      const key = `${selectedSet}-${selectedLesson}`;
+      const obj = quoteMap[key] || {};
+      cacheTexts([obj.text, obj.prayer].filter(Boolean));
+      return;
+    }
+    if (String(profile.grade) === '2b') {
+      const key = `${selectedSet}-${selectedLesson}`;
+      const obj = quoteMap2b[key] || {};
+      cacheTexts([obj.text, obj.prayer].filter(Boolean));
+      return;
+    }
+  }, [profile?.ttsVoice, profile?.grade, selectedSet, selectedLesson]);
+
   if (!profile) {
     return (
       <SafeAreaView style={styles.container}>
@@ -58,35 +108,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     );
   }
 
-  const renderVoiceOptions = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Reading Voice</Text>
-      {voiceOptions.map((voice) => (
-        <View key={voice.value} style={styles.itemWrapper}>
-          <TouchableOpacity
-            style={[
-              styles.item,
-              selectedVoice === voice.value && styles.itemSelected,
-            ]}
-            onPress={async () => {
-              await Tts.setDefaultVoice(voice.value);
-              setSelectedVoice(voice.value);
-              onSaveProfile?.({ ...profile, ttsVoice: voice.value });
-            }}
-          >
-            <Text
-              style={[
-                styles.itemText,
-                selectedVoice === voice.value && styles.itemTextSelected,
-              ]}
-            >
-              {voice.label}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ))}
-    </View>
-  );
+  // Voice options removed (we use ElevenLabs voice by ID from profile or env)
 
   const renderGrade1Settings = () => {
     const lessonNumbers = grade1Lessons.map(l => l.lesson);
@@ -274,7 +296,57 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
         {String(profile.grade) === '2' && renderGrade2Settings()}
         {String(profile.grade) === '2b' && renderGrade2bSettings()}
 
-        {renderVoiceOptions()}
+        {/* Playback speed */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Playback Speed</Text>
+          <Text style={styles.centerLabel}>Current: {fmtSpeed(speed)}</Text>
+          <View
+            style={styles.sliderContainer}
+            onLayout={({ nativeEvent }) => setSpeedSliderWidth(nativeEvent.layout.width)}
+          >
+            {/* Ticks for each snap point */}
+            <View style={styles.tickContainer} pointerEvents="none">
+              {allowedSpeeds.map((sp, i) => {
+                const min = 0.5, max = 2.0;
+                const ratio = (sp - min) / (max - min);
+                const tickW = 2;
+                const trackW = Math.max(0, speedSliderWidth);
+                const unclamped = ratio * trackW - tickW / 2;
+                const left = Math.max(0, Math.min(unclamped, trackW - tickW));
+                const active = Math.abs(sp - speed) < 0.001;
+                return (
+                  <View
+                    key={`tick-${i}`}
+                    style={[styles.tick, { left }, active && styles.tickActive]}
+                  />
+                );
+              })}
+            </View>
+
+            {/* Slider only */}
+            <View style={styles.sliderRow}>
+              <Slider
+                style={styles.sliderFlex}
+                minimumValue={0.5}
+                maximumValue={2.0}
+                step={0.01}
+                value={speed}
+                minimumTrackTintColor={themeVariables.tertiaryColor}
+                maximumTrackTintColor={themeVariables.neutralDark}
+                thumbTintColor={themeVariables.whiteColor}
+                onValueChange={val => setSpeed(snapToAllowed(val))}
+              />
+            </View>
+
+            {/* Bottom min/max labels */}
+            <View style={styles.sliderBottomLabels}>
+              <Text style={styles.sliderBottomLabel}>{fmtSpeed(0.5)}</Text>
+              <Text style={styles.sliderBottomLabel}>{fmtSpeed(2.0)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ElevenLabs voice configured via profile.ttsVoice or .env */}
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
@@ -371,13 +443,23 @@ const styles = StyleSheet.create({
   sliderMinMax: {
     color: themeVariables.whiteColor,
     fontSize: 14,
-    width: 24,
+    width: 36,
     textAlign: 'center',
   },
   // Flex style for slider within row
   sliderFlex: {
     flex: 1,
     height: 40,
+  },
+  sliderBottomLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -6,
+  },
+  sliderBottomLabel: {
+    color: themeVariables.whiteColor,
+    fontSize: 12,
+    opacity: 0.85,
   },
   // Slider container to measure width and position the floating bubble
   sliderContainer: {
@@ -414,6 +496,34 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: themeVariables.tertiaryColor,
+  },
+  centerLabel: {
+    color: themeVariables.whiteColor,
+    opacity: 0.9,
+    textAlign: 'center',
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Ticks under the speed slider
+  tickContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 40,
+    justifyContent: 'center',
+  },
+  tick: {
+    position: 'absolute',
+    width: 2,
+    height: 8,
+    backgroundColor: themeVariables.neutralDark,
+    borderRadius: 1,
+    alignSelf: 'flex-start',
+  },
+  tickActive: {
+    backgroundColor: themeVariables.tertiaryColor,
+    height: 10,
   },
   item: {
     backgroundColor: themeVariables.neutralLight,
