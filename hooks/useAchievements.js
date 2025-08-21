@@ -13,9 +13,12 @@ export default function useAchievements(profile, saveProfile) {
     console.debug('useAchievements profile:', profile);
   }
 
+  const isGuest = Boolean(profile?.type === 'guest' || profile?.guest);
   const [achievements, setAchievements] = useState(() => {
+    // Guests always use local/default achievements; never fetch
+    if (isGuest) return initAchievements(profile);
     const hasServerId = Boolean(profile?._id || profile?.id || profile?.nuriUserId);
-    return hasServerId ? defaultAchievements.map(a => ({ ...a })) : initAchievements(profile);
+    return hasServerId ? initAchievements(profile) : initAchievements(profile);
   });
   const [totalPoints, setTotalPoints] = useState(
     typeof profile?.totalPoints === 'number'
@@ -31,6 +34,7 @@ export default function useAchievements(profile, saveProfile) {
 
   useEffect(
     () => {
+      if (isGuest) return; // never fetch for guest profiles
       // don’t run until we have a real ID
       const userId = profile?._id || profile?.id || profile?.nuriUserId;
       if (!userId) return;
@@ -100,17 +104,15 @@ export default function useAchievements(profile, saveProfile) {
       };
     },
     // ← effect only re-runs when the user ID changes
-    [profile?._id || profile?.id || profile?.nuriUserId],
+    [profile?._id || profile?.id || profile?.nuriUserId, isGuest],
   );
 
   // Keep computedPoints and sync flag updated whenever achievements change
   useEffect(() => {
     const nextComputed = getTotalPoints(achievements);
     setComputedPoints(nextComputed);
-    const hasServerId = Boolean(
-      profile?._id || profile?.id || profile?.nuriUserId,
-    );
-    if (hasServerId) {
+    const hasServerId = Boolean(profile?._id || profile?.id || profile?.nuriUserId);
+    if (!isGuest && hasServerId) {
       // When a server user exists, treat the server totalPoints as source of truth.
       // Do NOT override it with computed; just report sync status.
       setIsPointsSynced(totalPoints === nextComputed);
@@ -128,6 +130,7 @@ export default function useAchievements(profile, saveProfile) {
 
   // Explicit refresh from server, used when entering Achievements screen
   const refreshFromServer = useCallback(async () => {
+    if (isGuest) return; // guests never fetch from server
     const userId = profile?._id || profile?.id || profile?.nuriUserId;
     if (!userId) return;
     try {
@@ -146,7 +149,7 @@ export default function useAchievements(profile, saveProfile) {
     } catch (e) {
       console.error('refreshFromServer failed:', e);
     }
-  }, [profile, saveProfile]);
+  }, [profile, saveProfile, isGuest]);
 
   // Alias for external consumers: setAchievements() triggers a server refresh
   const setAchievementsFromServer = refreshFromServer;
@@ -212,11 +215,33 @@ export default function useAchievements(profile, saveProfile) {
     ],
   );
 
+  // Reinitialize achievements state when the active profile changes (e.g., switch guest/registered)
+  useEffect(() => {
+    // Establish a fresh baseline from the profile (local-only for guests)
+    const baseline = initAchievements(profile);
+    setAchievements(baseline);
+    const nextComputed = getTotalPoints(baseline);
+    setComputedPoints(nextComputed);
+    // Prefer provided totalPoints if present; else fall back to computed
+    const nextTotal = typeof profile?.totalPoints === 'number' ? profile.totalPoints : nextComputed;
+    setTotalPoints(nextTotal);
+    // Guests are always in-sync locally; for server users, report sync status
+    setIsPointsSynced(isGuest ? true : nextTotal === nextComputed);
+  }, [
+    // switch triggers: any identifier or guest flag change
+    profile?._id,
+    profile?.id,
+    profile?.nuriUserId,
+    profile?.guest,
+    profile?.type,
+  ]);
+
   return {
     achievements,
     totalPoints,
     computedPoints,
     isPointsSynced,
+    isGuest,
     notification,
     setNotification,
     awardAchievement,

@@ -9,7 +9,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CAR_SIZE = 40;
 const STEP = 20;
 
-const WordRacerGame = ({ quote, onBack, onWin }) => {
+const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
   const sentence = typeof quote === 'string' ? quote : quote?.text || '';
   const { level } = useDifficulty() || { level: 1 };
   const initialLives = level === 1 ? 6 : level === 2 ? 4 : 2;
@@ -74,9 +74,9 @@ const WordRacerGame = ({ quote, onBack, onWin }) => {
         setLives((lv) => {
           const next = Math.max(0, lv - 1);
           if (next === 0) {
-            setMessage('Game Over');
-            // Brief delay then back
-            setTimeout(() => onBack?.(), 800);
+            setMessage('');
+            // trigger loss overlay
+            onLose?.();
           } else {
             setMessage('Oops! Wrong word');
           }

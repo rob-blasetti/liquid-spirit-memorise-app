@@ -24,7 +24,7 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
 const AchievementsScreen = () => {
-  const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0, setAchievements } = useAchievementsContext();
+  const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0, setAchievements, isGuest = false } = useAchievementsContext();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterOption, setFilterOption] = useState('earned'); // 'earned' | 'unearned' | 'all'
@@ -115,6 +115,9 @@ const AchievementsScreen = () => {
             style={styles.headerBgIcon}
           />
           <Text style={styles.title}>Achievements</Text>
+          {isGuest && (
+            <Text style={styles.guestBadge}>Guest Mode — Local Only</Text>
+          )}
           {/* total points (left) + filter (right) */}
           <View style={styles.headerRow}>
             <Text style={styles.totalPointsLeft}>Total Points: {totalPoints}</Text>
@@ -352,5 +355,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: themeVariables.whiteColor,
     fontSize: 14,
+  },
+  guestBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    color: themeVariables.whiteColor,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

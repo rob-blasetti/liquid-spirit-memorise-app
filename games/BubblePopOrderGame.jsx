@@ -7,19 +7,28 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
-  // Limit bubbles based on difficulty level
-  const allWords = text.split(/\s+/);
+  // Tokenize once per incoming quote so indices stay stable per round
+  const allWords = useMemo(() => text.trim().split(/\s+/), [text]);
   const maxBubbles = level === 1 ? 8 : level === 2 ? 16 : 32;
-  const bubbleCount = Math.min(maxBubbles, allWords.length);
+  // Only allow words that contain at least one alphanumeric character to be bubbled (skip punctuation like ...)
+  const eligibleIndices = useMemo(() => {
+    const res = [];
+    for (let i = 0; i < allWords.length; i += 1) {
+      const w = allWords[i];
+      if (/[A-Za-z0-9]/.test(w)) res.push(i);
+    }
+    return res;
+  }, [text]);
+  const bubbleCount = Math.min(maxBubbles, eligibleIndices.length);
   const bubbleIndices = useMemo(() => {
-    // pick unique random indices across the quote, preserve reading order
+    if (!eligibleIndices.length || bubbleCount === 0) return [];
+    // pick unique random eligible indices across the quote, preserve reading order
     const indices = new Set();
-    while (indices.size < bubbleCount) {
-      const idx = Math.floor(Math.random() * allWords.length);
-      indices.add(idx);
+    while (indices.size < bubbleCount && indices.size < eligibleIndices.length) {
+      const pick = Math.floor(Math.random() * eligibleIndices.length);
+      indices.add(eligibleIndices[pick]);
     }
     return Array.from(indices).sort((a, b) => a - b);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, level]);
   const bubbleOrderMap = useMemo(() => {
     const m = new Map();
@@ -40,7 +49,9 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
   // initialize bubbles with bubble-like visuals, motion, and some overlap allowed
   useEffect(() => {
     const intensity = level === 1 ? 1.0 : level === 2 ? 1.2 : 1.4;
-    const items = bubbleWords.map((w, i) => {
+    const items = [];
+    const placed = [];
+    bubbleWords.forEach((w, i) => {
       // estimate bubble size based on word length and add size variance
       const charWidth = 9; const paddingH = 18 * 2;
       const paddingV = 12 * 2; const fontSize = 18;
@@ -50,9 +61,32 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
       const wWidth = Math.max(56, baseWidth * sizeJitter);
       const wHeight = Math.max(56, baseHeight * sizeJitter);
 
-      // allow overlaps: pick a random position in the middle band of the screen
-      const x = Math.random() * (SCREEN_WIDTH - wWidth);
-      const y = Math.random() * (SCREEN_HEIGHT * 0.45) + SCREEN_HEIGHT * 0.3;
+      // Try to avoid heavy overlap so required bubbles aren't hidden.
+      // Search for a position with minimal collision; fall back if needed.
+      let x = 0; let y = 0; let attempts = 0; let ok = false;
+      const maxAttempts = 60;
+      const radius = Math.max(wWidth, wHeight) / 2;
+      while (attempts < maxAttempts && !ok) {
+        attempts += 1;
+        x = Math.random() * (SCREEN_WIDTH - wWidth);
+        y = Math.random() * (SCREEN_HEIGHT * 0.45) + SCREEN_HEIGHT * 0.3;
+        // keep away from the bottom-left "taps left" badge area a bit
+        const avoidLeft = 0;
+        const avoidRight = 160;
+        const avoidBottom = SCREEN_HEIGHT - 60;
+        const avoidTop = SCREEN_HEIGHT - 140;
+        const intersectsAvoid = x < avoidRight && x + wWidth > avoidLeft && y < avoidBottom && y + wHeight > avoidTop;
+        if (intersectsAvoid) continue;
+        ok = true;
+        for (let p of placed) {
+          const cx = x + wWidth / 2; const cy = y + wHeight / 2;
+          const dx = cx - p.cx; const dy = cy - p.cy;
+          const dist = Math.hypot(dx, dy);
+          const minDist = (radius + p.radius) * 0.9; // allow slight overlap but not full occlusion
+          if (dist < minDist) { ok = false; break; }
+        }
+      }
+      placed.push({ cx: x + wWidth / 2, cy: y + wHeight / 2, radius });
 
       // animations: vertical bob, horizontal sway, subtle pulse
       const bob = new Animated.Value(0);
@@ -97,7 +131,7 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
         ]),
       ).start();
 
-      return { word: w, id: i, x, y, wWidth, wHeight, bob, sway, scale, opacity, ringScale, ringOpacity, shake, popped: false, intensity };
+      items.push({ word: w, id: i, x, y, wWidth, wHeight, bob, sway, scale, opacity, ringScale, ringOpacity, shake, popped: false, intensity });
     });
     setBubbles(items);
     setIndex(0);
@@ -105,7 +139,7 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
     setWrongCount(0);
     // initialize per-word shimmer animators
     shimmerValuesRef.current = allWords.map(() => new Animated.Value(0));
-  }, [text, level, bubbleWords.length]);
+  }, [text, level, bubbleIndices.length]);
 
   // no title animation per request
 
@@ -116,8 +150,9 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
     setBubbles((prev) => {
       const updated = prev.map((b) => {
         if (b.id !== id || b.popped) return b;
-        const targetWord = bubbleWords[index];
-        if (b.word === targetWord) {
+        // Enforce popping strictly in order by bubble id, to avoid
+        // issues with duplicate words matching by text alone.
+        if (b.id === index) {
           // pop: quick scale-out and ring burst
           const ringTarget = 1.4 + 0.2 * (level - 1);
           Animated.parallel([
@@ -211,7 +246,11 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
             return (
               <View key={`slate-word-${i}`} style={styles.slateWordWrap}>
                 {isVisible ? (
-                  <Animated.View style={{ transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }], opacity: appear.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }}>
+                  <Animated.View style={{
+                    transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }],
+                    // Keep newly revealed words fully legible; avoid low-opacity fade-in
+                    opacity: appear.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] })
+                  }}>
                     <Text style={styles.slateWord}>{w}</Text>
                     {/* simple shimmer bar sweeps across the word */}
                     <Animated.View
@@ -267,7 +306,9 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
         <View pointerEvents="none" style={styles.remainingShine} />
         <Text style={styles.remainingText}>Taps left: {remainingGuesses}</Text>
       </View>
-      {message !== '' && <Text style={styles.message}>{message}</Text>}
+      {message !== '' && message !== 'Great job!' && (
+        <Text style={styles.message}>{message}</Text>
+      )}
     </View>
   );
 };
@@ -355,11 +396,14 @@ const styles = StyleSheet.create({
     maxHeight: 140,
     borderRadius: 16,
     padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    // Make slate opaque enough to block moving bubbles behind it
+    backgroundColor: 'rgba(0,0,0,0.65)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(255,255,255,0.3)',
     marginTop: 12,
     marginBottom: 10,
+    // Ensure internal shimmer/words don't bleed beyond rounded corners
+    overflow: 'hidden',
   },
   slateInner: {
     flexDirection: 'row',
@@ -375,13 +419,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Noto Sans',
+    // Slightly stronger shadow to improve contrast
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   slateWordPlaceholder: {
-    color: 'rgba(255,255,255,0.35)',
+    // Make underline placeholders more visible (slight nudge brighter)
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 1,
     fontFamily: 'Noto Sans',
+    // Slightly stronger shadow to help underscores stand out
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   slateShimmer: {
     position: 'absolute',
@@ -443,6 +496,7 @@ const styles = StyleSheet.create({
     color: themeVariables.primaryColor,
     marginTop: 12,
   },
+  // Removed explicit success styling; success is handled by WinOverlay
   remainingContainer: {
     position: 'absolute',
     left: 16,

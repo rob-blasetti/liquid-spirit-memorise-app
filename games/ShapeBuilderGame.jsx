@@ -13,7 +13,7 @@ import themeVariables from '../styles/theme';
 const { width, height } = Dimensions.get('window');
 const MARGIN = 0;
 
-const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
+const ShapeBuilderGame = ({ quote, onBack, onWin, onLose }) => {
   // Difficulty settings: number of pieces and pre-completed count from global context
   const { level: difficulty } = useDifficulty();
   const pieceCounts = { 1: 8, 2: 16, 3: 24 };
@@ -94,9 +94,9 @@ const ShapeBuilderGame = ({ quote, onBack, onWin }) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           timerRef.current = null;
-          // time up: navigate back after a short delay unless already won
+          // time up: trigger loss overlay unless already won
           if (!winTriggeredRef.current) {
-            setTimeout(() => onBack && onBack(), 300);
+            if (typeof onLose === 'function') setTimeout(() => onLose(), 100);
           }
           return 0;
         }

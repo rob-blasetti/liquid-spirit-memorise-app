@@ -5,7 +5,7 @@ import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 // Accept onWin callback to award achievements after reward banner
-const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
+const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [displayWords, setDisplayWords] = useState([]);
   const [missingWords, setMissingWords] = useState([]);
@@ -15,9 +15,10 @@ const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
   const [message, setMessage] = useState('');
   const [guessesLeft, setGuessesLeft] = useState(3);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  // Notify parent on win; overlay handled in GameRenderer
+  // Notify parent on win/loss; overlays handled in GameRenderer
   useEffect(() => {
     if (status === 'won' && onWin) onWin();
+    if (status === 'lost' && onLose) onLose();
   }, [status, onWin]);
   const starAnimsRef = useRef([]);
 
@@ -113,7 +114,7 @@ const TapMissingWordsGame = ({ quote, onBack, onWin }) => {
           {message ? <Text style={styles.message}>{message}</Text> : null}
         </>
       )}
-      {status === 'lost' && <Text style={styles.message}>Try again</Text>}
+      {/* Loss overlay handled at parent; no inline loss message */}
       {/* Win overlay handled at parent */}
     </View>
   );

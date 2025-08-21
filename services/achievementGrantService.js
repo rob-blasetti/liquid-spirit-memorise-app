@@ -39,6 +39,7 @@ export async function grantAchievement({
   setTotalPoints,
 }) {
   if (!profile || !id) return;
+  const isGuest = Boolean(profile?.type === 'guest' || profile?.guest);
 
   // Avoid duplicate awards
   const alreadyEarned = achievements.some(a => a.id === id && a.earned);
@@ -80,6 +81,10 @@ export async function grantAchievement({
   }
 
   try {
+    if (isGuest) {
+      // Guests never sync with server; keep optimistic local state only
+      return;
+    }
     const userId = profile._id || profile.id || profile.nuriUserId;
     if (!userId) {
       console.warn('grantAchievement: missing userId, skipping server sync');

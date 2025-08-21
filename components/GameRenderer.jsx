@@ -7,14 +7,17 @@ import DifficultyFAB from './DifficultyFAB';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import ThemedButton from './ThemedButton';
 import WinOverlay from './WinOverlay';
+import LostOverlay from './LostOverlay';
 
 const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) => {
   const GameComponent = lazyGameScreens[screen];
   const { level: currLevel, setLevel } = useDifficulty();
   const [gameWon, setGameWon] = useState(false);
+  const [gameLost, setGameLost] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
   const suppressWinsRef = useRef(false);
-  // Clear any suppression on level change
-  useEffect(() => { suppressWinsRef.current = false; }, [currLevel]);
+  // Clear suppression when level OR screen changes (e.g., switching games)
+  useEffect(() => { suppressWinsRef.current = false; }, [currLevel, screen]);
   if (!GameComponent) return null;
   const gameProps = { quote, onBack };
   // Handle game win: award achievement and show next-level overlay
@@ -26,8 +29,17 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
     }
     // eslint-disable-next-line no-console
     console.log('[GameRenderer:onWin]', { screen, level: currLevel });
-    awardGameAchievement(screen, currLevel);
+    // Show win overlay; ensure lose overlay is hidden
+    setGameLost(false);
     setGameWon(true);
+    setTimeout(() => awardGameAchievement(screen, currLevel), 120);
+  };
+  // Handle game loss
+  gameProps.onLose = () => {
+    // eslint-disable-next-line no-console
+    console.log('[GameRenderer:onLose]', { screen, level: currLevel });
+    setGameWon(false);
+    setGameLost(true);
   };
   // Title mapping for overlay display
   const screenTitle = useMemo(() => {
@@ -52,7 +64,7 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
       sceneChangeGame: 'Scene Change',
       wordSwapGame: 'Word Swap',
       buildRecallGame: 'Build Recall',
-      bubblePopOrderGame: 'Bubble Pop Order',
+      bubblePopOrderGame: 'Bubble Pop',
       wordRacerGame: 'Word Racer',
     };
     if (map[screen]) return map[screen];
@@ -69,6 +81,23 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
   }
   return (
     <View style={styles.container}>
+      <LostOverlay
+        visible={gameLost}
+        gameTitle={screenTitle}
+        difficultyLabel={(() => {
+          const map = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+          return map[currLevel] || `Level ${currLevel}`;
+        })()}
+        onRetry={() => {
+          setGameLost(false);
+          // Remount same game at same level
+          setRetryTick((k) => k + 1);
+        }}
+        onHome={() => {
+          setGameLost(false);
+          onBack();
+        }}
+      />
       <WinOverlay
         visible={gameWon}
         gameTitle={screenTitle}
@@ -93,7 +122,7 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
         }}
       />
       <Suspense fallback={<ActivityIndicator style={{ marginTop: 24 }} size="large" />}>
-        <GameComponent key={`${screen}-${currLevel}`} {...gameProps} />
+        <GameComponent key={`${screen}-${currLevel}-${retryTick}`} {...gameProps} />
       </Suspense>
       <DifficultyFAB />
     </View>

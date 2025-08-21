@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import { useDifficulty } from '../contexts/DifficultyContext';
-import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+// Lost overlay handled by parent GameRenderer
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const MemoryMatchGame = ({ quote, onBack, onWin }) => {
+const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
   const { level } = useDifficulty();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [cards, setCards] = useState([]);
   const [selected, setSelected] = useState([]);
-  const [message, setMessage] = useState('');
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
   // Win banner handled by GameRenderer overlay via onWin
   const [guessesLeft, setGuessesLeft] = useState(0);
@@ -43,7 +42,6 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
     // Do not add any blank placeholder tiles; only actual word pairs are included
     setCards(pairs);
     setSelected([]);
-    setMessage('');
     setStatus('playing');
     setGuessesLeft(initialGuesses);
     setPairWords(selectedWords);
@@ -52,6 +50,10 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
   useEffect(() => {
     initGame();
   }, [initGame]);
+  // Notify parent on loss
+  useEffect(() => {
+    if (status === 'lost' && onLose) onLose();
+  }, [status, onLose]);
 
   const handlePress = (card) => {
     if (status !== 'playing' || card.matched || selected.find((c) => c.id === card.id)) return;
@@ -94,7 +96,6 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
           // if all cards matched, win
           if (updated.every((c2) => c2.matched)) {
             setStatus('won');
-            setMessage('Great job!');
           }
           return updated;
         });
@@ -308,15 +309,8 @@ const MemoryMatchGame = ({ quote, onBack, onWin }) => {
           </View>
         </View>
       )}
-      {message !== '' && status === 'won' && (
-        <Text style={styles.message}>{message}</Text>
-      )}
-      {status === 'lost' && (
-        <Text style={styles.message}>Out of guesses!</Text>
-      )}
-      {status !== 'playing' && (
-        <ThemedButton title="Play Again" onPress={initGame} style={styles.playButton} />
-      )}
+      {/* No win text here; WinOverlay handles success messaging */}
+      {/* Loss overlay handled by GameRenderer */}
       {/* Enlarged preview overlay when cards are tiny */}
       {preview && (
         <View
@@ -438,9 +432,10 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 16,
     padding: 12,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    // Match Bubble Pop slate for consistency and to prevent bleed-through
+    backgroundColor: 'rgba(0,0,0,0.65)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(255,255,255,0.3)',
     marginBottom: 10,
     overflow: 'hidden',
   },
@@ -453,23 +448,29 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   slateWord: {
-    color: themeVariables.primaryColor,
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Noto Sans',
+    // Subtle shadow for readability on dark slate
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   slateWordDim: {
-    color: 'rgba(0,0,0,0.65)',
+    color: 'rgba(255,255,255,0.65)',
   },
   slateWordRevealed: {
-    color: themeVariables.primaryColor,
+    color: themeVariables.whiteColor,
   },
   slateWordPlaceholder: {
-    color: 'rgba(0,0,0,0.35)',
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Noto Sans',
     letterSpacing: 1,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   grid: {
     flex: 1,

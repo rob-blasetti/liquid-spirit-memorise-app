@@ -24,6 +24,7 @@ export default function GuestLoginScreen({ onSignIn }) {
       // Assign a unique ID for each guest based on avatarSeed
       _id: avatarSeed,
       username: displayName,
+      name: displayName,
       avatarSeed,
       ...(avatarPhoto ? { avatar: avatarPhoto } : {}),
       grade: gradeVal,

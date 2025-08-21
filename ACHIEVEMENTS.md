@@ -33,9 +33,9 @@
 | hangman1 | Hangman Novice | Win Hangman on Easy difficulty | 5 |
 | hangman2 | Hangman Intermediate | Win Hangman on Medium difficulty | 10 |
 | hangman3 | Hangman Master | Win Hangman on Hard difficulty | 15 |
-| bubble1 | Bubble Pop Novice | Complete Bubble Pop Order on Easy difficulty | 5 |
-| bubble2 | Bubble Pop Intermediate | Complete Bubble Pop Order on Medium difficulty | 10 |
-| bubble3 | Bubble Pop Master | Complete Bubble Pop Order on Hard difficulty | 15 |
+| bubble1 | Bubble Pop Novice | Complete Bubble Pop on Easy difficulty | 5 |
+| bubble2 | Bubble Pop Intermediate | Complete Bubble Pop on Medium difficulty | 10 |
+| bubble3 | Bubble Pop Master | Complete Bubble Pop on Hard difficulty | 15 |
 | wordRacer1 | Word Racer Novice | Complete Word Racer on Easy difficulty | 5 |
 | wordRacer2 | Word Racer Intermediate | Complete Word Racer on Medium difficulty | 10 |
 | wordRacer3 | Word Racer Master | Complete Word Racer on Hard difficulty | 15 |

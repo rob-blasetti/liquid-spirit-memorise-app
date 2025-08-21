@@ -10,6 +10,7 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -40,22 +41,24 @@ const NotificationBanner = ({ title, onPress, onHide }) => {
   }, [translateY, onHide]);
 
   return (
-    <Animated.View style={[styles.notification, { top: safeTop, transform: [{ translateY }] }]}>
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-        <View style={styles.content}>
-          <View style={styles.textContainer}>
-            <Text style={styles.subtitle}>Achievement unlocked:</Text>
-            <Text style={styles.titleText}>{title}</Text>
+    <Modal transparent visible animationType="fade" statusBarTranslucent>
+      <Animated.View style={[styles.notification, { top: safeTop, transform: [{ translateY }] }]}>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+          <View style={styles.content}>
+            <View style={styles.textContainer}>
+              <Text style={styles.subtitle}>Achievement unlocked:</Text>
+              <Text style={styles.titleText}>{title}</Text>
+            </View>
+            <Ionicons
+              name="star"
+              size={28}
+              color="#FFD700"
+              style={styles.icon}
+            />
           </View>
-          <Ionicons
-            name="star"
-            size={28}
-            color="#FFD700"
-            style={styles.icon}
-          />
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
+        </TouchableOpacity>
+      </Animated.View>
+    </Modal>
   );
 };
 
@@ -76,7 +79,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     // Android shadow
     elevation: 10,
-    zIndex: 2000,                     // ensure it floats above all
   },
   content: {
     flexDirection: 'row',

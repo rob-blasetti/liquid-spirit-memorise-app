@@ -32,7 +32,7 @@ const initGuessed = (text, level) => {
   return Array.from(revealedLetters);
 };
 
-const HangmanGame = ({ quote, onBack, onWin }) => {
+const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
   const { level } = useDifficulty();
   const { markDifficultyComplete } = useUser();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
@@ -122,6 +122,11 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
     }
   }, [guessed, status]);
 
+  // Notify parent on loss to show LostOverlay
+  useEffect(() => {
+    if (status === 'lost' && onLose) onLose();
+  }, [status, onLose]);
+
   return (
     <View style={styles.container}>
       <GameTopBar onBack={onBack} variant="whiteShadow" />
@@ -135,7 +140,7 @@ const HangmanGame = ({ quote, onBack, onWin }) => {
         <View style={styles.titleUnderline} />
         <View style={styles.quoteWrap}>
           <Text style={styles.quote}>{masked}</Text>
-          {status === 'lost' && <Text style={styles.message}>Out of guesses!</Text>}
+          {/* Loss overlay handled by parent; no inline loss text */}
         </View>
       </View>
       {/* Thematic bottom-left counter */}

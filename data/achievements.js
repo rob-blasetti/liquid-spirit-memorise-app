@@ -271,11 +271,11 @@ export const achievements = [
     prereq: 'hangman2',
     earned: false,
   },
-  // Bubble Pop Order achievements by difficulty
+  // Bubble Pop achievements by difficulty
   {
     id: 'bubble1',
     title: 'Bubble Pop Novice',
-    description: 'Complete Bubble Pop Order on Easy difficulty',
+    description: 'Complete Bubble Pop on Easy difficulty',
     icon: 'trophy',
     points: 5,
     earned: false,
@@ -283,7 +283,7 @@ export const achievements = [
   {
     id: 'bubble2',
     title: 'Bubble Pop Intermediate',
-    description: 'Complete Bubble Pop Order on Medium difficulty',
+    description: 'Complete Bubble Pop on Medium difficulty',
     icon: 'trophy',
     points: 10,
     prereq: 'bubble1',
@@ -292,7 +292,7 @@ export const achievements = [
   {
     id: 'bubble3',
     title: 'Bubble Pop Master',
-    description: 'Complete Bubble Pop Order on Hard difficulty',
+    description: 'Complete Bubble Pop on Hard difficulty',
     icon: 'trophy',
     points: 15,
     prereq: 'bubble2',

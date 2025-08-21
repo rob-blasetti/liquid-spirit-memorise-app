@@ -39,7 +39,7 @@ const titles = {
   sceneChangeGame: 'Scene Change',
   wordSwapGame: 'Word Swap',
   buildRecallGame: 'Build & Recall',
-  bubblePopOrderGame: 'Bubble Pop Order',
+  bubblePopOrderGame: 'Bubble Pop',
 };
 const iconMap = {
   practice: 'book-outline',

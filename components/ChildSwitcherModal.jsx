@@ -53,11 +53,14 @@ const ChildSwitcherModal = ({
               await saveProfile({
                 ...gp,
                 guest: true,
+                // Ensure name is populated for downstream UI
+                name: gp.name || gp.username || 'Guest',
                 achievements: guestAch,
                 totalPoints: guestPoints,
               });
               setUser({
                 ...gp,
+                name: gp.name || gp.username || 'Guest',
                 achievements: guestAch,
                 totalPoints: guestPoints,
               });
@@ -75,10 +78,10 @@ const ChildSwitcherModal = ({
                     resizeMode={FastImage.resizeMode.cover}
                   />
                 ) : (
-                  <Avatar size={40} name={guestProfile.name} variant="beam" />
+                  <Avatar size={40} name={(guestProfile.name || guestProfile.username || 'Guest')} variant="beam" />
                 )}
                 <Text style={styles.childText}>
-                  {guestProfile.name} (Guest)
+                  {(guestProfile.name || guestProfile.username || 'Guest')} (Guest)
                   {profile?.guest ? ' (Active)' : ''}
                 </Text>
               </TouchableOpacity>

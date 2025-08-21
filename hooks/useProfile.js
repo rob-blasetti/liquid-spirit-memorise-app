@@ -49,6 +49,7 @@ export default function useProfile() {
       }
       // Try loading a guest profile
       const guest = await loadGuestProfile();
+      console.log('GUEST: ', guest);
       if (guest) {
         // store guestProfile in state
         dispatch({ type: 'setGuestProfile', payload: guest });
