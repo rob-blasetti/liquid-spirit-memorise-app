@@ -101,7 +101,6 @@ const ChildSwitcherModal = ({
               : rp.name?.trim()
                 ? rp.name
                 : rp.username || '';
-            const regAch = rp.achievements || defaultAchievements;
             // Determine totalPoints for registered user (fallback to score for legacy data)
             const regPoints = rp.totalPoints != null ? rp.totalPoints : (rp.score || 0);
             return (
@@ -110,14 +109,23 @@ const ChildSwitcherModal = ({
                 onPress={async () => {
                   // Try to fetch fresh totals from server before switching
                   let regPoints = rp.totalPoints != null ? rp.totalPoints : (rp.score || 0);
+                  let regAchievements = Array.isArray(rp.achievements) && rp.achievements.length
+                    ? rp.achievements
+                    : defaultAchievements;
                   try {
-                    const { totalPoints } = await fetchUserAchievements(rp._id || rp.id || rp.nuriUserId);
+                    const {
+                      achievements: serverAchievements = [],
+                      totalPoints,
+                    } = await fetchUserAchievements(rp._id || rp.id || rp.nuriUserId);
+                    if (Array.isArray(serverAchievements) && serverAchievements.length) {
+                      regAchievements = serverAchievements;
+                    }
                     if (typeof totalPoints === 'number') regPoints = totalPoints;
                   } catch {}
                   const updated = {
                     ...rp,
                     guest: false,
-                    achievements: regAch,
+                    achievements: regAchievements,
                     totalPoints: regPoints,
                   };
                   await saveProfile(updated);
@@ -156,7 +164,6 @@ const ChildSwitcherModal = ({
                 : childObj.username || childObj.name || '';
               // Preserve original grade value (e.g., '2b') or numeric grade
               const selected = { ...childObj, name: fullName, grade: childObj.grade };
-              const childAchievements = selected.achievements || defaultAchievements;
               // Determine totalPoints for child (fallback to score for legacy data)
               const childPoints = selected.totalPoints != null ? selected.totalPoints : (selected.score || 0);
               return (
@@ -165,20 +172,29 @@ const ChildSwitcherModal = ({
                   onPress={async () => {
                     // Try to fetch fresh totals from server before switching
                     let freshPoints = childPoints;
+                    let freshAchievements = Array.isArray(selected.achievements) && selected.achievements.length
+                      ? selected.achievements
+                      : defaultAchievements;
                     try {
-                      const { totalPoints } = await fetchUserAchievements(selected._id || selected.id || selected.nuriUserId);
+                      const {
+                        achievements: serverAchievements = [],
+                        totalPoints,
+                      } = await fetchUserAchievements(selected._id || selected.id || selected.nuriUserId);
+                      if (Array.isArray(serverAchievements) && serverAchievements.length) {
+                        freshAchievements = serverAchievements;
+                      }
                       if (typeof totalPoints === 'number') freshPoints = totalPoints;
                     } catch {}
                     // Persist selected child profile with proper totalPoints
                     await saveProfile({
                       ...selected,
                       guest: false,
-                      achievements: childAchievements,
+                      achievements: freshAchievements,
                       totalPoints: freshPoints,
                     });
                     setUser({
                       ...selected,
-                      achievements: childAchievements,
+                      achievements: freshAchievements,
                       totalPoints: freshPoints,
                     });
                     setChooseChildVisible(false);

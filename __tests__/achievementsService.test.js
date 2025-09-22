@@ -67,11 +67,15 @@ describe('achievementsService', () => {
 
       const { achievements, totalPoints } = await fetchUserAchievements('user-1');
       expect(totalPoints).toBe(42);
-      expect(achievements).toEqual([
-        { id: 'a1', title: 'A One', points: 5, earned: true },
-        { id: 'a2', title: 'A Two', points: 10, earned: true },
+      expect(achievements.find(a => a.id === 'a1')).toEqual(
+        expect.objectContaining({ title: 'A One', points: 5, earned: true }),
+      );
+      expect(achievements.find(a => a.id === 'a2')).toEqual(
+        expect.objectContaining({ title: 'A Two', points: 10, earned: true }),
+      );
+      expect(achievements.find(a => a.id === 'a3')).toEqual(
         expect.objectContaining({ id: 'a3', earned: true }),
-      ]);
+      );
     });
 
     it('returns empty on failure', async () => {

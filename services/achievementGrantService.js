@@ -1,4 +1,4 @@
-import { updateAchievementOnServer } from './achievementsService';
+import { updateAchievementOnServer, fetchUserAchievements } from './achievementsService';
 import { achievements as defaultAchievements } from '../data/achievements';
 
 // Prevent re-entrant or repeated awards for the same user/achievement
@@ -90,26 +90,25 @@ export async function grantAchievement({
       console.warn('grantAchievement: missing userId, skipping server sync');
       return; // keep optimistic local state
     }
-    const { user } = await updateAchievementOnServer(userId, id);
+    await updateAchievementOnServer(userId, id, optimisticProfile.totalPoints);
 
-    // Normalise server achievements into client shape
-    const updatedAchievements = user.achievements.map(a => ({
-      id: a.achievement._id,
-      title: a.achievement.title,
-      points: a.achievement.points,
-      earned: true,
-    }));
+    const {
+      achievements: serverAchievements = optimisticAchievements,
+      totalPoints: serverTotal = optimisticProfile.totalPoints,
+    } = await fetchUserAchievements(userId);
 
-    // Persist profile and update context with server-confirmed state
+    const resolvedAchievements = serverAchievements.length ? serverAchievements : optimisticAchievements;
+    const resolvedTotal = typeof serverTotal === 'number' ? serverTotal : optimisticProfile.totalPoints;
+
     const updatedProfile = {
       ...profile,
-      achievements: updatedAchievements,
-      totalPoints: user.totalPoints,
+      achievements: resolvedAchievements,
+      totalPoints: resolvedTotal,
     };
-    setAchievements(updatedAchievements);
+    setAchievements(resolvedAchievements);
     saveProfile(updatedProfile);
     if (typeof setTotalPoints === 'function') {
-      setTotalPoints(user.totalPoints);
+      setTotalPoints(resolvedTotal);
     }
   } catch (e) {
     if (e?.code === 'ALREADY_EARNED') {

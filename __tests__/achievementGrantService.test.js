@@ -1,21 +1,21 @@
 jest.mock('../services/achievementsService', () => ({
-  updateAchievementOnServer: jest.fn(),
+  updateAchievementOnServer: jest.fn(() => Promise.resolve()),
+  fetchUserAchievements: jest.fn(() => Promise.resolve({ achievements: [], totalPoints: 0 })),
 }));
 
 const { grantAchievement } = require('../services/achievementGrantService');
 const {
   updateAchievementOnServer,
+  fetchUserAchievements,
 } = require('../services/achievementsService');
 
 const A = (id, points, earned = false) => ({ id, title: id, points, earned });
 
 describe('achievementGrantService', () => {
   it('syncs total points with server response', async () => {
-    updateAchievementOnServer.mockResolvedValue({
-      user: {
-        achievements: [{ achievement: { _id: 'x', title: 'x', points: 10 } }],
-        totalPoints: 15,
-      },
+    fetchUserAchievements.mockResolvedValue({
+      achievements: [A('x', 10, true)],
+      totalPoints: 15,
     });
 
     const profile = { id: 'u1', totalPoints: 5 };
@@ -35,9 +35,16 @@ describe('achievementGrantService', () => {
       setTotalPoints,
     });
 
+    expect(updateAchievementOnServer).toHaveBeenCalledWith('u1', 'x', 15);
+    expect(fetchUserAchievements).toHaveBeenCalledWith('u1');
     expect(setTotalPoints).toHaveBeenLastCalledWith(15);
     expect(saveProfile).toHaveBeenLastCalledWith(
-      expect.objectContaining({ totalPoints: 15 }),
+      expect.objectContaining({
+        totalPoints: 15,
+        achievements: expect.arrayContaining([
+          expect.objectContaining({ id: 'x', earned: true, points: 10 }),
+        ]),
+      }),
     );
   });
 });

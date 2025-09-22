@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SafeAreaView, View, Image as RNImage } from 'react-native';
+import { SafeAreaView, View, Image as RNImage, InteractionManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -41,6 +41,8 @@ import { AchievementsProvider } from '../contexts/AchievementsContext';
 import { createNavigationActions } from '../services/navigationService';
 import { createAppActions } from '../services/appFlowService';
 import { createAvatarActions } from '../services/avatarService';
+import { prefetchGames } from '../games/lazyGameRoutes';
+import { gameIds } from '../games';
 
 const MainApp = () => {
   const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
@@ -122,6 +124,27 @@ const MainApp = () => {
     const asset = RNImage.resolveAssetSource(require('../assets/img/pearlina-pointing-right.png'));
     FastImage.preload([{ uri: asset.uri }]);
   }, []);
+
+  // Warm the most common game modules after first paint to trim Suspense delays
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      prefetchGames(['practice', ...gameIds.slice(0, 3)]);
+    });
+    return () => {
+      if (task && typeof task.cancel === 'function') task.cancel();
+    };
+  }, []);
+
+  // When player opens the games hub, preload the rest of the listed games in the background
+  useEffect(() => {
+    if (nav.screen !== 'games') return undefined;
+    const task = InteractionManager.runAfterInteractions(() => {
+      prefetchGames(gameIds);
+    });
+    return () => {
+      if (task && typeof task.cancel === 'function') task.cancel();
+    };
+  }, [nav.screen]);
 
   // Warm cache with likely avatar + class images when children load/switch
   useEffect(() => {

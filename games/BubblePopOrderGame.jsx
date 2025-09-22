@@ -5,7 +5,7 @@ import themeVariables from '../styles/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
+const BubblePopOrderGame = ({ quote, onBack, onWin, onLose, level }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   // Tokenize once per incoming quote so indices stay stable per round
   const allWords = useMemo(() => text.trim().split(/\s+/), [text]);
@@ -139,7 +139,7 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
     setWrongCount(0);
     // initialize per-word shimmer animators
     shimmerValuesRef.current = allWords.map(() => new Animated.Value(0));
-  }, [text, level, bubbleIndices.length]);
+  }, [text, level, bubbleIndices]);
 
   // no title animation per request
 
@@ -208,8 +208,14 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, level }) => {
             const newCount = prevCount + 1;
             if (newCount >= limit) {
               setMessage('Game Over');
-              // return to previous screen after a short delay
-              setTimeout(() => onBack(), 1000);
+              // surface loss state through parent overlay when possible
+              setTimeout(() => {
+                if (typeof onLose === 'function') {
+                  onLose();
+                } else if (typeof onBack === 'function') {
+                  onBack();
+                }
+              }, 120);
             }
             return newCount;
           });

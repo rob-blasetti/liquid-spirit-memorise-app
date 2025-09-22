@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -7,10 +7,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  InteractionManager,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { gameIds } from '../games';
+import { prefetchGames } from '../games/lazyGameRoutes';
 import themeVariables from '../styles/theme';
 
 const { width } = Dimensions.get('window');
@@ -65,7 +67,20 @@ const iconMap = {
   bubblePopOrderGame: 'water-outline',
 };
 
-const GamesListScreen = ({ onSelect }) => (
+const GamesListScreen = ({ onSelect }) => {
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      const preloadTargets = Array.from(new Set([...gameIds, 'practice'])).slice(0, 6);
+      prefetchGames(preloadTargets);
+    });
+    return () => {
+      if (task && typeof task.cancel === 'function') {
+        task.cancel();
+      }
+    };
+  }, []);
+
+  return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Games</Text>
       <ScrollView
@@ -98,7 +113,8 @@ const GamesListScreen = ({ onSelect }) => (
         </View>
       </ScrollView>
     </SafeAreaView>
-);
+  );
+};
 
 export default GamesListScreen;
 

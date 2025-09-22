@@ -4,6 +4,14 @@ import { saveProfile as persistProfile } from './profileService';
 import { API_URL } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const toMap = (list = []) => {
+  const map = new Map();
+  list.forEach((item) => {
+    if (item?.id) map.set(item.id, item);
+  });
+  return map;
+};
+
 /**
  * Initialize achievements list for a profile.
  * Uses profile.achievements if available, else defaults.
@@ -31,7 +39,13 @@ export async function fetchUserAchievements(userId) {
   }
 
   try {
-    const res = await fetch(`${API_URL}/api/nuri/achievements/${userId}`);
+    const token = await AsyncStorage.getItem('token');
+    const headers = token
+      ? { Authorization: `Bearer ${token}` }
+      : undefined;
+    const res = await fetch(`${API_URL}/api/nuri/achievements/${userId}`,
+      headers ? { headers } : undefined,
+    );
     if (!res.ok) {
       throw new Error('Failed to fetch achievements');
     }
@@ -39,7 +53,7 @@ export async function fetchUserAchievements(userId) {
     console.log('ACHIEVEMENTS: ', raw);
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
     // Normalize server achievements; preserve earned and description
-    const achievements = (serverAchievements || [])
+    const normalizedEarned = (serverAchievements || [])
       .map((a) => {
         // Shape A: { achievement: { _id, title, points, description }, earned, dateEarned }
         if (a && a.achievement) {
@@ -79,11 +93,45 @@ export async function fetchUserAchievements(userId) {
       })
       .filter(Boolean);
 
+    const normalizedMap = toMap(normalizedEarned);
+    const merged = defaultAchievements.map((def) => {
+      const earned = normalizedMap.get(def.id);
+      if (earned) {
+        normalizedMap.delete(def.id);
+        return {
+          ...def,
+          ...earned,
+          id: def.id,
+          points: earned.points != null ? earned.points : def.points || 0,
+          earned: Boolean(earned.earned),
+          dateEarned: earned.dateEarned || null,
+        };
+      }
+      return {
+        ...def,
+        earned: false,
+        dateEarned: null,
+      };
+    });
+
+    const extras = Array.from(normalizedMap.values()).map((item) => ({
+      id: item.id,
+      title: item.title || item.id,
+      description: item.description || '',
+      points: item.points || 0,
+      earned: Boolean(item.earned),
+      dateEarned: item.dateEarned || null,
+    }));
+
+    const achievements = [...merged, ...extras];
+    const computedTotal = getTotalPoints(achievements);
+
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);
     }
-    return { achievements, totalPoints };
+    const resolvedTotal = typeof totalPoints === 'number' ? totalPoints : computedTotal;
+    return { achievements, totalPoints: resolvedTotal };
   } catch (err) {
     console.error('fetchUserAchievements error:', err);
     return { achievements: [], totalPoints: 0 };
@@ -105,16 +153,18 @@ export async function fetchUserAchievements(userId) {
  * @param {number} totalPoints - New total points after awarding achievement
  * @returns {Promise<object>} - Server response JSON
  */
-export async function updateAchievementOnServer(userId, achievementId) {
+export async function updateAchievementOnServer(userId, achievementId, totalPoints) {
   try {
     const token = await AsyncStorage.getItem('token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
 
+    const payload = { userId, achievementId };
+    if (typeof totalPoints === 'number') payload.totalPoints = totalPoints;
     const response = await fetch(`${API_URL}/api/nuri/achievement`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ userId, achievementId }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -196,19 +246,17 @@ export async function awardAchievement(profile, id) {
 
   // 2. Sync with server
   try {
-    const { user } = await updateAchievementOnServer(profile.id, id);
-
-    // 3. Reconcile server state to local shape
-    const syncedAchievements = user.achievements.map(a => ({
-      id: a.achievement._id,
-      title: a.achievement.title,
-      points: a.achievement.points,
-      earned: true,
-    }));
+    const userId = profile._id || profile.id || profile.nuriUserId;
+    if (userId) {
+      await updateAchievementOnServer(userId, id, totalPoints);
+    }
+    const { achievements: syncedAchievements = [], totalPoints: serverTotal = totalPoints } = await fetchUserAchievements(userId);
+    const resolvedAchievements = syncedAchievements.length ? syncedAchievements : achievementsList;
+    const resolvedTotal = typeof serverTotal === 'number' ? serverTotal : getTotalPoints(resolvedAchievements);
     const syncedProfile = {
       ...profile,
-      achievements: syncedAchievements,
-      totalPoints: user.totalPoints,
+      achievements: resolvedAchievements,
+      totalPoints: resolvedTotal,
     };
 
     await persistProfile(syncedProfile);
