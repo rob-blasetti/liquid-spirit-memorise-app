@@ -21,7 +21,7 @@ const ShapeBuilderGame = ({ quote, onBack, onWin, onLose }) => {
   const pieceCount = pieceCounts[difficulty] || 8;
   const prePlaced = prePlacedCounts[difficulty] || 2;
   // Timer based on difficulty
-  const initialTime = difficulty === 1 ? 30 : difficulty === 2 ? 20 : 10;
+  const initialTime = difficulty === 1 ? 60 : difficulty === 2 ? 40 : 20;
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timerRef = useRef(null);
   // Prepare words and split into interactive and pre-placed sets

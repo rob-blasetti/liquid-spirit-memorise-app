@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Animated, Easing, TouchableWithoutFeedback } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -12,6 +12,36 @@ const DifficultyFAB = () => {
   const [open, setOpen] = useState(false);
   const openAnim = useRef(new Animated.Value(0)).current; // 0 closed -> 1 open
 
+  const levelOrder = useMemo(() => {
+    const keys = Object.keys(completedDifficulties || {});
+    if (keys.length === 0) {
+      return [1, 2, 3];
+    }
+    const parsed = keys
+      .map(key => Number(key))
+      .filter(lvl => Number.isFinite(lvl) && lvl > 0);
+    if (!parsed.includes(1)) {
+      parsed.push(1);
+    }
+    return parsed.sort((a, b) => a - b);
+  }, [completedDifficulties]);
+
+  const highestDefinedLevel = levelOrder[levelOrder.length - 1] || 1;
+
+  const highestUnlocked = useMemo(() => {
+    let highest = 1;
+    while (highest < highestDefinedLevel && completedDifficulties?.[highest]) {
+      highest += 1;
+    }
+    return Math.min(highest, highestDefinedLevel);
+  }, [completedDifficulties, highestDefinedLevel]);
+
+  useEffect(() => {
+    if (level > highestUnlocked) {
+      setLevel(highestUnlocked);
+    }
+  }, [highestUnlocked, level, setLevel]);
+
   useEffect(() => {
     Animated.timing(openAnim, {
       toValue: open ? 1 : 0,
@@ -22,9 +52,7 @@ const DifficultyFAB = () => {
   }, [open, openAnim]);
 
   const LevelButton = ({ value, index }) => {
-    // Only allow selecting this level if prior level completed
-    const prereqCompleted = value === 1 ? true : completedDifficulties[value - 1];
-    const disabled = !prereqCompleted;
+    const disabled = value > highestUnlocked;
     const spacing = 44; // vertical spacing between items
     // Arrange items vertically upward from the FAB: 1 -> closest, 2 -> above, 3 -> highest
     const offsets = [-1 * spacing, -2 * spacing, -3 * spacing];
@@ -76,7 +104,7 @@ const DifficultyFAB = () => {
       )}
       <View style={styles.fabWrap} pointerEvents="box-none">
         <View style={styles.levelContainer} pointerEvents="box-none">
-          {[1, 2, 3].map((val, idx) => (
+          {levelOrder.map((val, idx) => (
             <LevelButton key={val} value={val} index={idx} />
           ))}
         </View>

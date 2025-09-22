@@ -5,6 +5,7 @@ import themeVariables from '../styles/theme';
 import { lazyGameScreens } from '../games/lazyGameRoutes';
 import DifficultyFAB from './DifficultyFAB';
 import { useDifficulty } from '../contexts/DifficultyContext';
+import { useUser } from '../contexts/UserContext';
 import ThemedButton from './ThemedButton';
 import WinOverlay from './WinOverlay';
 import LostOverlay from './LostOverlay';
@@ -12,6 +13,7 @@ import LostOverlay from './LostOverlay';
 const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) => {
   const GameComponent = lazyGameScreens[screen];
   const { level: currLevel, setLevel } = useDifficulty();
+  const { markDifficultyComplete } = useUser();
   const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
@@ -26,6 +28,9 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
       // eslint-disable-next-line no-console
       console.log('[GameRenderer:onWin] suppressed', { screen, level: currLevel });
       return;
+    }
+    if (typeof markDifficultyComplete === 'function') {
+      markDifficultyComplete(currLevel);
     }
     // eslint-disable-next-line no-console
     console.log('[GameRenderer:onWin]', { screen, level: currLevel });
