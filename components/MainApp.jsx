@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Image as RNImage, Alert } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { SafeAreaView, View, Image as RNImage } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -33,14 +33,14 @@ import { isGameScreen } from '../navigation/router';
 import ScreenBackground from './ScreenBackground';
 import FastImage from 'react-native-fast-image';
 import { preloadImages, collectChildAndClassImageUris } from '../services/imageCache';
-import { getCurrentContent, getContentFor } from '../services/contentSelector';
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
 import useProfile from '../hooks/useProfile';
-import { launchImageLibrary } from 'react-native-image-picker';
 import useAchievements from '../hooks/useAchievements';
 import useLessonProgress from '../hooks/useLessonProgress';
-import { uploadAndSetProfilePicture } from '../services/profileService';
 import { AchievementsProvider } from '../contexts/AchievementsContext';
+import { createNavigationActions } from '../services/navigationService';
+import { createAppActions } from '../services/appFlowService';
+import { createAvatarActions } from '../services/avatarService';
 
 const MainApp = () => {
   const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
@@ -56,12 +56,66 @@ const MainApp = () => {
     deleteGuestAccount,
     wipeProfile,
   } = useProfile();
-  const { nav, goTo, visitGrade } = useNavigationHandlers();
+  const { nav, goTo, visitedGrades, markGradeVisited } = useNavigationHandlers();
   const achievementsState = useAchievements(profile, saveProfile);
   const { achievements, notification, setNotification, awardAchievement, awardGameAchievement } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [chooseChildVisible, setChooseChildVisible] = useState(false);
+
+  const navigationActions = useMemo(
+    () =>
+      createNavigationActions({
+        goTo,
+        nav,
+        markGradeVisited,
+        visitedGrades,
+        awardAchievement,
+      }),
+    [goTo, nav, markGradeVisited, visitedGrades, awardAchievement],
+  );
+
+  const {
+    goHome,
+    goGrade1,
+    goGrade2,
+    goGrade3,
+    goGrade4,
+    goGrade2Set,
+    goGrade2Lesson,
+    goGrade2b,
+    goGrade2bSet,
+    goGrade2bLesson,
+    goBackToGrade2Set,
+    goBackToGrade2bSet,
+    goBackToLesson,
+  } = navigationActions;
+
+  const appActions = useMemo(
+    () =>
+      createAppActions({
+        profile,
+        goTo,
+        nav,
+        getCurrentProgress,
+        awardAchievement,
+      }),
+    [profile, goTo, nav, getCurrentProgress, awardAchievement],
+  );
+
+  const { handleDailyChallenge, playSelectedGame, getHomeProgress } = appActions;
+
+  const avatarActions = useMemo(
+    () =>
+      createAvatarActions({
+        profile,
+        setProfile,
+        saveProfile,
+      }),
+    [profile, setProfile, saveProfile],
+  );
+
+  const { pickNewAvatar } = avatarActions;
 
   // Preload Pearlina image for Home screen into FastImage cache
   useEffect(() => {
@@ -84,68 +138,6 @@ const MainApp = () => {
   }, [profile?.profilePicture, profile?.avatar]);
 
   if (showSplash) return <Splash />;
-
-  const goHome = () => goTo('home');
-
-  const goGrade1 = () => { visitGrade(1, {}, () => {}, awardAchievement); goTo('grade1'); };
-  const goGrade2 = () => { visitGrade(2, {}, () => {}, awardAchievement); goTo('grade2'); };
-  const goGrade3 = () => { visitGrade(3, {}, () => {}, awardAchievement); goTo('grade3'); };
-  const goGrade4 = () => { visitGrade(4, {}, () => {}, awardAchievement); goTo('grade4'); };
-  const goGrade2Set = (setNumber) => goTo('grade2Set', { setNumber });
-  // Navigate to a specific Grade 2 lesson, preserving the current setNumber
-  const goGrade2Lesson = (lessonNumber) => goTo('grade2Lesson', { setNumber: nav.setNumber, lessonNumber });
-  const goGrade2b = () => { visitGrade(2, {}, () => {}, awardAchievement); goTo('grade2b'); };
-  const goGrade2bSet = (setNumber) => goTo('grade2bSet', { setNumber });
-  // Navigate to a specific Grade 2b lesson, preserving the current setNumber
-  const goGrade2bLesson = (lessonNumber) => goTo('grade2bLesson', { setNumber: nav.setNumber, lessonNumber });
-
-  const goBackToGrade2Set = () => goTo('grade2Set', { setNumber: nav.setNumber });
-  const goBackToGrade2bSet = () => goTo('grade2bSet', { setNumber: nav.setNumber });
-  const goBackToLesson = () => goTo(nav.lessonScreen || 'grade2Lesson', { setNumber: nav.setNumber, lessonNumber: nav.lessonNumber });
-
-  const handleDailyChallenge = () => {
-    awardAchievement('daily');
-    const { setNumber, lessonNumber } = getCurrentProgress();
-    const content = getContentFor(profile, setNumber, lessonNumber, { type: 'prayer' });
-    goTo('practice', { quote: content, setNumber, lessonNumber });
-  };
-
-
-  const playSelectedGame = (gameId) => {
-    const { setNumber, lessonNumber } = getCurrentProgress();
-    const content = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
-    goTo(gameId, { quote: content, setNumber, lessonNumber, fromGames: true, lessonScreen: nav.screen });
-  };
-
-  // Allow user to pick a new avatar image with optimistic update
-  const handleAvatarPress = () => {
-    launchImageLibrary({ mediaType: 'photo' }, async (response) => {
-      if (response.didCancel || response.errorCode) return;
-      const asset = response.assets?.[0];
-      if (!asset) return;
-
-      // Optimistically update avatar in UI
-      const originalProfile = profile;
-      const oldProfilePicture = originalProfile.profilePicture;
-      const optimisticProfile = { ...originalProfile, profilePicture: asset.uri };
-      setProfile(optimisticProfile);
-
-      try {
-        // 1) upload to S3 & update the server
-        const updatedServerProfile = await uploadAndSetProfilePicture(originalProfile, asset);
-
-        // 2) cache and push into state
-        const newProfile = { ...originalProfile, ...updatedServerProfile };
-        await saveProfile(newProfile);
-        setProfile(newProfile);
-      } catch (err) {
-        console.error('Avatar upload/update failed:', err);
-        // Revert avatar on failure
-        setProfile(originalProfile);
-        Alert.alert('Error', 'Could not update your profile picture. Please try again.');
-      }
-    });
-  };
 
   const renderScreen = () => {
     if (!profile) {
@@ -311,8 +303,7 @@ const MainApp = () => {
           />
         );
       default: {
-        const { setNumber, lessonNumber } = getCurrentProgress();
-        const content = getCurrentContent(profile, getCurrentProgress, { type: 'prayer' });
+        const { setNumber, lessonNumber } = getHomeProgress();
         // Determine if user can switch accounts (guest, registered, or multiple children)
         const accountCount = (guestProfile ? 1 : 0) + (registeredProfile ? 1 : 0) + (Array.isArray(children) ? children.length : 0);
         const canSwitchAccount = accountCount > 1;
@@ -324,7 +315,7 @@ const MainApp = () => {
             currentSet={setNumber}
             currentLesson={lessonNumber}
             onProfilePress={() => setChooseChildVisible(true)}
-            onAvatarPress={handleAvatarPress}
+            onAvatarPress={pickNewAvatar}
             onJourney={() => goTo('lessonJourney')}
             canSwitchAccount={canSwitchAccount}
           />

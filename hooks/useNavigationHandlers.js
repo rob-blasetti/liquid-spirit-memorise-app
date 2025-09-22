@@ -1,24 +1,27 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
-export default function useNavigationHandlers() {
-  const [nav, setNav] = useState({ screen: 'home' });
+const INITIAL_NAV_STATE = { screen: 'home' };
 
-  const goTo = (screen, extra = {}) => setNav({ screen, ...extra });
+export default function useNavigationHandlers(initialState = INITIAL_NAV_STATE) {
+  const [nav, setNav] = useState(initialState);
+  const [visitedGrades, setVisitedGrades] = useState({ 1: false, 2: false, 3: false, 4: false });
 
-  const visitGrade = (g, visitedGrades, setVisitedGrades, awardAchievement) => {
+  const goTo = useCallback((screen, extra = {}) => {
+    setNav({ screen, ...extra });
+  }, []);
+
+  const markGradeVisited = useCallback((grade) => {
     setVisitedGrades(prev => {
-      const updated = { ...prev, [g]: true };
-      if (updated[1] && updated[2] && updated[3] && updated[4]) {
-        awardAchievement('explorer');
-      }
-      return updated;
+      if (prev[grade]) return prev;
+      return { ...prev, [grade]: true };
     });
-  };
+  }, []);
 
   return {
     nav,
     goTo,
     setNav,
-    visitGrade,
+    visitedGrades,
+    markGradeVisited,
   };
 }
