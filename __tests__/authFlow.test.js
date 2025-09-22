@@ -1,5 +1,11 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+jest.mock('liquid-spirit-styleguide', () => {
+  const React = require('react');
+  const Button = ({ label, onPress, ...props }) =>
+    React.createElement('Button', { label, onPress, ...props });
+  return { Button };
+}, { virtual: true });
 import WelcomeScreen from '../screens/WelcomeScreen.jsx';
 
 describe('WelcomeScreen sign in navigation', () => {

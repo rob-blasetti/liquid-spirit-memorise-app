@@ -6,9 +6,9 @@ export const gameIds = [
   'memoryGame',
   'shapeBuilderGame',
   'bubblePopOrderGame',
+  'wordRacerGame',
   // temporarily hide games pending polish
   // 'hangmanGame',
-  // 'wordRacerGame',
   // 'practice',
   // 'tapGame',
   // 'scrambleGame',

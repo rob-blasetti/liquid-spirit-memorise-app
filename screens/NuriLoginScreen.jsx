@@ -41,6 +41,8 @@ export default function NuriLoginScreen({ onSignIn, navigation }) {
           value={email}
           onChangeText={setEmail}
           style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={themeVariables.placeholderColor || '#666'}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -51,6 +53,8 @@ export default function NuriLoginScreen({ onSignIn, navigation }) {
           value={password}
           onChangeText={setPassword}
           style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={themeVariables.placeholderColor || '#666'}
         />
 
         <Text

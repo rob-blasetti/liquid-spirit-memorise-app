@@ -13,6 +13,12 @@ jest.mock('react-native-keychain', () => ({
   getGenericPassword: jest.fn(() => Promise.resolve({ username: 'user@example.com', password: 'secret' })),
   setGenericPassword: jest.fn(() => Promise.resolve()),
 }), { virtual: true });
+jest.mock('liquid-spirit-styleguide', () => {
+  const React = require('react');
+  const Button = ({ label, onPress, ...props }) =>
+    React.createElement('Button', { label, onPress, ...props });
+  return { Button };
+}, { virtual: true });
 
 import NuriLoginScreen from '../screens/NuriLoginScreen.jsx';
 

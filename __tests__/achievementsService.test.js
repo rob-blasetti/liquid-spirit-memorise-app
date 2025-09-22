@@ -1,19 +1,16 @@
 // Mock deps before requiring the module under test
 jest.mock('../services/profileService', () => ({ saveProfile: jest.fn() }));
 jest.mock('../config', () => ({ API_URL: 'http://test.local' }));
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  setItem: jest.fn(() => Promise.resolve()),
-  getItem: jest.fn(() => Promise.resolve(null)),
-  removeItem: jest.fn(() => Promise.resolve()),
-  getAllKeys: jest.fn(() => Promise.resolve([])),
-  multiGet: jest.fn(() => Promise.resolve([])),
-}));
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 
 const {
   getTotalPoints,
   awardAchievementData,
   fetchUserAchievements,
 } = require('../services/achievementsService');
+const AsyncStorage = require('@react-native-async-storage/async-storage');
 
 // Helper: build achievement items quickly
 const A = (id, points, earned = false) => ({ id, title: id, points, earned });

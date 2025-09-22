@@ -50,30 +50,33 @@ export async function fetchUserAchievements(userId) {
       throw new Error('Failed to fetch achievements');
     }
     const raw = await res.json();
-    console.log('ACHIEVEMENTS: ', raw);
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
     // Normalize server achievements; preserve earned and description
     const normalizedEarned = (serverAchievements || [])
       .map((a) => {
         // Shape A: { achievement: { _id, title, points, description }, earned, dateEarned }
         if (a && a.achievement) {
+          const earnedFlag =
+            typeof a.earned === 'boolean' ? a.earned : true;
           return {
             id: a.achievement._id || a.achievement.id,
             title: a.achievement.title,
             description: a.achievement.description,
             points: a.achievement.points || 0,
-            earned: Boolean(a.earned),
+            earned: earnedFlag,
             dateEarned: a.dateEarned || null,
           };
         }
         // Shape B: flat: { id, title, description, points, earned, dateEarned }
         if (a && (a._id || a.id)) {
+          const earnedFlag =
+            typeof a.earned === 'boolean' ? a.earned : true;
           return {
             id: a._id || a.id,
             title: a.title,
             description: a.description,
             points: a.points || 0,
-            earned: Boolean(a.earned),
+            earned: earnedFlag,
             dateEarned: a.dateEarned || null,
           };
         }
