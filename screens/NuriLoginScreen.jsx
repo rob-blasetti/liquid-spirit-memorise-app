@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
-import { loginNuriUser, requestPasswordReset } from '../services/authService';
+import { loginNuriUser } from '../services/authService';
 import { loadCredentials, saveCredentials } from '../services/credentialService';
 import ScreenBackground from '../components/ScreenBackground';
 import themeVariables from '../styles/theme';
@@ -59,13 +59,7 @@ export default function NuriLoginScreen({ onSignIn, navigation }) {
 
         <Text
           style={styles.forgotLink}
-          onPress={async () => {
-            try {
-              await requestPasswordReset(email);
-            } catch (e) {
-              // Silently ignore; backend may not be implemented yet
-            }
-          }}
+          onPress={() => navigation.navigate('ForgotYourPassword')}
         >
           Forgot your password?
         </Text>

@@ -7,6 +7,7 @@ import GuestLoginScreen from '../screens/GuestLoginScreen';
 import LiquidSpiritLoginScreen from '../screens/LiquidSpiritLoginScreen';
 import NuriRegisterScreen from '../screens/NuriRegisterScreen';
 import NuriLoginScreen from '../screens/NuriLoginScreen';
+import ForgotYourPassword from '../screens/ForgotYourPassword';
 
 const Stack = createStackNavigator();
 
@@ -38,6 +39,7 @@ export default function AuthNavigator({ onSignIn }) {
       <Stack.Screen name="LSLogin">
         {props => <LiquidSpiritLoginScreen {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
+      <Stack.Screen name="ForgotYourPassword" component={ForgotYourPassword} />
     </Stack.Navigator>
   );
 }

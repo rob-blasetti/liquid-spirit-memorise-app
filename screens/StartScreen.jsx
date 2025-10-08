@@ -11,7 +11,7 @@ const StartScreen = ({ onSignIn }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   // For Liquid Spirit login
-  const [bahaiId, setBahaiId] = useState('');
+  const [lsEmail, setLsEmail] = useState('');
   const { setUser, setClasses, setFamily, setChildren } = useUser();
 
   // Common post-auth context update
@@ -83,7 +83,7 @@ const StartScreen = ({ onSignIn }) => {
 
   const handleLSLogin = async () => {
     try {
-      const data = await signInWithLiquidSpirit(bahaiId, password);
+      const data = await signInWithLiquidSpirit(lsEmail, password);
       handleAuthSuccess(data, false);
     } catch (e) {
       console.error('LS login failed:', e);
@@ -186,12 +186,13 @@ const StartScreen = ({ onSignIn }) => {
       <View style={styles.container}>
         <Text style={styles.heading}>Liquid Spirit Login</Text>
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Bahai ID</Text>
+          <Text style={styles.inputLabel}>Email</Text>
           <TextInput
             style={styles.input}
-            value={bahaiId}
-            onChangeText={setBahaiId}
+            value={lsEmail}
+            onChangeText={setLsEmail}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
         </View>
         <View style={styles.inputContainer}>
@@ -239,7 +240,7 @@ const StartScreen = ({ onSignIn }) => {
       <Button
         secondary
         label="Login with Liquid Spirit"
-        onPress={() => { setBahaiId(''); setPassword(''); setMode('lsLogin'); }}
+        onPress={() => { setLsEmail(''); setPassword(''); setMode('lsLogin'); }}
         style={styles.lsButton}
       />
     </View>

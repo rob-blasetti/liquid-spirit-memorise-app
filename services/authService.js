@@ -1,15 +1,14 @@
 import { API_URL } from '../config';
 const LINKED = 'linked';
 
-export const signInWithLiquidSpirit = async (bahaiId, email, password) => {
-
+export const signInWithLiquidSpirit = async (email, password) => {
   try {
     const response = await fetch(`${API_URL}/api/nuri/login-ls`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ identifier: bahaiId, email, password, type: LINKED }),
+      body: JSON.stringify({ email, password, type: LINKED }),
     });
     console.log('Response from Liquid Spirit login:', response);
     
@@ -75,10 +74,8 @@ export const loginNuriUser = async (email, password) => {
   }
 };
 
-// Placeholder password reset request; wire to real API when available
 export const requestPasswordReset = async identifier => {
   try {
-    // If backend endpoint exists, update URL and payload accordingly
     const response = await fetch(`${API_URL}/api/nuri/request-password-reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -88,6 +85,21 @@ export const requestPasswordReset = async identifier => {
     return await response.json();
   } catch (e) {
     console.error('Password reset request failed:', e);
+    throw e;
+  }
+};
+
+export const requestLiquidSpiritPasswordReset = async email => {
+  try {
+    const response = await fetch(`${API_URL}/api/nuri/nuriForgotPassword`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) throw new Error('Liquid Spirit password reset failed');
+    return await response.json();
+  } catch (e) {
+    console.error('Liquid Spirit password reset request failed:', e);
     throw e;
   }
 };

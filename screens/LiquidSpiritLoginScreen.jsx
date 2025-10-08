@@ -6,8 +6,7 @@ import { loadCredentials, saveCredentials } from '../services/credentialService'
 import ScreenBackground from '../components/ScreenBackground';
 import themeVariables from '../styles/theme';
 
-export default function LiquidSpiritLoginScreen({ onSignIn }) {
-  const [bahaiId, setBahaiId] = useState('');
+export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,11 +23,11 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
   }, []);
 
   const handleLogin = async () => {
-    console.log('Attempting Liquid Spirit login with:', { bahaiId, email, password });
+    console.log('Attempting Liquid Spirit login with:', { email, password });
     try {
       setLoading(true);
       await saveCredentials(email, password);
-      const data = await signInWithLiquidSpirit(bahaiId, email, password);
+      const data = await signInWithLiquidSpirit(email, password);
       console.log('Liquid Spirit login successful', data);
       onSignIn(data);
     } catch (err) {
@@ -44,16 +43,6 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <View style={styles.container}>
         <Text style={styles.heading}>Log In With Liquid Spirit</Text>
-
-        <Text style={styles.label}>Bahá'í ID</Text>
-        <TextInput
-          value={bahaiId}
-          onChangeText={setBahaiId}
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!loading}
-        />
 
         <Text style={styles.label}>Email</Text>
         <TextInput
@@ -74,6 +63,12 @@ export default function LiquidSpiritLoginScreen({ onSignIn }) {
           style={styles.input}
           editable={!loading}
         />
+        <Text
+          style={styles.forgotLink}
+          onPress={() => navigation.navigate('ForgotYourPassword', { mode: 'ls' })}
+        >
+          Forgot your password?
+        </Text>
         <Button
           label={loading ? 'Logging in…' : 'Log In'}
           onPress={handleLogin}
@@ -120,6 +115,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: themeVariables.whiteColor,
     borderColor: themeVariables.primaryColor,
+  },
+  forgotLink: {
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginTop: 4,
+    marginBottom: 16,
+    color: themeVariables.whiteColor,
+    textDecorationLine: 'underline',
   },
   fullWidthButton: {
     width: '80%',

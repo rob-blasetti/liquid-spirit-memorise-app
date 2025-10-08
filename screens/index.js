@@ -24,3 +24,4 @@ export { default as NuriRegisterScreen } from './NuriRegisterScreen';
 export { default as NuriLoginScreen } from './NuriLoginScreen';
 export { default as LessonJourneyScreen } from './LessonJourneyScreen';
 export { default as ShopScreen } from './ShopScreen';
+export { default as ForgotYourPassword } from './ForgotYourPassword';
