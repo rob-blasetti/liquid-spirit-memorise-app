@@ -4,13 +4,16 @@ import { Button } from 'liquid-spirit-styleguide';
 import { registerGuest } from '../services/authService';
 import ScreenBackground from '../components/ScreenBackground';
 import themeVariables from '../styles/theme';
+import { GradeSelector } from '../components/form';
 
 export default function GuestRegisterStep2({ route, navigation }) {
   const { username, password } = route.params;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
-  const [grade, setGrade] = useState('');
+  const [grade, setGrade] = useState('1');
+  const grades = ['1', '2', '2b', '3', '4', '5'];
+  const disabledGrades = ['3', '4', '5'];
 
   const handleSubmit = async () => {
     try {
@@ -44,11 +47,11 @@ export default function GuestRegisterStep2({ route, navigation }) {
           onChangeText={setAge}
           style={styles.input}
         />
-        <TextInput
-          placeholder="Grade"
+        <GradeSelector
           value={grade}
-          onChangeText={setGrade}
-          style={styles.input}
+          onChange={setGrade}
+          grades={grades}
+          disabledGrades={disabledGrades}
         />
         <Button label="Register" onPress={handleSubmit} />
       </View>

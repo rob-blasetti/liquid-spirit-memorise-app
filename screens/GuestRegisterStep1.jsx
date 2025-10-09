@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import ScreenBackground from '../components/ScreenBackground';
 import themeVariables from '../styles/theme';
+import { UsernameInput, PasswordInput } from '../components/form';
 
-export default function GuestRegisterStep1({ navigation, route }) {
+export default function GuestRegisterStep1({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,25 +19,21 @@ export default function GuestRegisterStep1({ navigation, route }) {
     <ScreenBackground>
       <View style={styles.container}>
         <Text style={styles.heading}>Step 1: Create Account</Text>
-        <TextInput
-          placeholder="Username"
+        <UsernameInput
           value={username}
           onChangeText={setUsername}
-          style={styles.input}
+          placeholder="Username"
         />
-        <TextInput
-          placeholder="Password"
-          secureTextEntry
+        <PasswordInput
           value={password}
           onChangeText={setPassword}
-          style={styles.input}
+          placeholder="Password"
         />
-        <TextInput
-          placeholder="Confirm Password"
-          secureTextEntry
+        <PasswordInput
+          label="Confirm Password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          style={styles.input}
+          placeholder="Confirm Password"
         />
         <Button label="Next" onPress={handleNext} />
       </View>
@@ -53,13 +50,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   heading: { fontSize: 24, marginBottom: 16, color: themeVariables.whiteColor },
-  input: {
-    width: '80%',
-    padding: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderRadius: 8,
-    backgroundColor: themeVariables.whiteColor,
-    borderColor: themeVariables.primaryColor,
-  },
 });
