@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
-import { signInWithLiquidSpirit } from '../services/authService';
-import { loadCredentials, saveCredentials } from '../services/credentialService';
-import ScreenBackground from '../components/ScreenBackground';
-import themeVariables from '../styles/theme';
+import { signInWithLiquidSpirit } from '../../services/authService';
+import { loadCredentials, saveCredentials } from '../../services/credentialService';
+import ScreenBackground from '../../components/ScreenBackground';
+import themeVariables from '../../styles/theme';
 
-export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
+export default function LSLogin({ navigation, onSignIn }) {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);

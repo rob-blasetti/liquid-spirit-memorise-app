@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
-import { loginNuriUser } from '../services/authService';
-import { loadCredentials, saveCredentials } from '../services/credentialService';
-import ScreenBackground from '../components/ScreenBackground';
-import themeVariables from '../styles/theme';
+import { loginNuriUser } from '../../services/authService';
+import { loadCredentials, saveCredentials } from '../../services/credentialService';
+import ScreenBackground from '../../components/ScreenBackground';
+import themeVariables from '../../styles/theme';
 
-export default function NuriLoginScreen({ onSignIn, navigation }) {
+export default function Login({ onSignIn, navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 

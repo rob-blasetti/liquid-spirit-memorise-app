@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
-import { registerNuriUser } from '../services/authService';
-import themeVariables from '../styles/theme';
-import ScreenBackground from '../components/ScreenBackground';
+import { registerNuriUser } from '../../services/authService';
+import themeVariables from '../../styles/theme';
+import ScreenBackground from '../../components/ScreenBackground';
 
-export default function NuriRegisterScreen({ onSignIn }) {
+export default function Register({ onSignIn }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

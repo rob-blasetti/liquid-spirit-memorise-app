@@ -4,10 +4,10 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { Button } from 'liquid-spirit-styleguide';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import themeVariables from '../styles/theme';
-import ScreenBackground from '../components/ScreenBackground';
+import themeVariables from '../../styles/theme';
+import ScreenBackground from '../../components/ScreenBackground';
 
-export default function GuestLoginScreen({ onSignIn }) {
+export default function GuestLogin({ onSignIn }) {
   const [displayName, setDisplayName] = useState('');
   const [avatarSeed, setAvatarSeed] = useState(Math.random().toString());
   const [avatarPhoto, setAvatarPhoto] = useState(null);

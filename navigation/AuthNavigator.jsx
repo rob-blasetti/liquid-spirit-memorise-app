@@ -3,10 +3,10 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import themeVariables from '../styles/theme';
 import WelcomeScreen from '../screens/WelcomeScreen.jsx';
-import GuestLoginScreen from '../screens/GuestLoginScreen';
-import LiquidSpiritLoginScreen from '../screens/LiquidSpiritLoginScreen';
-import NuriRegisterScreen from '../screens/NuriRegisterScreen';
-import NuriLoginScreen from '../screens/NuriLoginScreen';
+import GuestLogin from '../screens/auth/GuestLogin';
+import LSLogin from '../screens/auth/LSLogin';
+import Register from '../screens/auth/Register';
+import Login from '../screens/auth/Login';
 import ForgotYourPassword from '../screens/ForgotYourPassword';
 
 const Stack = createStackNavigator();
@@ -28,16 +28,16 @@ export default function AuthNavigator({ onSignIn }) {
         {props => <WelcomeScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="GuestLogin">
-        {props => <GuestLoginScreen {...props} onSignIn={onSignIn} />}
+        {props => <GuestLogin {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="NuriRegister">
-        {props => <NuriRegisterScreen {...props} onSignIn={onSignIn} />}
+        {props => <Register {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="NuriLogin">
-        {props => <NuriLoginScreen {...props} onSignIn={onSignIn} />}
+        {props => <Login {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="LSLogin">
-        {props => <LiquidSpiritLoginScreen {...props} onSignIn={onSignIn} />}
+        {props => <LSLogin {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="ForgotYourPassword" component={ForgotYourPassword} />
     </Stack.Navigator>

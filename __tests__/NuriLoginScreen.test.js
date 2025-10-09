@@ -20,12 +20,12 @@ jest.mock('liquid-spirit-styleguide', () => {
   return { Button };
 }, { virtual: true });
 
-import NuriLoginScreen from '../screens/NuriLoginScreen.jsx';
+import Login from '../screens/auth/Login.jsx';
 
 it('prefills stored credentials', async () => {
   let instance;
   await ReactTestRenderer.act(async () => {
-    instance = ReactTestRenderer.create(<NuriLoginScreen onSignIn={jest.fn()} />);
+    instance = ReactTestRenderer.create(<Login onSignIn={jest.fn()} />);
   });
   const emailInput = instance.root.findByProps({ placeholder: 'Email' });
   const passInput = instance.root.findByProps({ placeholder: 'Password' });
