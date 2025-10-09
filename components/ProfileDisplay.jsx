@@ -5,6 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import LinearGradient from 'react-native-linear-gradient';
 import themeVariables from '../styles/theme';
+import Chip from './Chip';
 
 const AVATAR_SIZE = 68; // slightly smaller avatar
 const STAR_SIZE = 48; // slightly smaller star for the score
@@ -22,6 +23,8 @@ const ProfileDisplay = ({
     .filter(part => typeof part === 'string' && part.trim().length > 0)
     .join(' ');
   const displayName = fullName || username;
+  const gradeLabel = profile.grade?.toString() || 'N/A';
+  const isGradeTwoB = gradeLabel?.toLowerCase() === '2b';
 
   // lesson pattern: Lesson {set}.{lesson} (falls back to just lesson if no set)
   const lessonDisplay = (typeof currentSet !== 'undefined' && currentSet !== null)
@@ -70,7 +73,17 @@ const ProfileDisplay = ({
               )}
             </View>
 
-            <Text style={styles.profileGrade}>Grade {profile.grade?.toString() || 'N/A'}</Text>
+            {isGradeTwoB ? (
+              <Chip
+                text="Grade 2B"
+                icon="school-outline"
+                color={themeVariables.primaryColor}
+                bg="rgba(255, 255, 255, 0.85)"
+                style={styles.gradeChip}
+              />
+            ) : (
+              <Text style={styles.profileGrade}>Grade {gradeLabel}</Text>
+            )}
 
             {/* Lesson moved out of ProfileDisplay to Home screen */}
           </TouchableOpacity>
@@ -140,6 +153,10 @@ const styles = StyleSheet.create({
   profileGrade: {
     fontSize: 14,
     color: themeVariables.whiteColor,
+  },
+  gradeChip: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
   },
   pointsContainer: {
     flexDirection: 'row',

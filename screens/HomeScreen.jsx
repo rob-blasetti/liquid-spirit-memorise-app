@@ -61,7 +61,7 @@ const HomeScreen = ({
   const hasPrayer = Boolean(prayerToShow);
   const hasQuote = Boolean(quoteToShow);
   const [activeContent, setActiveContent] = useState(
-    hasPrayer ? 'prayer' : hasQuote ? 'quote' : null
+    hasQuote ? 'quote' : hasPrayer ? 'prayer' : null
   );
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const HomeScreen = ({
         if (prev === 'prayer' || prev === 'quote') {
           return prev;
         }
-        return 'prayer';
+        return 'quote';
       });
     } else if (hasPrayer) {
       setActiveContent('prayer');
@@ -168,27 +168,8 @@ const HomeScreen = ({
       {/* Prayer and Quote Blocks */}
       <View style={styles.contentContainer}>
         <View style={styles.lessonContent}>
-          {lessonDisplay ? (
-            <Text style={styles.currentLessonText}>Current Lesson: {lessonDisplay}</Text>
-          ) : null}
           {hasPrayer && hasQuote ? (
             <View style={styles.lessonTabs}>
-              <TouchableOpacity
-                style={[
-                  styles.lessonTab,
-                  activeContent === 'prayer' && styles.lessonTabActive,
-                ]}
-                onPress={() => setActiveContent('prayer')}
-              >
-                <Text
-                  style={[
-                    styles.lessonTabLabel,
-                    activeContent === 'prayer' && styles.lessonTabLabelActive,
-                  ]}
-                >
-                  Prayer
-                </Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.lessonTab,
@@ -205,19 +186,35 @@ const HomeScreen = ({
                   Quote
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.lessonTab,
+                  activeContent === 'prayer' && styles.lessonTabActive,
+                ]}
+                onPress={() => setActiveContent('prayer')}
+              >
+                <Text
+                  style={[
+                    styles.lessonTabLabel,
+                    activeContent === 'prayer' && styles.lessonTabLabelActive,
+                  ]}
+                >
+                  Prayer
+                </Text>
+              </TouchableOpacity>
             </View>
-          ) : null}
-          {activeContent === 'prayer' && hasPrayer ? (
-            <PrayerBlock
-              prayer={prayerToShow}
-              profile={profile}
-            />
           ) : null}
           {activeContent === 'quote' && hasQuote ? (
             <QuoteBlock
               quote={quoteToShow}
               profile={profile}
               references={references}
+            />
+          ) : null}
+          {activeContent === 'prayer' && hasPrayer ? (
+            <PrayerBlock
+              prayer={prayerToShow}
+              profile={profile}
             />
           ) : null}
           {!hasPrayer && !hasQuote ? (
@@ -323,14 +320,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     width: '100%',
-  },
-  currentLessonText: {
-    color: themeVariables.whiteColor,
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 12,
-    alignSelf: 'flex-start',
   },
   lessonTabs: {
     flexDirection: 'row',
