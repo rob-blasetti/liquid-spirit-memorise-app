@@ -10,20 +10,13 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
+import { GRADE_CARD_DATA } from '../data/gradesConfig';
 
 const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
 const TILE_HEIGHT = 115; // reduced slightly so bottom item clears nav
 
 const GradesScreen = ({ onGradeSelect }) => {
-  const data = [
-    { grade: 1, book: 'Book 3', ages: 'Ages 5-7' },
-    { grade: 2, book: 'Book 3-1', ages: 'Ages 7-8' },
-    { grade: 3, book: 'Book 3-2', ages: 'Ages 7-8' },
-    { grade: 4, book: 'Book 3-3', ages: 'Ages 8-9' },
-    { grade: 5, book: 'Book 3-4', ages: 'Ages 9-10' },
-  ];
-
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -43,19 +36,19 @@ const GradesScreen = ({ onGradeSelect }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {data.map((item, i) => {
+        {GRADE_CARD_DATA.map((item) => {
           const range = item.ages.split(' ')[1] || item.ages;
-          const pct = (item.grade / data.length) * 100;
+          const pct = (item.grade / GRADE_CARD_DATA.length) * 100;
 
           return (
             <TouchableOpacity
-              key={i}
+              key={item.grade}
               style={styles.tile}
               activeOpacity={0.7}
               onPress={() => onGradeSelect(item.grade, item.setNumber)}
             >
               <View style={styles.left}>
-                <Text style={styles.gradeText}>Grade {item.grade}</Text>
+                <Text style={styles.gradeText}>{item.title}</Text>
                 <Text style={styles.bookText}>{item.book}</Text>
               </View>
               <View style={styles.right}>

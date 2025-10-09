@@ -8,14 +8,6 @@ import {
   GradesScreen,
   Grade1SetScreen,
   Grade1LessonScreen,
-  Grade2Screen,
-  Grade2SetScreen,
-  Grade2LessonScreen,
-  Grade2bScreen,
-  Grade2bSetScreen,
-  Grade2bLessonScreen,
-  Grade3Screen,
-  Grade4Screen,
   SettingsScreen,
   AchievementsScreen,
   HomeScreen,
@@ -43,6 +35,13 @@ import { createAppActions } from '../services/appFlowService';
 import { createAvatarActions } from '../services/avatarService';
 import { prefetchGames } from '../games/lazyGameRoutes';
 import { gameIds } from '../games';
+import {
+  GradeSetLanding,
+  GradeLessonSelector,
+  GradeLessonContent,
+  GradeComingSoon,
+} from '../components/GradeLayouts';
+import { GRADE_SCREEN_CONFIG } from '../data/gradesConfig';
 
 const Main = () => {
   const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
@@ -232,39 +231,100 @@ const Main = () => {
           />
         );
       case 'grade2Lesson':
-        return (
-          <Grade2LessonScreen
-            setNumber={nav.setNumber}
-            lessonNumber={nav.lessonNumber}
-            onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2Set}
-            onComplete={completeLesson}
-            onPractice={(q) => goTo('practice', { quote: q })}
-            onPlayGame={(q) => goTo('tapGame', { quote: q })}
-          />
-        );
+        {
+          const config = GRADE_SCREEN_CONFIG[2];
+          if (!config) return null;
+          return (
+            <GradeLessonContent
+              gradeTitle={config.title}
+              setNumber={nav.setNumber}
+              lessonNumber={nav.lessonNumber}
+              getLessonContent={config.getLessonContent}
+              fallbackQuote={config.fallbackQuote}
+              onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2Set}
+              onComplete={completeLesson}
+              onPractice={(q) => goTo('practice', { quote: q })}
+              onPlayGame={(q) => goTo('tapGame', { quote: q })}
+            />
+          );
+        }
       case 'grade2bLesson':
-        return (
-          <Grade2bLessonScreen
-            setNumber={nav.setNumber}
-            lessonNumber={nav.lessonNumber}
-            onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2bSet}
-            onComplete={completeLesson}
-            onPractice={(q) => goTo('practice', { quote: q })}
-            onPlayGame={(q) => goTo('tapGame', { quote: q })}
-          />
-        );
+        {
+          const config = GRADE_SCREEN_CONFIG['2b'];
+          if (!config) return null;
+          return (
+            <GradeLessonContent
+              gradeTitle={config.title}
+              setNumber={nav.setNumber}
+              lessonNumber={nav.lessonNumber}
+              getLessonContent={config.getLessonContent}
+              fallbackQuote={config.fallbackQuote}
+              onBack={nav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2bSet}
+              onComplete={completeLesson}
+              onPractice={(q) => goTo('practice', { quote: q })}
+              onPlayGame={(q) => goTo('tapGame', { quote: q })}
+            />
+          );
+        }
       case 'grade2Set':
-        return <Grade2SetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2Lesson} onBack={goGrade2} />;
+        {
+          const config = GRADE_SCREEN_CONFIG[2];
+          if (!config) return null;
+          return (
+            <GradeLessonSelector
+              title={`${config.title} - Set ${nav.setNumber}`}
+              lessonNumbers={config.lessonNumbers}
+              onLessonSelect={goGrade2Lesson}
+              onBack={goGrade2}
+            />
+          );
+        }
       case 'grade2bSet':
-        return <Grade2bSetScreen setNumber={nav.setNumber} onLessonSelect={goGrade2bLesson} onBack={goGrade2b} />;
+        {
+          const config = GRADE_SCREEN_CONFIG['2b'];
+          if (!config) return null;
+          return (
+            <GradeLessonSelector
+              title={`${config.title} - Set ${nav.setNumber}`}
+              lessonNumbers={config.lessonNumbers}
+              onLessonSelect={goGrade2bLesson}
+              onBack={goGrade2b}
+            />
+          );
+        }
       case 'grade2':
-        return <Grade2Screen onSetSelect={goGrade2Set} onBack={goHome} />;
+        {
+          const config = GRADE_SCREEN_CONFIG[2];
+          if (!config) return null;
+          return (
+            <GradeSetLanding title={config.title} sets={config.sets} onSetSelect={goGrade2Set} onBack={goHome} />
+          );
+        }
       case 'grade2b':
-        return <Grade2bScreen onSetSelect={goGrade2bSet} onBack={goHome} />;
+        {
+          const config = GRADE_SCREEN_CONFIG['2b'];
+          if (!config) return null;
+          return (
+            <GradeSetLanding
+              title={config.title}
+              sets={config.sets}
+              onSetSelect={goGrade2bSet}
+              onBack={goHome}
+            />
+          );
+        }
       case 'grade3':
-        return <Grade3Screen onBack={goHome} />;
+        {
+          const config = GRADE_SCREEN_CONFIG[3];
+          if (!config) return null;
+          return <GradeComingSoon title={config.title} message={config.message} onBack={goHome} />;
+        }
       case 'grade4':
-        return <Grade4Screen onBack={goHome} />;
+        {
+          const config = GRADE_SCREEN_CONFIG[4];
+          if (!config) return null;
+          return <GradeComingSoon title={config.title} message={config.message} onBack={goHome} />;
+        }
       case 'achievements':
         return <AchievementsScreen />;
       case 'games':
