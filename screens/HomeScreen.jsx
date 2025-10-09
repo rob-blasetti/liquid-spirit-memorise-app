@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
 import themeVariables from '../styles/theme';
@@ -9,6 +9,8 @@ import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import ProfileDisplay from '../components/ProfileDisplay';
+
+const bookImage = require('../assets/img/Book.png');
 
 const HomeScreen = ({
   profile,
@@ -55,9 +57,6 @@ const HomeScreen = ({
     quoteToShow = qObj.text;
     references = qObj.references || [];
   }
-
-  console.log('profile: ', profile);
-
   const hasPrayer = Boolean(prayerToShow);
   const hasQuote = Boolean(quoteToShow);
   const [activeContent, setActiveContent] = useState(
@@ -167,61 +166,74 @@ const HomeScreen = ({
 
       {/* Prayer and Quote Blocks */}
       <View style={styles.contentContainer}>
+        <FastImage
+          source={bookImage}
+          style={styles.lessonBackground}
+          resizeMode={FastImage.resizeMode.cover}
+        />
         <View style={styles.lessonContent}>
-          {hasPrayer && hasQuote ? (
-            <View style={styles.lessonTabs}>
-              <TouchableOpacity
-                style={[
-                  styles.lessonTab,
-                  activeContent === 'quote' && styles.lessonTabActive,
-                ]}
-                onPress={() => setActiveContent('quote')}
-              >
-                <Text
+          <View style={styles.lessonInner}>
+            {hasPrayer && hasQuote ? (
+              <View style={styles.lessonTabs}>
+                <TouchableOpacity
                   style={[
-                    styles.lessonTabLabel,
-                    activeContent === 'quote' && styles.lessonTabLabelActive,
+                    styles.lessonTab,
+                    activeContent === 'quote' && styles.lessonTabActive,
                   ]}
+                  onPress={() => setActiveContent('quote')}
                 >
-                  Quote
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.lessonTab,
-                  activeContent === 'prayer' && styles.lessonTabActive,
-                ]}
-                onPress={() => setActiveContent('prayer')}
-              >
-                <Text
+                  <Text
+                    style={[
+                      styles.lessonTabLabel,
+                      activeContent === 'quote' && styles.lessonTabLabelActive,
+                    ]}
+                  >
+                    Quote
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[
-                    styles.lessonTabLabel,
-                    activeContent === 'prayer' && styles.lessonTabLabelActive,
+                    styles.lessonTab,
+                    activeContent === 'prayer' && styles.lessonTabActive,
                   ]}
+                  onPress={() => setActiveContent('prayer')}
                 >
-                  Prayer
+                  <Text
+                    style={[
+                      styles.lessonTabLabel,
+                      activeContent === 'prayer' && styles.lessonTabLabelActive,
+                    ]}
+                  >
+                    Prayer
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+            {(activeContent === 'quote' && hasQuote) || (activeContent === 'prayer' && hasPrayer) ? (
+              <View style={styles.lessonContentInner}>
+                {activeContent === 'quote' && hasQuote ? (
+                  <QuoteBlock
+                    quote={quoteToShow}
+                    profile={profile}
+                    references={references}
+                  />
+                ) : null}
+                {activeContent === 'prayer' && hasPrayer ? (
+                  <PrayerBlock
+                    prayer={prayerToShow}
+                    profile={profile}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+            {!hasPrayer && !hasQuote ? (
+              <View style={styles.lessonContentInner}>
+                <Text style={styles.emptyLessonText}>
+                  Content for this lesson will appear here.
                 </Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {activeContent === 'quote' && hasQuote ? (
-            <QuoteBlock
-              quote={quoteToShow}
-              profile={profile}
-              references={references}
-            />
-          ) : null}
-          {activeContent === 'prayer' && hasPrayer ? (
-            <PrayerBlock
-              prayer={prayerToShow}
-              profile={profile}
-            />
-          ) : null}
-          {!hasPrayer && !hasQuote ? (
-            <Text style={styles.emptyLessonText}>
-              Content for this lesson will appear here.
-            </Text>
-          ) : null}
+              </View>
+            ) : null}
+          </View>
         </View>
         {lessonTimeline.length > 0 ? (
           <View style={styles.lessonTimelineContainer}>
@@ -315,11 +327,35 @@ const styles = StyleSheet.create({
     paddingRight: 0,
     marginTop: 24,
     width: '100%',
+    position: 'relative',
   },
   lessonContent: {
     flex: 1,
     alignItems: 'center',
     width: '100%',
+    position: 'relative',
+    paddingBottom: 16,
+  },
+  lessonBackground: {
+    position: 'absolute',
+    left: -16,
+    right: -16,
+    top: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  lessonInner: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  lessonContentInner: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 12,
   },
   lessonTabs: {
     flexDirection: 'row',
@@ -348,10 +384,10 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
   },
   emptyLessonText: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: themeVariables.primaryColor,
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 32,
+    paddingVertical: 8,
   },
   bottomButtonContainer: {
     width: '100%',

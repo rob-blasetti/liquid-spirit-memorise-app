@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  ImageBackground,
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -19,8 +18,6 @@ const QuoteBlock = ({
   quote,
   profile,
   references = [],
-  backgroundImage,
-  backgroundColor = themeVariables.neutralLight,
 }) => {
   const [activeRef, setActiveRef] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -115,26 +112,40 @@ const QuoteBlock = ({
   }, []);
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={[styles.background, { backgroundColor }]}
-    >
-      <Text style={styles.title}>Quote</Text>
-      <Text style={styles.quoteText}>
-        {tokens.map((part) =>
-          part.underline ? (
-            <Text
-              key={part.key}
-              style={styles.underline}
-              onPress={() => setActiveRef(part.examples)}
-            >
-              {part.text}
-            </Text>
-          ) : (
-            <Text key={part.key}>{part.text}</Text>
-          )
+    <>
+      <View style={styles.container}>
+        <Text style={styles.quoteText}>
+          {tokens.map((part) =>
+            part.underline ? (
+              <Text
+                key={part.key}
+                style={styles.underline}
+                onPress={() => setActiveRef(part.examples)}
+              >
+                {part.text}
+              </Text>
+            ) : (
+              <Text key={part.key}>{part.text}</Text>
+            )
+          )}
+        </Text>
+
+        {displayText.trim() !== '' && (
+          <TouchableOpacity
+            style={styles.audioButton}
+            onPress={handleAudioPress}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel={isSpeaking ? "Stop reading quote" : "Read quote aloud"}
+            accessibilityHint={isSpeaking ? "Double tap to stop the speech" : "Double tap to hear this quote"}
+          >
+            <Ionicons
+              name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
+              size={24}
+              color={themeVariables.primaryColor}
+            />
+          </TouchableOpacity>
         )}
-      </Text>
+      </View>
 
       <Modal
         visible={!!activeRef}
@@ -161,34 +172,18 @@ const QuoteBlock = ({
           </View>
         </View>
       </Modal>
-
-      {displayText.trim() !== '' && (
-        <TouchableOpacity
-          style={styles.audioButton}
-          onPress={handleAudioPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel={isSpeaking ? "Stop reading quote" : "Read quote aloud"}
-          accessibilityHint={isSpeaking ? "Double tap to stop the speech" : "Double tap to hear this quote"}
-        >
-          <Ionicons
-            name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
-            size={24}
-            color={themeVariables.primaryColor}
-          />
-        </TouchableOpacity>
-      )}
-    </ImageBackground>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
+  container: {
     width: '100%',
-    padding: 16,
-    marginVertical: themeVariables.margin,
-    borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+    paddingTop: 8,
+    paddingBottom: 48,
+    alignSelf: 'stretch',
   },
   quoteText: {
     fontSize: 18,
@@ -229,8 +224,8 @@ const styles = StyleSheet.create({
   },
   audioButton: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: 12,
+    right: 12,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -238,13 +233,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: themeVariables.primaryColor,
-    textAlign: 'center',
   },
 });
 

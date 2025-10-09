@@ -8,7 +8,7 @@ import themeVariables from '../styles/theme';
 import Chip from './Chip';
 
 const AVATAR_SIZE = 68; // slightly smaller avatar
-const STAR_SIZE = 48; // slightly smaller star for the score
+const STAR_ICON_SIZE = 14; // compact star so it fits beside the grade
 
 const ProfileDisplay = ({
   profile,
@@ -63,37 +63,42 @@ const ProfileDisplay = ({
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
-            <View style={styles.nameContainer}>
-              <Text style={styles.profileName}>{displayName}</Text>
+            <View style={styles.gradeRow}>
+              <View style={styles.gradeContent}>
+                {isGradeTwoB ? (
+                  <Chip
+                    text="Grade 2B"
+                    icon="school-outline"
+                    color={themeVariables.primaryColor}
+                    bg="rgba(255, 255, 255, 0.85)"
+                    style={styles.gradeChip}
+                  />
+                ) : (
+                  <Text style={styles.profileGrade}>Grade {gradeLabel}</Text>
+                )}
+                <View style={styles.pointsDisplay}>
+                  <View style={styles.starButton}>
+                    <Ionicons name="star-outline" size={STAR_ICON_SIZE} color={themeVariables.blackColor} />
+                  </View>
+                  <Text style={styles.pointsText}>{totalPoints ?? 0}</Text>
+                </View>
+              </View>
               {canSwitchAccount ? (
-                <Ionicons name="chevron-down" size={16} color={themeVariables.whiteColor} style={styles.chevronIcon} />
+                <View style={styles.gradeChevronButton}>
+                  <Ionicons name="chevron-down" size={12} color={themeVariables.blackColor} />
+                </View>
               ) : null}
+            </View>
+
+            <View style={[styles.nameContainer, isGradeTwoB && styles.nameIndented]}>
+              <Text style={styles.profileName}>{displayName}</Text>
               {profile.type === 'linked' && (
                 <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
               )}
             </View>
 
-            {isGradeTwoB ? (
-              <Chip
-                text="Grade 2B"
-                icon="school-outline"
-                color={themeVariables.primaryColor}
-                bg="rgba(255, 255, 255, 0.85)"
-                style={styles.gradeChip}
-              />
-            ) : (
-              <Text style={styles.profileGrade}>Grade {gradeLabel}</Text>
-            )}
-
             {/* Lesson moved out of ProfileDisplay to Home screen */}
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.pointsContainer}>
-          <View style={styles.starWrapper}>
-            <Ionicons name="star" size={STAR_SIZE} color="#f1c40f" />
-            <Text style={styles.pointsBadge}>{totalPoints ?? 0}</Text>
-          </View>
         </View>
       </View>
     </LinearGradient>
@@ -112,7 +117,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     width: '100%',
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -144,6 +149,7 @@ const styles = StyleSheet.create({
   profileTextContainer: {
     justifyContent: 'center',
     marginLeft: 16,
+    flex: 1,
   },
   profileName: {
     fontSize: 18,
@@ -153,45 +159,68 @@ const styles = StyleSheet.create({
   profileGrade: {
     fontSize: 14,
     color: themeVariables.whiteColor,
+    marginRight: 8,
   },
   gradeChip: {
-    marginTop: 4,
+    marginRight: 8,
     alignSelf: 'flex-start',
   },
-  pointsContainer: {
+  gradeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
+    marginBottom: 6,
+    width: '100%',
   },
-  starWrapper: {
-    width: STAR_SIZE + 8,
-    height: STAR_SIZE + 8,
+  gradeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  pointsDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  starButton: {
+    backgroundColor: themeVariables.whiteColor,
+    borderRadius: 14,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1.5,
+    marginRight: 4,
   },
-  pointsBadge: {
-    position: 'absolute',
-    textAlign: 'center',
-    alignSelf: 'center',
+  pointsText: {
     fontSize: 12,
     fontWeight: '700',
-    color: themeVariables.blackColor,
-    // small shadow so it reads nicely over the star
-    textShadowColor: 'rgba(0,0,0,0.12)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
-    marginTop: 4,
+    color: themeVariables.whiteColor,
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  nameIndented: {
+    marginLeft: 6,
+  },
+  gradeChevronButton: {
+    marginLeft: 12,
+    backgroundColor: themeVariables.whiteColor,
+    borderRadius: 14,
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1.5,
+  },
   linkIcon: {
     marginLeft: 8,
-  },
-  chevronIcon: {
-    marginLeft: 6,
   },
 });
 

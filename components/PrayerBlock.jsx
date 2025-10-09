@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  ImageBackground,
+  View,
   Text,
   StyleSheet,
   TouchableOpacity,
@@ -12,8 +12,6 @@ import themeVariables from '../styles/theme';
 const PrayerBlock = ({
   prayer,
   profile,
-  backgroundImage,
-  backgroundColor = themeVariables.neutralLight,
 }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const cancelRef = useRef(false);
@@ -48,11 +46,7 @@ const PrayerBlock = ({
   }, []);
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={[styles.background, { backgroundColor }]}
-    >
-      <Text style={styles.title}>Prayer</Text>
+    <View style={styles.container}>
       <Text style={styles.prayerText}>{prayer}</Text>
       {prayer && prayer.trim() && (
         <TouchableOpacity
@@ -77,34 +71,27 @@ const PrayerBlock = ({
           />
         </TouchableOpacity>
       )}
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
+  container: {
     width: '100%',
-    padding: 16,
-    marginVertical: themeVariables.margin,
-    borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+    paddingTop: 8,
+    paddingBottom: 48,
+    alignSelf: 'stretch',
   },
   prayerText: {
     fontSize: 18,
     textAlign: 'center',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: themeVariables.primaryColor,
-    textAlign: 'center',
-  },
   audioButton: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: 12,
+    right: 12,
     width: 32,
     height: 32,
     borderRadius: 16,
