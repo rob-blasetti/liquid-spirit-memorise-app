@@ -16,7 +16,6 @@ export { default as SettingsScreen } from './SettingsScreen';
 export { default as AchievementsScreen } from './AchievementsScreen';
 export { default as ProfileSetupScreen } from './ProfileSetupScreen';
 export { default as HomeScreen } from './HomeScreen';
-export { default as StartScreen } from './StartScreen';
 export { default as Splash } from './Splash';
 export { default as GamesListScreen } from './GamesListScreen';
 export { default as ClassScreen } from './ClassScreen';

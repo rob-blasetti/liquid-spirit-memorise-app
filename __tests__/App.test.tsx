@@ -23,7 +23,7 @@ jest.mock('react-native-fast-image', () => {
   FastImage.preload = jest.fn();
   return FastImage;
 }, { virtual: true });
-jest.mock('../components/MainApp', () => () => null);
+jest.mock('../components/Main', () => () => null);
 jest.mock('../contexts/UserContext', () => ({
   UserProvider: ({ children }) => children,
 }));

@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit } from '../../services/authService';
 import { loadCredentials, saveCredentials } from '../../services/credentialService';
 import ScreenBackground from '../../components/ScreenBackground';
 import themeVariables from '../../styles/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function LSLogin({ navigation, onSignIn }) {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -56,13 +58,28 @@ export default function LSLogin({ navigation, onSignIn }) {
         />
 
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          editable={!loading}
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            secureTextEntry={!passwordVisible}
+            value={password}
+            onChangeText={setPassword}
+            style={styles.passwordInput}
+            editable={!loading}
+          />
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+            onPress={() => setPasswordVisible((prev) => !prev)}
+            style={styles.toggleIcon}
+            disabled={loading}
+          >
+            <Ionicons
+              name={passwordVisible ? 'eye-off' : 'eye'}
+              size={20}
+              color={themeVariables.primaryColor}
+            />
+          </TouchableOpacity>
+        </View>
         <Text
           style={styles.forgotLink}
           onPress={() => navigation.navigate('ForgotYourPassword', { mode: 'ls' })}
@@ -115,6 +132,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: themeVariables.whiteColor,
     borderColor: themeVariables.primaryColor,
+  },
+  passwordContainer: {
+    width: '80%',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: themeVariables.primaryColor,
+    backgroundColor: themeVariables.whiteColor,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 10,
+  },
+  toggleIcon: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   forgotLink: {
     alignSelf: 'flex-start',

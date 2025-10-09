@@ -2,7 +2,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import themeVariables from '../styles/theme';
-import WelcomeScreen from '../screens/WelcomeScreen.jsx';
+import Start from '../screens/Start.jsx';
 import GuestLogin from '../screens/auth/GuestLogin';
 import LSLogin from '../screens/auth/LSLogin';
 import Register from '../screens/auth/Register';
@@ -25,7 +25,7 @@ export default function AuthNavigator({ onSignIn }) {
     >
       {/* Hide header on initial welcome screen */}
       <Stack.Screen name="Welcome" options={{ headerShown: false }}>
-        {props => <WelcomeScreen {...props} />}
+        {props => <Start {...props} />}
       </Stack.Screen>
       <Stack.Screen name="GuestLogin">
         {props => <GuestLogin {...props} onSignIn={onSignIn} />}

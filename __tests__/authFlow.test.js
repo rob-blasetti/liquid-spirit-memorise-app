@@ -6,14 +6,14 @@ jest.mock('liquid-spirit-styleguide', () => {
     React.createElement('Button', { label, onPress, ...props });
   return { Button };
 }, { virtual: true });
-import WelcomeScreen from '../screens/WelcomeScreen.jsx';
+import Start from '../screens/Start.jsx';
 
-describe('WelcomeScreen sign in navigation', () => {
+describe('Start sign in navigation', () => {
   it('navigates to GuestLogin from Continue as Guest', () => {
     const navigate = jest.fn();
     let instance;
     ReactTestRenderer.act(() => {
-      instance = ReactTestRenderer.create(<WelcomeScreen navigation={{ navigate }} />);
+      instance = ReactTestRenderer.create(<Start navigation={{ navigate }} />);
     });
     ReactTestRenderer.act(() => {
       instance.root.findByProps({ label: 'Continue as Guest' }).props.onPress();
@@ -25,7 +25,7 @@ describe('WelcomeScreen sign in navigation', () => {
     const navigate = jest.fn();
     let instance;
     ReactTestRenderer.act(() => {
-      instance = ReactTestRenderer.create(<WelcomeScreen navigation={{ navigate }} />);
+      instance = ReactTestRenderer.create(<Start navigation={{ navigate }} />);
     });
     ReactTestRenderer.act(() => {
       instance.root.findByProps({ label: 'Register' }).props.onPress();
@@ -37,7 +37,7 @@ describe('WelcomeScreen sign in navigation', () => {
     const navigate = jest.fn();
     let instance;
     ReactTestRenderer.act(() => {
-      instance = ReactTestRenderer.create(<WelcomeScreen navigation={{ navigate }} />);
+      instance = ReactTestRenderer.create(<Start navigation={{ navigate }} />);
     });
     ReactTestRenderer.act(() => {
       instance.root.findByProps({ label: 'Login' }).props.onPress();
@@ -49,7 +49,7 @@ describe('WelcomeScreen sign in navigation', () => {
     const navigate = jest.fn();
     let instance;
     ReactTestRenderer.act(() => {
-      instance = ReactTestRenderer.create(<WelcomeScreen navigation={{ navigate }} />);
+      instance = ReactTestRenderer.create(<Start navigation={{ navigate }} />);
     });
     ReactTestRenderer.act(() => {
       instance.root.findByType(require('react-native').TouchableOpacity).props.onPress();

@@ -20,7 +20,7 @@ export default function GuestLogin({ onSignIn }) {
     if (!displayName) return;
     // Convert grade to number for 1,2,3,4,5; preserve '2b'
     const gradeVal = selectedGrade === '2b' ? '2b' : parseInt(selectedGrade, 10);
-    onSignIn({
+    const user = {
       // Assign a unique ID for each guest based on avatarSeed
       _id: avatarSeed,
       username: displayName,
@@ -29,9 +29,10 @@ export default function GuestLogin({ onSignIn }) {
       ...(avatarPhoto ? { avatar: avatarPhoto } : {}),
       grade: gradeVal,
       guest: true,
-      totalPoints: 0,
       type: 'guest',
-    });
+      totalPoints: 0,
+    };
+    onSignIn({ user });
   };
 
   const pickImage = () => {

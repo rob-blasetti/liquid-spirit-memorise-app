@@ -6,7 +6,7 @@ import lsLogo from '../assets/img/LS-Logo.png';
 import nuriLogoWhite from '../assets/img/Nuri_Logo_White.png';
 import ScreenBackground from '../components/ScreenBackground';
 
-export default function WelcomeScreen({ navigation }) {
+export default function Start({ navigation }) {
   return (
     <ScreenBackground>
       <View style={styles.container}>

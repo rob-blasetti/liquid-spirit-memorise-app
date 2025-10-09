@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useMemo, useRef, useEffect } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import themeVariables from '../styles/theme';
-// NotificationBanner display is handled at the root (MainApp)
+// NotificationBanner display is handled at the root (Main)
 import { lazyGameScreens } from '../games/lazyGameRoutes';
 import DifficultyFAB from './DifficultyFAB';
 import { useDifficulty } from '../contexts/DifficultyContext';

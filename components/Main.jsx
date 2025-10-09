@@ -44,7 +44,7 @@ import { createAvatarActions } from '../services/avatarService';
 import { prefetchGames } from '../games/lazyGameRoutes';
 import { gameIds } from '../games';
 
-const MainApp = () => {
+const Main = () => {
   const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
   const { level } = useDifficulty();
   const {
@@ -168,24 +168,29 @@ const MainApp = () => {
         <NavigationContainer>
           {/* onSignIn may receive { user, token } from Nuri auth or a raw profile for guest */}
         <AuthNavigator onSignIn={(data) => {
-            console.log('User signed in:', data);
+            console.log('Auth returned ===> :', data);
+            const payload = data || {};
+            const userPayload = payload.user ?? (payload.guest ? payload : null);
+            if (!userPayload) {
+              console.warn('Auth payload did not include a user object');
+              return;
+            }
             // Handle guest login directly
-            if (data.guest) {
-              saveProfile(data);
+            if (userPayload.guest) {
+              saveProfile(userPayload);
               goTo('home');
               return;
             }
             // Registered or LS user login flow
-            const token = data.token || null;
+            const token = payload.token || null;
             if (token) {
               setToken(token);
             }
-            const fullUser = data.user || null;
-            setUser(fullUser);
-            const children = data.classes || [];
-            setChildren(children);
+            setUser(userPayload);
+            const authChildren = Array.isArray(payload.classes) ? payload.classes : [];
+            setChildren(authChildren);
             // Determine active learning profile: first child for LS, else self
-            let activeProfile = Array.isArray(children) && children.length > 0 ? children[0] : fullUser;
+            let activeProfile = authChildren.length > 0 ? authChildren[0] : userPayload;
             // Normalize grade: numeric grades to Number, preserve '2b'
             const gradeVal = activeProfile?.grade || '1';
             const normalizedGrade = gradeVal === '2b' ? '2b' : Number(gradeVal);
@@ -391,4 +396,4 @@ const MainApp = () => {
   );
 };
 
-export default MainApp;
+export default Main;

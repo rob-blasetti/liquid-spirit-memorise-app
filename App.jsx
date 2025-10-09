@@ -1,12 +1,12 @@
 import React from 'react';
 import { UserProvider } from './contexts/UserContext';
 import { DifficultyProvider } from './contexts/DifficultyContext';
-import MainApp from './components/MainApp';
+import Main from './components/Main';
 
 const App = () => (
   <UserProvider>
     <DifficultyProvider>
-      <MainApp />
+      <Main />
     </DifficultyProvider>
   </UserProvider>
 );
