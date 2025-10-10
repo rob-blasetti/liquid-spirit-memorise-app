@@ -17,14 +17,35 @@ const ProfileDisplay = ({
   onAvatarPress,
   onProfilePress,
   canSwitchAccount,
+  onPointsPress,
+  showGradeChip = true,
+  showPoints = true,
 }) => {
   const { firstName, lastName, username, totalPoints } = profile;
   const fullName = [ firstName, lastName ]
     .filter(part => typeof part === 'string' && part.trim().length > 0)
     .join(' ');
   const displayName = fullName || username;
-  const gradeLabel = profile.grade?.toString() || 'N/A';
-  const isGradeTwoB = gradeLabel?.toLowerCase() === '2b';
+  const rawGradeValue = profile.grade;
+  const gradeString = rawGradeValue === null || typeof rawGradeValue === 'undefined'
+    ? ''
+    : String(rawGradeValue).trim();
+  const shouldShowGradeChip = gradeString.length > 0
+    && ![ 'n/a', 'na', 'null', 'undefined', 'nan' ].includes(gradeString.toLowerCase());
+  const formattedGradeLabel = shouldShowGradeChip
+    ? gradeString.replace(
+      /[a-z]+/gi,
+      segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase(),
+    )
+    : null;
+  const gradeChipText = (() => {
+    if (!formattedGradeLabel) return null;
+    const labelLower = formattedGradeLabel.toLowerCase();
+    if (labelLower.startsWith('grade ')) return formattedGradeLabel;
+    if (/^\d/.test(formattedGradeLabel)) return `Grade ${formattedGradeLabel}`;
+    if (labelLower === '2b') return 'Grade 2B';
+    return formattedGradeLabel;
+  })();
 
   // lesson pattern: Lesson {set}.{lesson} (falls back to just lesson if no set)
   const lessonDisplay = (typeof currentSet !== 'undefined' && currentSet !== null)
@@ -65,23 +86,30 @@ const ProfileDisplay = ({
           <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
             <View style={styles.gradeRow}>
               <View style={styles.gradeContent}>
-                {isGradeTwoB ? (
+                {showGradeChip && shouldShowGradeChip && gradeChipText ? (
                   <Chip
-                    text="Grade 2B"
+                    text={gradeChipText}
                     icon="school-outline"
                     color={themeVariables.primaryColor}
                     bg="rgba(255, 255, 255, 0.85)"
                     style={styles.gradeChip}
                   />
-                ) : (
-                  <Text style={styles.profileGrade}>Grade {gradeLabel}</Text>
-                )}
-                <View style={styles.pointsDisplay}>
-                  <View style={styles.starButton}>
-                    <Ionicons name="star-outline" size={STAR_ICON_SIZE} color={themeVariables.blackColor} />
-                  </View>
-                  <Text style={styles.pointsText}>{totalPoints ?? 0}</Text>
-                </View>
+                ) : null}
+                {showPoints ? (
+                  <TouchableOpacity
+                    style={styles.pointsDisplay}
+                    onPress={onPointsPress}
+                    accessibilityRole="button"
+                    accessibilityLabel="View achievements"
+                    disabled={typeof onPointsPress !== 'function'}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.starButton}>
+                      <Ionicons name="star-outline" size={STAR_ICON_SIZE} color={themeVariables.blackColor} />
+                    </View>
+                    <Text style={styles.pointsText}>{totalPoints ?? 0}</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
               {canSwitchAccount ? (
                 <View style={styles.gradeChevronButton}>
@@ -90,7 +118,7 @@ const ProfileDisplay = ({
               ) : null}
             </View>
 
-            <View style={[styles.nameContainer, isGradeTwoB && styles.nameIndented]}>
+            <View style={[styles.nameContainer, showGradeChip && shouldShowGradeChip && styles.nameIndented]}>
               <Text style={styles.profileName}>{displayName}</Text>
               {(profile.linkedAccount || profile.type === 'linked') && (
                 <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
@@ -155,11 +183,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: themeVariables.whiteColor,
-  },
-  profileGrade: {
-    fontSize: 14,
-    color: themeVariables.whiteColor,
-    marginRight: 8,
   },
   gradeChip: {
     marginRight: 8,

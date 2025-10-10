@@ -98,12 +98,34 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     }
   }, [profile?.ttsVoice, profile?.grade, selectedSet, selectedLesson]);
 
+  const hasBackHandler = typeof onBack === 'function';
+  const renderHeader = () => (
+    <View style={styles.headerRow}>
+      {hasBackHandler ? (
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back to home"
+        >
+          <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.headerButtonPlaceholder} />
+      )}
+      <Text style={styles.headerTitle}>Settings</Text>
+      <View style={styles.headerButtonPlaceholder} />
+    </View>
+  );
+
   if (!profile) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>No profile loaded</Text>
-        <Button label="Back" onPress={onBack} />
+        <View style={styles.emptyContent}>
+          {renderHeader()}
+          <Text style={styles.subtitle}>No profile loaded</Text>
+          <Button label="Back" onPress={onBack} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -290,7 +312,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Settings</Text>
+        {renderHeader()}
         <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
         {String(profile.grade) === '1' && renderGrade1Settings()}
         {String(profile.grade) === '2' && renderGrade2Settings()}
@@ -369,16 +391,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  emptyContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    justifyContent: 'flex-start',
+  },
   content: {
     paddingHorizontal: 24,
     paddingBottom: 32,
   },
-  title: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  headerButton: {
+    minWidth: 36,
+    minHeight: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerButtonPlaceholder: {
+    width: 36,
+    height: 36,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
     color: themeVariables.whiteColor,
     fontSize: 24,
     fontWeight: '700',
-    marginTop: 16,
-    marginBottom: 8,
   },
   subtitle: {
     color: themeVariables.whiteColor,

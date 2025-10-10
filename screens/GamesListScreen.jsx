@@ -67,7 +67,7 @@ const iconMap = {
   bubblePopOrderGame: 'water-outline',
 };
 
-const GamesListScreen = ({ onSelect }) => {
+const GamesListScreen = ({ onSelect, onBack }) => {
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
       const preloadTargets = Array.from(new Set([...gameIds, 'practice'])).slice(0, 6);
@@ -82,7 +82,22 @@ const GamesListScreen = ({ onSelect }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Games</Text>
+      <View style={styles.header}>
+        {typeof onBack === 'function' ? (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
+          >
+            <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButtonPlaceholder} />
+        )}
+        <Text style={styles.title}>Games</Text>
+        <View style={styles.headerButtonPlaceholder} />
+      </View>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -123,13 +138,33 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: HORIZONTAL_PADDING,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    paddingBottom: 20,
+    paddingLeft: 4,
+    paddingRight: 4,
+  },
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  headerButtonPlaceholder: {
+    width: 36,
+    height: 36,
+  },
   title: {
     color: themeVariables.whiteColor,
     fontSize: 24,
     fontWeight: '700',
-    paddingTop: 12,
-    paddingBottom: 20,
-    paddingLeft: 20,
+    textAlign: 'center',
+    flex: 1,
   },
   content: {
     paddingBottom: 24,

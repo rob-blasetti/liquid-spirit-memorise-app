@@ -6,6 +6,7 @@ import {
   deleteGuestProfile,
   clearProfile,
 } from '../services/profileService';
+import { normalizeGradeValue } from '../services/profileUtils';
 
 const initialState = {
   profile: null,       // active profile
@@ -29,6 +30,14 @@ export default function useProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [registeredProfile, setRegisteredProfile] = useState(null);
 
+  const normalizeProfileGrade = (incoming) => {
+    if (!incoming || typeof incoming !== 'object') return incoming;
+    if (Object.prototype.hasOwnProperty.call(incoming, 'grade')) {
+      return { ...incoming, grade: normalizeGradeValue(incoming.grade) };
+    }
+    return incoming;
+  };
+
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') {
       setShowSplash(false);
@@ -44,18 +53,20 @@ export default function useProfile() {
       // Try loading a registered profile
       const prof = await loadProfile();
       if (prof) {
-        setRegisteredProfile(prof);
-        dispatch({ type: 'setProfile', payload: prof });
+        const normalizedProf = normalizeProfileGrade(prof);
+        setRegisteredProfile(normalizedProf);
+        dispatch({ type: 'setProfile', payload: normalizedProf });
       }
       // Try loading a guest profile
       const guest = await loadGuestProfile();
       console.log('GUEST: ', guest);
       if (guest) {
+        const normalizedGuest = normalizeProfileGrade(guest);
         // store guestProfile in state
-        dispatch({ type: 'setGuestProfile', payload: guest });
+        dispatch({ type: 'setGuestProfile', payload: normalizedGuest });
         // if no registered profile, make guest the active profile
         if (!prof) {
-          dispatch({ type: 'setProfile', payload: guest });
+          dispatch({ type: 'setProfile', payload: normalizedGuest });
         }
       }
     };
@@ -73,9 +84,7 @@ export default function useProfile() {
   const saveProfile = async (p) => {
     // Normalize grade: numeric grades to Number, preserve '2b'
     const prof = { ...p };
-    if (prof.grade !== '2b') {
-      prof.grade = Number(prof.grade);
-    }
+    prof.grade = normalizeGradeValue(prof.grade);
     // If this is a registered user, update registeredProfile storage
     if (!prof.guest) {
       setRegisteredProfile((prev) => {
@@ -122,8 +131,8 @@ export default function useProfile() {
     registeredProfile,
     // guest profile
     guestProfile: state.guestProfile,
-    setProfile: (p) => dispatch({ type: 'setProfile', payload: p }),
-    setGuestProfile: (p) => dispatch({ type: 'setGuestProfile', payload: p }),
+    setProfile: (p) => dispatch({ type: 'setProfile', payload: normalizeProfileGrade(p) }),
+    setGuestProfile: (p) => dispatch({ type: 'setGuestProfile', payload: normalizeProfileGrade(p) }),
     saveProfile,
     wipeProfile,
     deleteGuestAccount: async () => {

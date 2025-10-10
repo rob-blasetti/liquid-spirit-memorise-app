@@ -103,9 +103,9 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
     const teacherCount = classes.reduce((acc, c) => acc + (c.facilitators?.length || 0), 0);
 
     // Try to fill available vertical space without overlapping bottom nav
-    const HEADER_BLOCK = 70; // approx header area
+    const HEADER_BLOCK = 80; // approx header area including chevron
     const TABBAR_HEIGHT = 48; // default TabBar height
-    const BOTTOM_NAV_GUARD = 140; // ensure card clears floating bottom nav
+    const BOTTOM_NAV_GUARD = 24; // minor padding so content breathes
     const VERTICAL_PADDING = 24; // padding & margins
     const availableHeight = layout.height - HEADER_BLOCK - TABBAR_HEIGHT - BOTTOM_NAV_GUARD - VERTICAL_PADDING;
     const minCardHeight = Math.max(320, availableHeight);
@@ -180,10 +180,20 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
     <ScreenBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Your Classes</Text>
-          <TouchableOpacity>
-            <Ionicons name="school-outline" size={24} color={themeVariables.whiteColor} />
-          </TouchableOpacity>
+          {typeof onBack === 'function' ? (
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={onBack}
+              accessibilityRole="button"
+              accessibilityLabel="Back to home"
+            >
+              <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerButtonPlaceholder} />
+          )}
+          <Text style={styles.title}>My Class</Text>
+          <View style={styles.headerButtonPlaceholder} />
         </View>
 
         <TabView
@@ -253,24 +263,31 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 12,
     backgroundColor: 'transparent',
   },
-  backButton: {
-    padding: 8,
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
-  backButtonText: {
-    color: themeVariables.primaryColor,
-    fontSize: 16,
+  headerButtonPlaceholder: {
+    width: 36,
+    height: 36,
   },
   title: {
     color: themeVariables.whiteColor,
     fontSize: 24,
     fontWeight: '600',
     backgroundColor: 'transparent',
+    textAlign: 'center',
+    flex: 1,
   },
   scene: { flex: 1, paddingHorizontal: 16 },
-  sceneContent: { paddingBottom: 140, paddingTop: 8 },
+  sceneContent: { paddingBottom: 48, paddingTop: 8 },
   card: {
     marginBottom: 24,
     backgroundColor: 'rgba(255,255,255,0.08)',

@@ -16,19 +16,25 @@ const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
 const TILE_HEIGHT = 115; // reduced slightly so bottom item clears nav
 
-const GradesScreen = ({ onGradeSelect }) => {
+const GradesScreen = ({ onGradeSelect, onBack }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Select Grade</Text>
-        <TouchableOpacity>
-          <Ionicons
-            name="bookmark-outline"
-            size={24}
-            color={themeVariables.whiteColor}
-          />
-        </TouchableOpacity>
+        {typeof onBack === 'function' ? (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
+          >
+            <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButtonPlaceholder} />
+        )}
+        <Text style={styles.title}>Library</Text>
+        <View style={styles.headerButtonPlaceholder} />
       </View>
 
       {/* Grade Cards */}
@@ -86,10 +92,24 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
   },
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  headerButtonPlaceholder: {
+    width: 36,
+    height: 36,
+  },
   title: {
     color: themeVariables.whiteColor,
     fontSize: 24,
     fontWeight: '600',
+    textAlign: 'center',
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: HORIZONTAL_PADDING,

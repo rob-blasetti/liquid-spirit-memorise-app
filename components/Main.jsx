@@ -17,7 +17,6 @@ import {
   LessonJourneyScreen,
 } from '../screens';
 import AuthNavigator from '../navigation/AuthNavigator';
-import BottomNav from '../navigation/BottomNav';
 import NotificationBanner from './NotificationBanner';
 import ProfileSwitcherModal from './ProfileSwitcherModal';
 import GameRenderer from './GameRenderer';
@@ -173,17 +172,29 @@ const Main = () => {
   }, [setUsers]);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile && !registeredProfile) return;
     const childEntries = Array.isArray(children) ? children : [];
-    const isLinkedAccount = Boolean(profile.linkedAccount);
-    const normalizedChildList = isLinkedAccount
-      ? normalizeChildEntries(childEntries, { authType: 'ls-login' })
-      : [];
-    const availableProfiles = isLinkedAccount
-      ? [profile, ...normalizedChildList]
-      : [profile];
-    setUsersRef.current(availableProfiles);
-  }, [profile, children]);
+    const normalizedChildList = normalizeChildEntries(childEntries, { authType: 'ls-login' });
+    const candidateProfiles = [
+      registeredProfile,
+      profile,
+      ...normalizedChildList,
+    ].filter(Boolean);
+
+    const seen = new Set();
+    const dedupedProfiles = [];
+    candidateProfiles.forEach((candidate, index) => {
+      const id = resolveProfileId(candidate);
+      const key = id != null ? `id:${id}` : `fallback:${candidate.accountType || 'profile'}:${index}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      dedupedProfiles.push(candidate);
+    });
+
+    if (dedupedProfiles.length > 0) {
+      setUsersRef.current(dedupedProfiles);
+    }
+  }, [profile, registeredProfile, children]);
 
   const resolveProfileId = (entity) => {
     if (!entity || typeof entity !== 'object') return null;
@@ -354,9 +365,9 @@ const Main = () => {
           return <GradeComingSoon title={config.title} message={config.message} onBack={goHome} />;
         }
       case 'achievements':
-        return <AchievementsScreen />;
+        return <AchievementsScreen onBack={goHome} />;
       case 'games':
-        return <GamesListScreen onSelect={playSelectedGame} />;
+        return <GamesListScreen onSelect={playSelectedGame} onBack={goHome} />;
       case 'settings':
         return (
         <SettingsScreen
@@ -399,6 +410,7 @@ const Main = () => {
       case 'grades':
         return (
           <GradesScreen
+            onBack={goHome}
             onGradeSelect={(g, setNumber) => {
               if (g === 1) {
                 goGrade1();
@@ -445,6 +457,11 @@ const Main = () => {
             onAvatarPress={pickNewAvatar}
             onJourney={() => goTo('lessonJourney')}
             canSwitchAccount={profileSwitchEligible}
+            onOpenSettings={() => goTo('settings')}
+            onOpenAchievements={() => goTo('achievements')}
+            onOpenClass={() => goTo('class')}
+            onOpenLibrary={() => goTo('grades')}
+            onOpenGames={() => goTo('games')}
           />
         );
       }
@@ -477,18 +494,6 @@ const Main = () => {
         deleteGuestAccount={deleteGuestAccount}
       />
       <View style={styles.container}>{renderScreen()}</View>
-      {profile && (
-        <BottomNav
-          goHome={goHome}
-          goGrades={() => goTo('grades')}
-          goClass={() => goTo('class')}
-          goGames={() => goTo('games')}
-          goAchievements={() => goTo('achievements')}
-          goSettings={() => goTo('settings')}
-          activeScreen={nav.screen}
-          showClassTab={profile?.type === 'linked'}
-        />
-      )}
     </SafeAreaView>
     </ScreenBackground>
     </AchievementsProvider>

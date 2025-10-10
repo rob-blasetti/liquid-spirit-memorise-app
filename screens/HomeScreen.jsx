@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
 import themeVariables from '../styles/theme';
@@ -9,6 +9,7 @@ import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import ProfileDisplay from '../components/ProfileDisplay';
+import Chip from '../components/Chip';
 
 const bookImage = require('../assets/img/Book.png');
 
@@ -22,6 +23,11 @@ const HomeScreen = ({
   onAvatarPress,
   onJourney,
   canSwitchAccount,
+  onOpenSettings,
+  onOpenAchievements,
+  onOpenClass,
+  onOpenLibrary,
+  onOpenGames,
 }) => {
   if (__DEV__) {
     // eslint-disable-next-line no-console
@@ -151,8 +157,73 @@ const HomeScreen = ({
     return [];
   }, [profile.grade, currentLessonNumber, currentSetNumber]);
 
+  const { firstName, lastName, username, totalPoints } = profile;
+  const fullName = [firstName, lastName]
+    .filter(part => typeof part === 'string' && part.trim().length > 0)
+    .join(' ');
+  const displayName = fullName || username;
+  const rawGradeValue = profile.grade;
+  const gradeString = rawGradeValue === null || typeof rawGradeValue === 'undefined'
+    ? ''
+    : String(rawGradeValue).trim();
+  const normalizedGradeLabel = gradeString.length > 0
+    && !['n/a', 'na', 'null', 'undefined', 'nan'].includes(gradeString.toLowerCase())
+    ? gradeString.replace(
+      /[a-z]+/gi,
+      segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase(),
+    )
+    : null;
+  const gradeChipText = (() => {
+    if (!normalizedGradeLabel) return null;
+    const lower = normalizedGradeLabel.toLowerCase();
+    if (lower.startsWith('grade ')) return normalizedGradeLabel;
+    if (/^\d/.test(normalizedGradeLabel)) return `Grade ${normalizedGradeLabel}`;
+    if (lower === '2b') return 'Grade 2B';
+    return normalizedGradeLabel;
+  })();
+  const showGradeChip = Boolean(gradeChipText);
+  const showPointsButton = typeof onOpenAchievements === 'function';
+
   return (
     <View style={styles.container}>
+      <View style={styles.topBar}>
+        <Text style={styles.topBarName} numberOfLines={1}>
+          {displayName}
+        </Text>
+        {showGradeChip ? (
+          <Chip
+            text={gradeChipText}
+            icon="school-outline"
+            color={themeVariables.primaryColor}
+            bg="rgba(255, 255, 255, 0.85)"
+            style={styles.topBarGradeChip}
+          />
+        ) : null}
+        {showPointsButton ? (
+          <TouchableOpacity
+            style={styles.topBarPoints}
+            onPress={onOpenAchievements}
+            accessibilityRole="button"
+            accessibilityLabel="View achievements"
+            activeOpacity={0.75}
+          >
+            <View style={styles.topBarStarButton}>
+              <Ionicons name="star-outline" size={14} color={themeVariables.blackColor} />
+            </View>
+            <Text style={styles.topBarPointsText}>{totalPoints ?? 0}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {typeof onOpenSettings === 'function' ? (
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={onOpenSettings}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+          >
+            <Ionicons name="settings-outline" size={20} color={themeVariables.whiteColor} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
       {/* Profile Header */}
       <ProfileDisplay
         profile={profile}
@@ -162,6 +233,9 @@ const HomeScreen = ({
         onAvatarPress={onAvatarPress}
         onProfilePress={onProfilePress}
         canSwitchAccount={canSwitchAccount}
+        onPointsPress={onOpenAchievements}
+        showGradeChip={false}
+        showPoints={false}
       />
 
       {/* Prayer and Quote Blocks */}
@@ -301,6 +375,24 @@ const HomeScreen = ({
 
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
+        {typeof onOpenClass === 'function' ? (
+          <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenClass}>
+            <Text style={styles.customButtonText}>My Class</Text>
+            <Ionicons name="people" size={20} color="white" />
+          </TouchableOpacity>
+        ) : null}
+        {typeof onOpenLibrary === 'function' ? (
+          <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenLibrary}>
+            <Text style={styles.customButtonText}>Go To Library</Text>
+            <Ionicons name="library" size={20} color="white" />
+          </TouchableOpacity>
+        ) : null}
+        {typeof onOpenGames === 'function' ? (
+          <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenGames}>
+            <Text style={styles.customButtonText}>Games</Text>
+            <Ionicons name="game-controller" size={20} color="white" />
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity style={styles.customButton} onPress={onDailyChallenge}>
           <Text style={styles.customButtonText}>Daily Challenge</Text>
           <Ionicons name="arrow-forward" size={20} color="white" />
@@ -318,6 +410,52 @@ const styles = StyleSheet.create({
     // Let the global ScreenBackground gradient show through
     backgroundColor: 'transparent',
   },
+  topBar: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  topBarName: {
+    flexShrink: 1,
+    flexGrow: 1,
+    color: themeVariables.whiteColor,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  topBarGradeChip: {
+    marginLeft: 8,
+    marginRight: 0,
+  },
+  topBarPoints: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 18,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 8,
+  },
+  topBarStarButton: {
+    backgroundColor: themeVariables.whiteColor,
+    borderRadius: 14,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  topBarPointsText: {
+    color: themeVariables.whiteColor,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  settingsButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    padding: 8,
+    borderRadius: 18,
+    marginLeft: 8,
+  },
   contentContainer: {
     flex: 1,
     justifyContent: 'flex-start',
@@ -334,7 +472,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     position: 'relative',
-    paddingBottom: 16,
+    paddingBottom: 0,
   },
   lessonBackground: {
     position: 'absolute',
@@ -398,7 +536,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 24,
     gap: 12,
-    marginBottom: 40,
+    marginBottom: 16,
   },
   customButton: {
     flexDirection: 'row',
@@ -411,6 +549,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     width: '100%',
+  },
+  secondaryButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   customButtonText: {
     color: themeVariables.whiteColor,

@@ -1,9 +1,39 @@
 const normalizeGradeValue = (grade) => {
   if (typeof grade === 'string') {
     const trimmed = grade.trim();
-    if (trimmed.toLowerCase() === '2b') return '2b';
+    if (trimmed.length === 0) return 1;
+    const lower = trimmed.toLowerCase();
+    if (lower === '2b') return '2b';
+    if (
+      lower === 'preschool' ||
+      lower === 'pre-school' ||
+      lower === 'pre k' ||
+      lower === 'pre-k' ||
+      lower === 'prek' ||
+      lower === 'prekindergarten' ||
+      lower === 'pre-kindergarten'
+    ) {
+      return 'Preschool';
+    }
+    const gradeLetterMatch = trimmed.match(/^grade\s*(\d+)\s*([a-z])$/i);
+    if (gradeLetterMatch) {
+      const gradeNumber = Number(gradeLetterMatch[1]);
+      const gradeSuffix = gradeLetterMatch[2].toLowerCase();
+      if (gradeNumber === 2 && gradeSuffix === 'b') {
+        return '2b';
+      }
+    } else {
+      const gradeNumberMatch = trimmed.match(/^grade\s*(\d+)$/i);
+      if (gradeNumberMatch) {
+        const gradeNumber = Number(gradeNumberMatch[1]);
+        if (Number.isFinite(gradeNumber) && gradeNumber > 0) {
+          return gradeNumber;
+        }
+      }
+    }
     const parsed = Number(trimmed);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    return trimmed;
   }
   if (grade === '2b') return '2b';
   const numeric = Number(grade);
@@ -75,18 +105,22 @@ const buildProfileFromUser = (user = {}, options = {}) => {
 
   const authType = options.authType;
   const childList = options.childList;
+  const profileKind = options.profileKind;
+  const isChildProfile = profileKind === 'child';
   const linked =
     typeof user.linkedAccount === 'boolean'
       ? user.linkedAccount
       : authType === 'ls-login';
-  normalized.linkedAccount = Boolean(linked);
+  normalized.linkedAccount = isChildProfile ? false : Boolean(linked);
 
   let numberOfChildren =
     coerceNumber(user.numberOfChildren) ??
     (Array.isArray(user.children) ? user.children.length : null) ??
     (Array.isArray(user.childrens) ? user.childrens.length : null);
 
-  if (normalized.linkedAccount) {
+  if (isChildProfile) {
+    numberOfChildren = 0;
+  } else if (normalized.linkedAccount) {
     if (numberOfChildren == null && Array.isArray(childList)) {
       numberOfChildren = childList.length;
     }
@@ -98,7 +132,6 @@ const buildProfileFromUser = (user = {}, options = {}) => {
   }
   normalized.numberOfChildren = numberOfChildren;
 
-  const profileKind = options.profileKind;
   if (profileKind) {
     normalized.accountType = profileKind;
   } else if (normalized.guest) {
@@ -148,7 +181,18 @@ const normalizeChildEntries = (entries = [], options = {}) => {
 
   const authType = options.authType || 'ls-login';
 
-  return entries
+  const dedupeKey = (entity) => {
+    if (!entity || typeof entity !== 'object') return null;
+    const id =
+      entity._id ??
+      entity.id ??
+      entity.nuriUserId ??
+      entity.memberRef ??
+      null;
+    return id != null ? `id:${id}` : null;
+  };
+
+  const results = entries
     .map((entry) => {
       if (!entry || typeof entry !== 'object') return null;
 
@@ -168,22 +212,43 @@ const normalizeChildEntries = (entries = [], options = {}) => {
         : [];
       const classList = classSource.map((cls) => ({ ...cls }));
 
+      const baseChild = {
+        ...childData,
+        ...derived,
+        guest: false,
+        accountType: 'child',
+        classes: classList,
+        class: classList,
+        linkedAccount: false,
+        numberOfChildren: 0,
+      };
+
       if (entry.child && typeof entry.child === 'object') {
         const { child, ...rest } = entry;
         return {
           ...rest,
-          ...childData,
-          ...derived,
-          accountType: 'child',
-          classes: classList,
-          class: classList,
-          child: { ...childData, ...derived, accountType: 'child', classes: classList, class: classList },
+          ...baseChild,
+          child: { ...baseChild },
         };
       }
 
-      return { ...entry, ...derived, accountType: 'child', classes: classList, class: classList };
+      return { ...entry, ...baseChild };
     })
     .filter(Boolean);
+
+  const seenKeys = new Set();
+  const deduped = [];
+
+  results.forEach((child, index) => {
+    const key = dedupeKey(child) ?? `index:${index}`;
+    if (seenKeys.has(key)) {
+      return;
+    }
+    seenKeys.add(key);
+    deduped.push(child);
+  });
+
+  return deduped;
 };
 
 export {

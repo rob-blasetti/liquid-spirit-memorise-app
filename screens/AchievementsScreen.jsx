@@ -23,7 +23,7 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
-const AchievementsScreen = () => {
+const AchievementsScreen = ({ onBack }) => {
   const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0, setAchievements, isGuest = false } = useAchievementsContext();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -97,6 +97,8 @@ const AchievementsScreen = () => {
     return acc;
   }, {});
 
+  const hasBackHandler = typeof onBack === 'function';
+
   return (
     <LinearGradient
       start={{ x: 0, y: 0 }}
@@ -114,6 +116,22 @@ const AchievementsScreen = () => {
             color="rgba(255,255,255,0.1)"
             style={styles.headerBgIcon}
           />
+          <View style={styles.topRow}>
+            {hasBackHandler ? (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={onBack}
+                accessibilityRole="button"
+                accessibilityLabel="Back to home"
+              >
+                <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.backPlaceholder} />
+            )}
+            <Text style={styles.topRowTitle}>Achievements</Text>
+            <View style={styles.backPlaceholder} />
+          </View>
           <Text style={styles.title}>Achievements</Text>
           {isGuest && (
             <Text style={styles.guestBadge}>Guest Mode — Local Only</Text>
@@ -230,6 +248,31 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: HORIZONTAL_PADDING,
     position: 'relative',
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backPlaceholder: {
+    width: 36,
+    height: 36,
+  },
+  topRowTitle: {
+    flex: 1,
+    textAlign: 'center',
+    color: themeVariables.whiteColor,
+    fontSize: 18,
+    fontWeight: '600',
   },
   headerBgIcon: {
     position: 'absolute',
