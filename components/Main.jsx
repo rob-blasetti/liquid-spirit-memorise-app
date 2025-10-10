@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SafeAreaView, View, Image as RNImage, InteractionManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
@@ -19,7 +19,7 @@ import {
 import AuthNavigator from '../navigation/AuthNavigator';
 import BottomNav from '../navigation/BottomNav';
 import NotificationBanner from './NotificationBanner';
-import ChildSwitcherModal from './ChildSwitcherModal';
+import ProfileSwitcherModal from './ProfileSwitcherModal';
 import GameRenderer from './GameRenderer';
 import { isGameScreen } from '../navigation/router';
 import ScreenBackground from './ScreenBackground';
@@ -42,9 +42,17 @@ import {
   GradeComingSoon,
 } from '../components/GradeLayouts';
 import { GRADE_SCREEN_CONFIG } from '../data/gradesConfig';
+import {
+  buildProfileFromUser,
+  deriveAuthMetadata,
+  extractChildrenList,
+  normalizeChildEntries,
+  resolveAuthType,
+  resolveUserFromPayload,
+} from '../services/profileUtils';
 
 const Main = () => {
-  const { classes, children, user, setUser, setChildren, setFamily, setToken } = useUser();
+  const { children, setUser, setUsers, setChildren, setFamily, setToken } = useUser();
   const { level } = useDifficulty();
   const {
     showSplash,
@@ -62,7 +70,7 @@ const Main = () => {
   const { achievements, notification, setNotification, awardAchievement, awardGameAchievement } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
-  const [chooseChildVisible, setChooseChildVisible] = useState(false);
+  const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
 
   const navigationActions = useMemo(
     () =>
@@ -159,46 +167,66 @@ const Main = () => {
     if (avatarUri) preloadImages([avatarUri], { priority: 'normal' });
   }, [profile?.profilePicture, profile?.avatar]);
 
+  const setUsersRef = useRef(setUsers);
+  useEffect(() => {
+    setUsersRef.current = setUsers;
+  }, [setUsers]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const childEntries = Array.isArray(children) ? children : [];
+    const isLinkedAccount = Boolean(profile.linkedAccount);
+    const normalizedChildList = isLinkedAccount
+      ? normalizeChildEntries(childEntries, { authType: 'ls-login' })
+      : [];
+    const availableProfiles = isLinkedAccount
+      ? [profile, ...normalizedChildList]
+      : [profile];
+    setUsersRef.current(availableProfiles);
+  }, [profile, children]);
+
+  const resolveProfileId = (entity) => {
+    if (!entity || typeof entity !== 'object') return null;
+    const id = entity._id ?? entity.id ?? entity.nuriUserId ?? null;
+    return id != null ? String(id) : null;
+  };
+
   if (showSplash) return <Splash />;
 
   const renderScreen = () => {
     if (!profile) {
       return (
         <NavigationContainer>
-          {/* onSignIn may receive { user, token } from Nuri auth or a raw profile for guest */}
-        <AuthNavigator onSignIn={(data) => {
-            console.log('Auth returned ===> :', data);
-            const payload = data || {};
-            const userPayload = payload.user ?? (payload.guest ? payload : null);
-            if (!userPayload) {
-              console.warn('Auth payload did not include a user object');
-              return;
-            }
-            // Handle guest login directly
-            if (userPayload.guest) {
-              saveProfile(userPayload);
-              goTo('home');
-              return;
-            }
-            // Registered or LS user login flow
-            const token = payload.token || null;
-            if (token) {
-              setToken(token);
-            }
-            setUser(userPayload);
-            const authChildren = Array.isArray(payload.classes) ? payload.classes : [];
-            setChildren(authChildren);
-            // Determine active learning profile: first child for LS, else self
-            let activeProfile = authChildren.length > 0 ? authChildren[0] : userPayload;
-            // Normalize grade: numeric grades to Number, preserve '2b'
-            const gradeVal = activeProfile?.grade || '1';
-            const normalizedGrade = gradeVal === '2b' ? '2b' : Number(gradeVal);
-            activeProfile = { ...activeProfile, grade: normalizedGrade };
-            // Persist profile for learning context
-            saveProfile(activeProfile);
-            // Navigate into the app
-            goTo('home');
-          }} />
+          <AuthNavigator
+            onSignIn={async (data) => {
+              const payload = data || {};
+              const rawUser = resolveUserFromPayload(payload);
+              if (!rawUser) {
+                console.warn('Auth payload did not include a user object');
+                return;
+              }
+              const authType = resolveAuthType(payload, rawUser);
+              const { children: childList, family, token } = deriveAuthMetadata(payload, rawUser);
+              const normalizedUser = buildProfileFromUser(rawUser, { authType, childList });
+              const normalizedChildren = normalizedUser.linkedAccount
+                ? normalizeChildEntries(childList, { authType })
+                : [];
+              const availableProfiles = normalizedUser.linkedAccount
+                ? [normalizedUser, ...normalizedChildren]
+                : [normalizedUser];
+              try {
+                await setToken(token ?? null);
+                await setFamily(normalizedUser.guest ? null : (family ?? null));
+                await setChildren(normalizedChildren);
+                await setUsers(availableProfiles);
+                await setUser(normalizedUser);
+                await saveProfile(normalizedUser);
+                goTo('home');
+              } catch (error) {
+                console.error('Failed to process authentication payload', error);
+              }
+            }}
+          />
         </NavigationContainer>
       );
     }
@@ -392,9 +420,20 @@ const Main = () => {
         );
       default: {
         const { setNumber, lessonNumber } = getHomeProgress();
-        // Determine if user can switch accounts (guest, registered, or multiple children)
-        const accountCount = (guestProfile ? 1 : 0) + (registeredProfile ? 1 : 0) + (Array.isArray(children) ? children.length : 0);
-        const canSwitchAccount = accountCount > 1;
+        const activeProfileId = resolveProfileId(profile);
+        const childEntries = Array.isArray(children) ? children : [];
+        const hasSiblingOption = childEntries.some((entry) => {
+          const childObj = entry?.child && typeof entry.child === 'object' ? entry.child : entry;
+          const childId = resolveProfileId(childObj);
+          return childId && childId !== activeProfileId;
+        });
+        const hasRegisteredOption = (() => {
+          if (!registeredProfile) return false;
+          const registeredId = resolveProfileId(registeredProfile);
+          return registeredId && registeredId !== activeProfileId;
+        })();
+        const hasGuestOption = Boolean(guestProfile) && !profile?.guest;
+        const profileSwitchEligible = hasRegisteredOption || hasSiblingOption || hasGuestOption;
         return (
           <HomeScreen
             profile={profile}
@@ -402,10 +441,10 @@ const Main = () => {
             onDailyChallenge={handleDailyChallenge}
             currentSet={setNumber}
             currentLesson={lessonNumber}
-            onProfilePress={() => setChooseChildVisible(true)}
+            onProfilePress={profileSwitchEligible ? () => setProfileSwitcherVisible(true) : undefined}
             onAvatarPress={pickNewAvatar}
             onJourney={() => goTo('lessonJourney')}
-            canSwitchAccount={canSwitchAccount}
+            canSwitchAccount={profileSwitchEligible}
           />
         );
       }
@@ -426,15 +465,15 @@ const Main = () => {
           onHide={() => setNotification(null)}
         />
       )}
-      <ChildSwitcherModal
-        visible={chooseChildVisible}
+      <ProfileSwitcherModal
+        visible={profileSwitcherVisible}
         registeredProfile={registeredProfile}
         guestProfile={guestProfile}
         profile={profile}
         children={children}
         saveProfile={saveProfile}
         setUser={setUser}
-        setChooseChildVisible={setChooseChildVisible}
+        setProfileSwitcherVisible={setProfileSwitcherVisible}
         deleteGuestAccount={deleteGuestAccount}
       />
       <View style={styles.container}>{renderScreen()}</View>

@@ -62,6 +62,14 @@ export default function useProfile() {
     fetchProfiles();
   }, []);
 
+  const getProfileId = (user = {}) => {
+    if (!user || typeof user !== 'object') return null;
+    const id = user._id ?? user.id ?? user.nuriUserId ?? null;
+    return id != null ? String(id) : null;
+  };
+
+  const isParentProfile = (user = {}) => user?.accountType === 'parent';
+
   const saveProfile = async (p) => {
     // Normalize grade: numeric grades to Number, preserve '2b'
     const prof = { ...p };
@@ -70,7 +78,26 @@ export default function useProfile() {
     }
     // If this is a registered user, update registeredProfile storage
     if (!prof.guest) {
-      setRegisteredProfile(prof);
+      setRegisteredProfile((prev) => {
+        if (!prev) return prof;
+        const prevId = getProfileId(prev);
+        const nextId = getProfileId(prof);
+        if (prevId && nextId && prevId === nextId) {
+          return prof;
+        }
+        const prevIsParent = isParentProfile(prev);
+        const nextIsParent = isParentProfile(prof);
+        if (prevIsParent && !nextIsParent) {
+          return prev;
+        }
+        if (!prevIsParent && nextIsParent) {
+          return prof;
+        }
+        if (!prevIsParent && !prevId) {
+          return prof;
+        }
+        return nextIsParent ? prof : prev;
+      });
     }
     // Set active profile
     dispatch({ type: 'setProfile', payload: prof });

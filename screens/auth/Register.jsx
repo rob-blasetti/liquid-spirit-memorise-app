@@ -21,7 +21,12 @@ export default function Register({ onSignIn }) {
     setLoading(true);
     try {
       const data = await registerNuriUser(username, email, password, selectedGrade);
-      onSignIn(data);
+      const { user, ...rest } = data || {};
+      if (!user) {
+        console.warn('Registration response missing user data');
+        return;
+      }
+      onSignIn({ ...rest, user, authType: 'nuri-register' });
     } catch (err) {
       console.error('Register failed', err);
       setError(err.message || 'Registration failed');

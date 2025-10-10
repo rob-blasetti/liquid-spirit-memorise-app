@@ -85,14 +85,19 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
   // Warm the cache for the active tab's images
   usePreloadForActiveTab(childEntries, index);
 
-  const routes = childEntries.map(entry => ({
-    key: entry._id,
-    title: entry.firstName || '',
-  }));
+  const routes = childEntries.map((entry, idx) => {
+    const key = entry._id || entry.id || entry.nuriUserId || idx;
+    return {
+      key: String(key),
+      title: entry.firstName || '',
+    };
+  });
 
   const renderScene = ({ route }) => {
-    const entry = childEntries.find(e => e._id === route.key);
-    const classes = entry?.classes || [];
+    const entry = childEntries.find(
+      e => String(e._id || e.id || e.nuriUserId) === route.key
+    );
+    const classes = entry?.classes || entry?.class || [];
 
     const studentCount = classes.reduce((acc, c) => acc + (c.participants?.length || 0), 0);
     const teacherCount = classes.reduce((acc, c) => acc + (c.facilitators?.length || 0), 0);
@@ -222,7 +227,7 @@ const usePreloadForActiveTab = (entries, activeIndex) => {
     if (!Array.isArray(entries) || entries.length === 0) return;
     const active = entries[activeIndex];
     if (!active) return;
-    const classes = active.classes || [];
+    const classes = (active?.classes || active?.class || []);
     const cls = classes[0]; // currently, only first class is shown
     if (!cls) return;
     const header = cls.imageUrl ? [cls.imageUrl] : [];

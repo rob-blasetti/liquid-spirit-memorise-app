@@ -92,7 +92,7 @@ const ProfileDisplay = ({
 
             <View style={[styles.nameContainer, isGradeTwoB && styles.nameIndented]}>
               <Text style={styles.profileName}>{displayName}</Text>
-              {profile.type === 'linked' && (
+              {(profile.linkedAccount || profile.type === 'linked') && (
                 <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
               )}
             </View>

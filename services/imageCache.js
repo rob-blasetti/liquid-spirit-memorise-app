@@ -36,7 +36,8 @@ export function collectChildAndClassImageUris(children = []) {
     // Child avatar
     uris.push(child.profilePicture || child.avatar);
     // Class header images
-    (child.classes || []).forEach((cls) => {
+    const classList = child.classes || child.class || [];
+    classList.forEach((cls) => {
       if (cls?.imageUrl) uris.push(cls.imageUrl);
       // Teacher + student avatars
       (cls.facilitators || []).forEach((p) => uris.push(p?.profilePicture || p?.avatar));
@@ -47,4 +48,3 @@ export function collectChildAndClassImageUris(children = []) {
 }
 
 export default { preloadImages, collectChildAndClassImageUris };
-

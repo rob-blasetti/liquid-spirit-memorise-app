@@ -26,7 +26,12 @@ export default function Login({ onSignIn, navigation }) {
     try {
       await saveCredentials(email, password);
       const data = await loginNuriUser(email, password);
-      onSignIn(data);
+      const { user, ...rest } = data || {};
+      if (!user) {
+        console.warn('Login response missing user data');
+        return;
+      }
+      onSignIn({ ...rest, user, authType: 'nuri-login' });
     } catch (err) {
       console.error('Login failed', err);
     }

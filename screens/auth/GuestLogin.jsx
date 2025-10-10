@@ -27,13 +27,16 @@ export default function GuestLogin({ onSignIn }) {
       username: displayName,
       name: displayName,
       avatarSeed,
-      ...(avatarPhoto ? { avatar: avatarPhoto } : {}),
+      ...(avatarPhoto ? { avatar: avatarPhoto, profilePicture: avatarPhoto } : { profilePicture: null }),
       grade: gradeVal,
       guest: true,
       type: 'guest',
       totalPoints: 0,
+      score: 0,
+      linkedAccount: false,
+      numberOfChildren: 0,
     };
-    onSignIn({ user });
+    onSignIn({ user, authType: 'guest-login' });
   };
 
   const pickImage = () => {

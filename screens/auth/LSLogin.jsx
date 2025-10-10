@@ -30,7 +30,12 @@ export default function LSLogin({ navigation, onSignIn }) {
       await saveCredentials(email, password);
       const data = await signInWithLiquidSpirit(email, password);
       console.log('Liquid Spirit login successful', data);
-      onSignIn(data);
+      const { user, ...rest } = data || {};
+      if (!user) {
+        console.warn('Liquid Spirit login response missing user data');
+        return;
+      }
+      onSignIn({ ...rest, user, authType: 'ls-login' });
     } catch (err) {
       console.error('Liquid Spirit login failed', err);
     } finally {
