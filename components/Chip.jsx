@@ -1,16 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import theme from '../styles/theme';
 
-const Chip = ({ icon, text, color = theme.whiteColor, bg = 'rgba(255,255,255,0.15)', style }) => {
+const Chip = ({
+  icon,
+  text,
+  color = theme.whiteColor,
+  bg = 'rgba(255,255,255,0.15)',
+  style,
+  onPress,
+  disabled = false,
+  accessibilityLabel,
+}) => {
+  const Container = onPress ? TouchableOpacity : View;
+  const containerProps = onPress
+    ? {
+        activeOpacity: 0.8,
+        onPress,
+        disabled,
+        accessibilityRole: 'button',
+        accessibilityLabel: accessibilityLabel || text,
+        hitSlop: { top: 8, right: 8, bottom: 8, left: 8 },
+        ...(disabled ? { accessibilityState: { disabled: true } } : {}),
+      }
+    : {};
+
   return (
-    <View style={[styles.chip, { backgroundColor: bg }, style]}>
+    <Container style={[styles.chip, { backgroundColor: bg }, style]} {...containerProps}>
       {icon ? <Ionicons name={icon} size={14} color={color} style={styles.icon} /> : null}
       <Text style={[styles.text, { color }]} numberOfLines={1}>
         {text}
       </Text>
-    </View>
+    </Container>
   );
 };
 
@@ -33,4 +55,3 @@ const styles = StyleSheet.create({
 });
 
 export default Chip;
-

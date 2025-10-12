@@ -182,6 +182,7 @@ const HomeScreen = ({
     return normalizedGradeLabel;
   })();
   const showGradeChip = Boolean(gradeChipText);
+  const canOpenClass = typeof onOpenClass === 'function';
   const showPointsButton = typeof onOpenAchievements === 'function';
 
   return (
@@ -197,6 +198,12 @@ const HomeScreen = ({
             color={themeVariables.primaryColor}
             bg="rgba(255, 255, 255, 0.85)"
             style={styles.topBarGradeChip}
+            onPress={canOpenClass ? onOpenClass : undefined}
+            accessibilityLabel={
+              canOpenClass
+                ? `View classes for ${gradeChipText}`
+                : gradeChipText
+            }
           />
         ) : null}
         {showPointsButton ? (
