@@ -2,6 +2,11 @@ name: Mobile Release (iOS TestFlight & Android Internal)
 
 on:
   workflow_dispatch:
+    inputs:
+      run_release:
+        description: 'Set to true to run the mobile release pipeline'
+        required: false
+        default: 'false'
 
 concurrency:
   group: mobile-release-${{ github.ref }}
@@ -9,7 +14,7 @@ concurrency:
 
 jobs:
   ios-testflight:
-    if: ${{ secrets.ASC_KEY_ID && secrets.ASC_ISSUER_ID && secrets.ASC_KEY_CONTENT_BASE64 }}
+    if: ${{ github.event.inputs.run_release == 'true' && secrets.ASC_KEY_ID && secrets.ASC_ISSUER_ID && secrets.ASC_KEY_CONTENT_BASE64 }}
     runs-on: macos-14
     env:
       # App Store Connect API key (set these in repo Secrets)
@@ -74,6 +79,7 @@ jobs:
         run: fastlane beta
 
   android-internal:
+    if: ${{ github.event.inputs.run_release == 'true' && secrets.GOOGLE_PLAY_JSON_KEY && secrets.ANDROID_SIGNING_KEYSTORE_BASE64 && secrets.ANDROID_SIGNING_STORE_PASSWORD && secrets.ANDROID_SIGNING_KEY_ALIAS && secrets.ANDROID_SIGNING_KEY_PASSWORD }}
     runs-on: macos-14
     env:
       GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}

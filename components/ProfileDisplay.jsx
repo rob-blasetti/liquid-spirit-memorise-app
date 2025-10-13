@@ -1,20 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Avatar from '@liquidspirit/react-native-boring-avatars';
 import LinearGradient from 'react-native-linear-gradient';
 import themeVariables from '../styles/theme';
 import Chip from './Chip';
 
-const AVATAR_SIZE = 68; // slightly smaller avatar
 const STAR_ICON_SIZE = 14; // compact star so it fits beside the grade
 
 const ProfileDisplay = ({
   profile,
-  currentSet,
-  currentLesson,
-  onAvatarPress,
   onProfilePress,
   canSwitchAccount,
   onPointsPress,
@@ -46,11 +40,7 @@ const ProfileDisplay = ({
     if (labelLower === '2b') return 'Grade 2B';
     return formattedGradeLabel;
   })();
-
-  // lesson pattern: Lesson {set}.{lesson} (falls back to just lesson if no set)
-  const lessonDisplay = (typeof currentSet !== 'undefined' && currentSet !== null)
-    ? `${currentSet}.${currentLesson}`
-    : (typeof currentLesson !== 'undefined' && currentLesson !== null ? `${currentLesson}` : 'N/A');
+  const canPressProfile = typeof onProfilePress === 'function';
 
   return (
     <LinearGradient
@@ -60,74 +50,57 @@ const ProfileDisplay = ({
       style={styles.header}
     >
       <View style={styles.headerContent}>
-        <View style={styles.profileContainer}>
-          <TouchableOpacity style={styles.avatarWrapper} onPress={onAvatarPress}>
-            {(() => {
-              const avatarUri = profile.profilePicture || profile.avatar;
-              return avatarUri ? (
-                <FastImage
-                  source={{
-                    uri: avatarUri,
-                    priority: FastImage.priority.high,
-                    cache: FastImage.cacheControl.immutable,
-                  }}
-                  style={styles.profileAvatar}
-                  resizeMode={FastImage.resizeMode.cover}
+        <TouchableOpacity
+          style={styles.profileContent}
+          onPress={canPressProfile ? onProfilePress : undefined}
+          disabled={!canPressProfile}
+          activeOpacity={0.75}
+          accessibilityRole={canPressProfile ? 'button' : undefined}
+          accessibilityLabel={canPressProfile ? 'View profile' : undefined}
+        >
+          <View style={styles.gradeRow}>
+            <View style={styles.gradeContent}>
+              {showGradeChip && shouldShowGradeChip && gradeChipText ? (
+                <Chip
+                  text={gradeChipText}
+                  icon="school-outline"
+                  color={themeVariables.primaryColor}
+                  bg="rgba(255, 255, 255, 0.85)"
+                  style={styles.gradeChip}
                 />
-              ) : (
-                <Avatar size={AVATAR_SIZE} name={displayName} variant="beam" />
-              );
-            })()}
-            <View style={styles.avatarOverlay}>
-              <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.profileTextContainer} onPress={onProfilePress}>
-            <View style={styles.gradeRow}>
-              <View style={styles.gradeContent}>
-                {showGradeChip && shouldShowGradeChip && gradeChipText ? (
-                  <Chip
-                    text={gradeChipText}
-                    icon="school-outline"
-                    color={themeVariables.primaryColor}
-                    bg="rgba(255, 255, 255, 0.85)"
-                    style={styles.gradeChip}
-                  />
-                ) : null}
-                {showPoints ? (
-                  <TouchableOpacity
-                    style={styles.pointsDisplay}
-                    onPress={onPointsPress}
-                    accessibilityRole="button"
-                    accessibilityLabel="View achievements"
-                    disabled={typeof onPointsPress !== 'function'}
-                    activeOpacity={0.75}
-                  >
-                    <View style={styles.starButton}>
-                      <Ionicons name="star-outline" size={STAR_ICON_SIZE} color={themeVariables.blackColor} />
-                    </View>
-                    <Text style={styles.pointsText}>{totalPoints ?? 0}</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              {canSwitchAccount ? (
-                <View style={styles.gradeChevronButton}>
-                  <Ionicons name="chevron-down" size={12} color={themeVariables.blackColor} />
-                </View>
+              ) : null}
+              {showPoints ? (
+                <TouchableOpacity
+                  style={styles.pointsDisplay}
+                  onPress={onPointsPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="View achievements"
+                  disabled={typeof onPointsPress !== 'function'}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.starButton}>
+                    <Ionicons name="star-outline" size={STAR_ICON_SIZE} color={themeVariables.blackColor} />
+                  </View>
+                  <Text style={styles.pointsText}>{totalPoints ?? 0}</Text>
+                </TouchableOpacity>
               ) : null}
             </View>
+            {canSwitchAccount ? (
+              <View style={styles.gradeChevronButton}>
+                <Ionicons name="chevron-down" size={12} color={themeVariables.blackColor} />
+              </View>
+            ) : null}
+          </View>
 
-            <View style={[styles.nameContainer, showGradeChip && shouldShowGradeChip && styles.nameIndented]}>
-              <Text style={styles.profileName}>{displayName}</Text>
-              {(profile.linkedAccount || profile.type === 'linked') && (
-                <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
-              )}
-            </View>
+          <View style={[styles.nameContainer, showGradeChip && shouldShowGradeChip && styles.nameIndented]}>
+            <Text style={styles.profileName}>{displayName}</Text>
+            {(profile.linkedAccount || profile.type === 'linked') && (
+              <Ionicons name="link" size={14} color={themeVariables.whiteColor} style={styles.linkIcon} />
+            )}
+          </View>
 
-            {/* Lesson moved out of ProfileDisplay to Home screen */}
-          </TouchableOpacity>
-        </View>
+          {/* Lesson moved out of ProfileDisplay to Home screen */}
+        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -150,34 +123,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  profileContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  profileContent: {
     flex: 1,
-  },
-  avatarWrapper: {
-    position: 'relative',
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-  },
-  profileAvatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 14,
-    padding: 6,
-    elevation: 2,
-  },
-  profileTextContainer: {
     justifyContent: 'center',
-    marginLeft: 16,
-    flex: 1,
   },
   profileName: {
     fontSize: 18,

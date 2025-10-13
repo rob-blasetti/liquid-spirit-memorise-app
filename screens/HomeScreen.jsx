@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
+import Avatar from '@liquidspirit/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -12,6 +13,7 @@ import ProfileDisplay from '../components/ProfileDisplay';
 import Chip from '../components/Chip';
 
 const bookImage = require('../assets/img/Book.png');
+const AVATAR_SIZE = 68;
 
 const HomeScreen = ({
   profile,
@@ -184,52 +186,112 @@ const HomeScreen = ({
   const showGradeChip = Boolean(gradeChipText);
   const canOpenClass = typeof onOpenClass === 'function';
   const showPointsButton = typeof onOpenAchievements === 'function';
+  const isLinkedAccount = Boolean(
+    profile?.linkedAccount || profile?.type === 'linked'
+  );
+  const avatarUri = profile.profilePicture || profile.avatar;
+  const canPressAvatar = typeof onAvatarPress === 'function';
+  const canPressProfile = typeof onProfilePress === 'function';
 
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <Text style={styles.topBarName} numberOfLines={1}>
-          {displayName}
-        </Text>
-        {showGradeChip ? (
-          <Chip
-            text={gradeChipText}
-            icon="school-outline"
-            color={themeVariables.primaryColor}
-            bg="rgba(255, 255, 255, 0.85)"
-            style={styles.topBarGradeChip}
-            onPress={canOpenClass ? onOpenClass : undefined}
-            accessibilityLabel={
-              canOpenClass
-                ? `View classes for ${gradeChipText}`
-                : gradeChipText
-            }
-          />
-        ) : null}
-        {showPointsButton ? (
+        <View style={styles.topBarLeft}>
           <TouchableOpacity
-            style={styles.topBarPoints}
-            onPress={onOpenAchievements}
-            accessibilityRole="button"
-            accessibilityLabel="View achievements"
+            style={styles.topBarAvatarWrapper}
+            onPress={canPressAvatar ? onAvatarPress : undefined}
+            accessibilityRole={canPressAvatar ? 'button' : undefined}
+            accessibilityLabel={canPressAvatar ? 'Update profile picture' : undefined}
+            disabled={!canPressAvatar}
             activeOpacity={0.75}
           >
-            <View style={styles.topBarStarButton}>
-              <Ionicons name="star-outline" size={14} color={themeVariables.blackColor} />
-            </View>
-            <Text style={styles.topBarPointsText}>{totalPoints ?? 0}</Text>
+            {avatarUri ? (
+              <FastImage
+                source={{
+                  uri: avatarUri,
+                  priority: FastImage.priority.high,
+                  cache: FastImage.cacheControl.immutable,
+                }}
+                style={styles.topBarAvatar}
+                resizeMode={FastImage.resizeMode.cover}
+              />
+            ) : (
+              <Avatar size={AVATAR_SIZE} name={displayName} variant="beam" />
+            )}
+            {canPressAvatar ? (
+              <View style={styles.topBarAvatarOverlay}>
+                <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
+              </View>
+            ) : null}
           </TouchableOpacity>
-        ) : null}
-        {typeof onOpenSettings === 'function' ? (
           <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={onOpenSettings}
-            accessibilityRole="button"
-            accessibilityLabel="Open settings"
+            style={styles.topBarProfileInfo}
+            onPress={canPressProfile ? onProfilePress : undefined}
+            accessibilityRole={canPressProfile ? 'button' : undefined}
+            accessibilityLabel={canPressProfile ? 'View profile' : undefined}
+            disabled={!canPressProfile}
+            activeOpacity={0.75}
           >
-            <Ionicons name="settings-outline" size={20} color={themeVariables.whiteColor} />
+            <Text style={styles.topBarName} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {showGradeChip ? (
+              <View style={styles.topBarGradeRow}>
+                {isLinkedAccount ? (
+                  <View style={styles.topBarLinkButton}>
+                    <Ionicons
+                      name="link"
+                      size={14}
+                      color={themeVariables.blackColor}
+                    />
+                  </View>
+                ) : null}
+                <Chip
+                  text={gradeChipText}
+                  icon="school-outline"
+                  color={themeVariables.primaryColor}
+                  bg="rgba(255, 255, 255, 0.85)"
+                  style={[
+                    styles.topBarGradeChip,
+                    isLinkedAccount && styles.topBarGradeChipLinked,
+                  ]}
+                  onPress={canOpenClass ? onOpenClass : undefined}
+                  accessibilityLabel={
+                    canOpenClass
+                      ? `View classes for ${gradeChipText}`
+                      : gradeChipText
+                  }
+                />
+              </View>
+            ) : null}
           </TouchableOpacity>
-        ) : null}
+        </View>
+        <View style={styles.topBarRight}>
+          {showPointsButton ? (
+            <TouchableOpacity
+              style={styles.topBarPoints}
+              onPress={onOpenAchievements}
+              accessibilityRole="button"
+              accessibilityLabel="View achievements"
+              activeOpacity={0.75}
+            >
+              <View style={styles.topBarStarButton}>
+                <Ionicons name="star-outline" size={14} color={themeVariables.blackColor} />
+              </View>
+              <Text style={styles.topBarPointsText}>{totalPoints ?? 0}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {typeof onOpenSettings === 'function' ? (
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={onOpenSettings}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
+            >
+              <Ionicons name="settings-outline" size={20} color={themeVariables.whiteColor} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
       {/* Profile Header */}
       <ProfileDisplay
@@ -420,20 +482,74 @@ const styles = StyleSheet.create({
   topBar: {
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  topBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  topBarAvatarWrapper: {
+    position: 'relative',
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+  },
+  topBarAvatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+  },
+  topBarAvatarOverlay: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: themeVariables.whiteColor,
+    borderRadius: 14,
+    padding: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1.5,
+  },
+  topBarProfileInfo: {
+    flex: 1,
+    marginLeft: 16,
+    justifyContent: 'center',
   },
   topBarName: {
     flexShrink: 1,
-    flexGrow: 1,
     color: themeVariables.whiteColor,
     fontSize: 20,
     fontWeight: '600',
   },
+  topBarGradeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   topBarGradeChip: {
-    marginLeft: 8,
+    marginLeft: 0,
     marginRight: 0,
+  },
+  topBarGradeChipLinked: {
+    marginLeft: 4,
+  },
+  topBarLinkButton: {
+    backgroundColor: themeVariables.whiteColor,
+    borderRadius: 14,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   topBarPoints: {
     flexDirection: 'row',
