@@ -2,18 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
-import Avatar from '@liquidspirit/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
 import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
-import ProfileDisplay from '../components/ProfileDisplay';
+import HomeTopBar from '../components/HomeTopBar';
 import Chip from '../components/Chip';
 
 const bookImage = require('../assets/img/Book.png');
-const AVATAR_SIZE = 68;
 
 const HomeScreen = ({
   profile,
@@ -39,13 +37,6 @@ const HomeScreen = ({
   let prayerToShow = null;
   let quoteToShow = null;
   let references = [];
-  // Compose lesson display once for use below
-  const lessonDisplay =
-    (typeof currentSet !== 'undefined' && currentSet !== null)
-      ? `${currentSet}.${currentLesson}`
-      : (typeof currentLesson !== 'undefined' && currentLesson !== null
-          ? `${currentLesson}`
-          : null);
   if (profile.grade === 1) {
     const lesson = grade1Lessons.find(l => l.lesson === currentLesson);
     prayerToShow = lesson?.prayer;
@@ -159,7 +150,11 @@ const HomeScreen = ({
     return [];
   }, [profile.grade, currentLessonNumber, currentSetNumber]);
 
-  const { firstName, lastName, username, totalPoints } = profile;
+  const {
+    firstName,
+    lastName,
+    username,
+  } = profile;
   const fullName = [firstName, lastName]
     .filter(part => typeof part === 'string' && part.trim().length > 0)
     .join(' ');
@@ -184,129 +179,76 @@ const HomeScreen = ({
     return normalizedGradeLabel;
   })();
   const showGradeChip = Boolean(gradeChipText);
+  const isLinkedAccount = Boolean(profile?.linkedAccount || profile?.type === 'linked');
   const canOpenClass = typeof onOpenClass === 'function';
-  const showPointsButton = typeof onOpenAchievements === 'function';
-  const isLinkedAccount = Boolean(
-    profile?.linkedAccount || profile?.type === 'linked'
-  );
-  const avatarUri = profile.profilePicture || profile.avatar;
-  const canPressAvatar = typeof onAvatarPress === 'function';
   const canPressProfile = typeof onProfilePress === 'function';
+  const canPressProfileSwitch = canSwitchAccount && canPressProfile;
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <View style={styles.topBarLeft}>
-          <TouchableOpacity
-            style={styles.topBarAvatarWrapper}
-            onPress={canPressAvatar ? onAvatarPress : undefined}
-            accessibilityRole={canPressAvatar ? 'button' : undefined}
-            accessibilityLabel={canPressAvatar ? 'Update profile picture' : undefined}
-            disabled={!canPressAvatar}
-            activeOpacity={0.75}
-          >
-            {avatarUri ? (
-              <FastImage
-                source={{
-                  uri: avatarUri,
-                  priority: FastImage.priority.high,
-                  cache: FastImage.cacheControl.immutable,
-                }}
-                style={styles.topBarAvatar}
-                resizeMode={FastImage.resizeMode.cover}
-              />
-            ) : (
-              <Avatar size={AVATAR_SIZE} name={displayName} variant="beam" />
-            )}
-            {canPressAvatar ? (
-              <View style={styles.topBarAvatarOverlay}>
-                <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
-              </View>
-            ) : null}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.topBarProfileInfo}
-            onPress={canPressProfile ? onProfilePress : undefined}
-            accessibilityRole={canPressProfile ? 'button' : undefined}
-            accessibilityLabel={canPressProfile ? 'View profile' : undefined}
-            disabled={!canPressProfile}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.topBarName} numberOfLines={1}>
-              {displayName}
-            </Text>
-            {showGradeChip ? (
-              <View style={styles.topBarGradeRow}>
-                {isLinkedAccount ? (
-                  <View style={styles.topBarLinkButton}>
-                    <Ionicons
-                      name="link"
-                      size={14}
-                      color={themeVariables.blackColor}
-                    />
-                  </View>
-                ) : null}
-                <Chip
-                  text={gradeChipText}
-                  icon="school-outline"
-                  color={themeVariables.primaryColor}
-                  bg="rgba(255, 255, 255, 0.85)"
-                  style={[
-                    styles.topBarGradeChip,
-                    isLinkedAccount && styles.topBarGradeChipLinked,
-                  ]}
-                  onPress={canOpenClass ? onOpenClass : undefined}
-                  accessibilityLabel={
-                    canOpenClass
-                      ? `View classes for ${gradeChipText}`
-                      : gradeChipText
-                  }
+      <HomeTopBar
+        profile={profile}
+        onAvatarPress={onAvatarPress}
+        onOpenAchievements={onOpenAchievements}
+        onOpenSettings={onOpenSettings}
+      />
+
+      <View style={styles.profileMetaContainer}>
+        <TouchableOpacity
+          style={styles.profileNameButton}
+          onPress={canPressProfile ? onProfilePress : undefined}
+          accessibilityRole={canPressProfile ? 'button' : undefined}
+          accessibilityLabel={canPressProfile ? 'View profile' : undefined}
+          disabled={!canPressProfile}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.profileName} numberOfLines={1}>
+            {displayName}
+          </Text>
+        </TouchableOpacity>
+        {(isLinkedAccount || showGradeChip || canSwitchAccount) ? (
+          <View style={styles.profileMetaRow}>
+            {isLinkedAccount ? (
+              <View style={styles.profileLinkBadge}>
+                <Ionicons
+                  name="link"
+                  size={16}
+                  color={themeVariables.blackColor}
                 />
               </View>
             ) : null}
-          </TouchableOpacity>
-        </View>
-        <View style={styles.topBarRight}>
-          {showPointsButton ? (
-            <TouchableOpacity
-              style={styles.topBarPoints}
-              onPress={onOpenAchievements}
-              accessibilityRole="button"
-              accessibilityLabel="View achievements"
-              activeOpacity={0.75}
-            >
-              <View style={styles.topBarStarButton}>
-                <Ionicons name="star-outline" size={14} color={themeVariables.blackColor} />
-              </View>
-              <Text style={styles.topBarPointsText}>{totalPoints ?? 0}</Text>
-            </TouchableOpacity>
-          ) : null}
-          {typeof onOpenSettings === 'function' ? (
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={onOpenSettings}
-              accessibilityRole="button"
-              accessibilityLabel="Open settings"
-            >
-              <Ionicons name="settings-outline" size={20} color={themeVariables.whiteColor} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+            {showGradeChip ? (
+              <Chip
+                text={gradeChipText}
+                icon="school-outline"
+                color={themeVariables.primaryColor}
+                bg="rgba(255, 255, 255, 0.9)"
+                style={styles.profileGradeChip}
+                onPress={canOpenClass ? onOpenClass : undefined}
+                accessibilityLabel={
+                  canOpenClass ? `View classes for ${gradeChipText}` : gradeChipText
+                }
+              />
+            ) : null}
+            {canSwitchAccount ? (
+              <TouchableOpacity
+                style={styles.profileSwitcherButton}
+                onPress={canPressProfileSwitch ? onProfilePress : undefined}
+                accessibilityRole={canPressProfileSwitch ? 'button' : undefined}
+                accessibilityLabel={canPressProfileSwitch ? 'Switch profile' : undefined}
+                disabled={!canPressProfileSwitch}
+                activeOpacity={0.75}
+              >
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={themeVariables.blackColor}
+                />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
       </View>
-      {/* Profile Header */}
-      <ProfileDisplay
-        profile={profile}
-        achievements={achievements}
-        currentSet={currentSet}
-        currentLesson={currentLesson}
-        onAvatarPress={onAvatarPress}
-        onProfilePress={onProfilePress}
-        canSwitchAccount={canSwitchAccount}
-        onPointsPress={onOpenAchievements}
-        showGradeChip={false}
-        showPoints={false}
-      />
-
       {/* Prayer and Quote Blocks */}
       <View style={styles.contentContainer}>
         <FastImage
@@ -479,105 +421,55 @@ const styles = StyleSheet.create({
     // Let the global ScreenBackground gradient show through
     backgroundColor: 'transparent',
   },
-  topBar: {
+  profileMetaContainer: {
     width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profileNameButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  profileName: {
+    color: themeVariables.whiteColor,
+    fontSize: 22,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  profileMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    justifyContent: 'center',
+    marginTop: 10,
   },
-  topBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  topBarAvatarWrapper: {
-    position: 'relative',
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  topBarAvatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  topBarAvatarOverlay: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
+  profileLinkBadge: {
     backgroundColor: themeVariables.whiteColor,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 6,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 1.5,
   },
-  topBarProfileInfo: {
-    flex: 1,
-    marginLeft: 16,
-    justifyContent: 'center',
+  profileGradeChip: {
+    marginRight: 8,
   },
-  topBarName: {
-    flexShrink: 1,
-    color: themeVariables.whiteColor,
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  topBarGradeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  topBarGradeChip: {
-    marginLeft: 0,
-    marginRight: 0,
-  },
-  topBarGradeChipLinked: {
-    marginLeft: 4,
-  },
-  topBarLinkButton: {
+  profileSwitcherButton: {
     backgroundColor: themeVariables.whiteColor,
-    borderRadius: 14,
-    padding: 4,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 4,
-  },
-  topBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  topBarPoints: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 18,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginLeft: 8,
-  },
-  topBarStarButton: {
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 14,
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  topBarPointsText: {
-    color: themeVariables.whiteColor,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  settingsButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    padding: 8,
-    borderRadius: 18,
-    marginLeft: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   contentContainer: {
     flex: 1,

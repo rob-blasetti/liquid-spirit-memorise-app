@@ -57,6 +57,10 @@
 	<array>
 		<string>arm64</string>
 	</array>
+	<key>UIApplicationSupportsGameMode</key>
+	<true/>
+	<key>UIApplicationPreferredGameMode</key>
+	<string>game</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
