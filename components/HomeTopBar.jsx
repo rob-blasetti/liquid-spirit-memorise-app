@@ -4,39 +4,83 @@ import FastImage from 'react-native-fast-image';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
+import Chip from './Chip';
 
-const AVATAR_SIZE = 84;
+const AVATAR_SIZE = 56;
 
 const HomeTopBar = ({
   profile,
   onAvatarPress,
   onOpenAchievements,
   onOpenSettings,
+  onOpenClass,
 }) => {
-  const { displayName, totalPoints, avatarUri, isLinkedAccount } = useMemo(() => {
-    const { firstName, lastName, username, totalPoints: profilePoints } = profile;
+  const { displayName, totalPoints, avatarUri, isLinkedAccount, gradeChipText } = useMemo(() => {
+    const {
+      firstName,
+      lastName,
+      username,
+      totalPoints: profilePoints,
+      grade,
+    } = profile;
     const fullName = [firstName, lastName]
       .filter(part => typeof part === 'string' && part.trim().length > 0)
       .join(' ');
     const computedDisplayName = fullName || username;
     const pictureUri = profile.profilePicture || profile.avatar;
     const linkedAccount = Boolean(profile?.linkedAccount || profile?.type === 'linked');
+    const rawGradeValue = grade;
+    const gradeString = rawGradeValue === null || typeof rawGradeValue === 'undefined'
+      ? ''
+      : String(rawGradeValue).trim();
+    const normalizedGradeLabel = gradeString.length > 0
+      && !['n/a', 'na', 'null', 'undefined', 'nan'].includes(gradeString.toLowerCase())
+      ? gradeString.replace(
+        /[a-z]+/gi,
+        segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase(),
+      )
+      : null;
+    const resolvedGradeLabel = (() => {
+      if (!normalizedGradeLabel) return null;
+      const lower = normalizedGradeLabel.toLowerCase();
+      if (lower.startsWith('grade ')) return normalizedGradeLabel;
+      if (/^\d/.test(normalizedGradeLabel)) return `Grade ${normalizedGradeLabel}`;
+      if (lower === '2b') return 'Grade 2B';
+      return normalizedGradeLabel;
+    })();
     return {
       displayName: computedDisplayName,
       totalPoints: profilePoints ?? 0,
       avatarUri: pictureUri,
       isLinkedAccount: linkedAccount,
+      gradeChipText: resolvedGradeLabel,
     };
   }, [profile]);
 
   const canPressAvatar = typeof onAvatarPress === 'function';
   const showPointsButton = typeof onOpenAchievements === 'function';
   const showSettingsButton = typeof onOpenSettings === 'function';
+  const canOpenClass = typeof onOpenClass === 'function';
 
   return (
     <View style={styles.topBar}>
       <View style={styles.row}>
-        <View style={styles.sideContainer}>
+        <View style={styles.sideColumnLeft}>
+          {gradeChipText ? (
+            <Chip
+              text={gradeChipText}
+              icon="school-outline"
+              color={themeVariables.primaryColor}
+              bg="rgba(255, 255, 255, 0.9)"
+              style={styles.gradeChip}
+              onPress={canOpenClass ? onOpenClass : undefined}
+              accessibilityLabel={
+                canOpenClass ? `View classes for ${gradeChipText}` : gradeChipText
+              }
+            />
+          ) : null}
+        </View>
+        <View style={styles.sideColumnRight}>
           {showPointsButton ? (
             <TouchableOpacity
               style={styles.pointsButton}
@@ -55,47 +99,6 @@ const HomeTopBar = ({
               <Text style={styles.pointsText}>{totalPoints}</Text>
             </TouchableOpacity>
           ) : null}
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.avatarWrapper,
-            isLinkedAccount && styles.avatarWrapperLinked,
-          ]}
-          onPress={canPressAvatar ? onAvatarPress : undefined}
-          accessibilityRole={canPressAvatar ? 'button' : undefined}
-          accessibilityLabel={canPressAvatar ? 'Update profile picture' : undefined}
-          disabled={!canPressAvatar}
-          activeOpacity={0.8}
-        >
-          {avatarUri ? (
-            <FastImage
-              source={{
-                uri: avatarUri,
-                priority: FastImage.priority.high,
-                cache: FastImage.cacheControl.immutable,
-              }}
-              style={[
-                styles.avatar,
-                isLinkedAccount && styles.avatarLinked,
-              ]}
-              resizeMode={FastImage.resizeMode.cover}
-            />
-          ) : (
-            <Avatar
-              size={isLinkedAccount ? AVATAR_SIZE - 6 : AVATAR_SIZE}
-              name={displayName}
-              variant="beam"
-            />
-          )}
-          {canPressAvatar ? (
-            <View style={styles.avatarOverlay}>
-              <Ionicons name="camera" size={16} color={themeVariables.blackColor} />
-            </View>
-          ) : null}
-        </TouchableOpacity>
-
-        <View style={[styles.sideContainer, styles.sideContainerRight]}>
           {showSettingsButton ? (
             <TouchableOpacity
               style={styles.settingsButton}
@@ -112,6 +115,40 @@ const HomeTopBar = ({
             </TouchableOpacity>
           ) : null}
         </View>
+        <View pointerEvents="box-none" style={styles.centerOverlay}>
+          <TouchableOpacity
+            style={[
+              styles.avatarWrapper,
+              isLinkedAccount && styles.avatarWrapperLinked,
+            ]}
+            onPress={canPressAvatar ? onAvatarPress : undefined}
+            accessibilityRole={canPressAvatar ? 'button' : undefined}
+            accessibilityLabel={canPressAvatar ? 'Open profile options' : undefined}
+            disabled={!canPressAvatar}
+            activeOpacity={0.8}
+          >
+            {avatarUri ? (
+              <FastImage
+                source={{
+                  uri: avatarUri,
+                  priority: FastImage.priority.high,
+                  cache: FastImage.cacheControl.immutable,
+                }}
+                style={[
+                  styles.avatar,
+                  isLinkedAccount && styles.avatarLinked,
+                ]}
+                resizeMode={FastImage.resizeMode.cover}
+              />
+            ) : (
+              <Avatar
+                size={isLinkedAccount ? AVATAR_SIZE - 6 : AVATAR_SIZE}
+                name={displayName}
+                variant="beam"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -122,20 +159,39 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: 'rgba(13, 23, 60, 0.65)',
     borderRadius: 28,
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: AVATAR_SIZE,
+    width: '100%',
+    position: 'relative',
   },
-  sideContainer: {
+  sideColumnLeft: {
     flex: 1,
     alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingRight: 12,
   },
-  sideContainerRight: {
-    alignItems: 'flex-end',
+  sideColumnRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    columnGap: 12,
+  },
+  centerOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pointsButton: {
     flexDirection: 'row',
@@ -163,6 +219,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  gradeChip: {
+    alignSelf: 'flex-start',
+  },
   avatarWrapper: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
@@ -174,7 +233,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   avatar: {
     width: '100%',
@@ -188,20 +247,6 @@ const styles = StyleSheet.create({
   },
   avatarLinked: {
     borderRadius: (AVATAR_SIZE - 6) / 2,
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 16,
-    padding: 6,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    zIndex: 2,
   },
   settingsButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.18)',

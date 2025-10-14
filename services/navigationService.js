@@ -54,6 +54,7 @@ export const createNavigationActions = ({
       setNumber: nav.setNumber,
       lessonNumber: nav.lessonNumber,
     });
+  const goStoryMode = () => goTo('storyMode');
 
   return {
     goHome,
@@ -69,5 +70,6 @@ export const createNavigationActions = ({
     goBackToGrade2Set,
     goBackToGrade2bSet,
     goBackToLesson,
+    goStoryMode,
   };
 };

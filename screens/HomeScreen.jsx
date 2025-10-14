@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
+import { Button as StyleguideButton } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -9,7 +10,6 @@ import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import HomeTopBar from '../components/HomeTopBar';
-import Chip from '../components/Chip';
 
 const bookImage = require('../assets/img/Book.png');
 
@@ -19,15 +19,14 @@ const HomeScreen = ({
   onDailyChallenge,
   currentSet,
   currentLesson,
-  onProfilePress,
   onAvatarPress,
   onJourney,
-  canSwitchAccount,
   onOpenSettings,
   onOpenAchievements,
   onOpenClass,
   onOpenLibrary,
   onOpenGames,
+  onOpenStoryMode,
 }) => {
   if (__DEV__) {
     // eslint-disable-next-line no-console
@@ -150,40 +149,6 @@ const HomeScreen = ({
     return [];
   }, [profile.grade, currentLessonNumber, currentSetNumber]);
 
-  const {
-    firstName,
-    lastName,
-    username,
-  } = profile;
-  const fullName = [firstName, lastName]
-    .filter(part => typeof part === 'string' && part.trim().length > 0)
-    .join(' ');
-  const displayName = fullName || username;
-  const rawGradeValue = profile.grade;
-  const gradeString = rawGradeValue === null || typeof rawGradeValue === 'undefined'
-    ? ''
-    : String(rawGradeValue).trim();
-  const normalizedGradeLabel = gradeString.length > 0
-    && !['n/a', 'na', 'null', 'undefined', 'nan'].includes(gradeString.toLowerCase())
-    ? gradeString.replace(
-      /[a-z]+/gi,
-      segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase(),
-    )
-    : null;
-  const gradeChipText = (() => {
-    if (!normalizedGradeLabel) return null;
-    const lower = normalizedGradeLabel.toLowerCase();
-    if (lower.startsWith('grade ')) return normalizedGradeLabel;
-    if (/^\d/.test(normalizedGradeLabel)) return `Grade ${normalizedGradeLabel}`;
-    if (lower === '2b') return 'Grade 2B';
-    return normalizedGradeLabel;
-  })();
-  const showGradeChip = Boolean(gradeChipText);
-  const isLinkedAccount = Boolean(profile?.linkedAccount || profile?.type === 'linked');
-  const canOpenClass = typeof onOpenClass === 'function';
-  const canPressProfile = typeof onProfilePress === 'function';
-  const canPressProfileSwitch = canSwitchAccount && canPressProfile;
-
   return (
     <View style={styles.container}>
       <HomeTopBar
@@ -191,64 +156,9 @@ const HomeScreen = ({
         onAvatarPress={onAvatarPress}
         onOpenAchievements={onOpenAchievements}
         onOpenSettings={onOpenSettings}
+        onOpenClass={onOpenClass}
       />
 
-      <View style={styles.profileMetaContainer}>
-        <TouchableOpacity
-          style={styles.profileNameButton}
-          onPress={canPressProfile ? onProfilePress : undefined}
-          accessibilityRole={canPressProfile ? 'button' : undefined}
-          accessibilityLabel={canPressProfile ? 'View profile' : undefined}
-          disabled={!canPressProfile}
-          activeOpacity={0.75}
-        >
-          <Text style={styles.profileName} numberOfLines={1}>
-            {displayName}
-          </Text>
-        </TouchableOpacity>
-        {(isLinkedAccount || showGradeChip || canSwitchAccount) ? (
-          <View style={styles.profileMetaRow}>
-            {isLinkedAccount ? (
-              <View style={styles.profileLinkBadge}>
-                <Ionicons
-                  name="link"
-                  size={16}
-                  color={themeVariables.blackColor}
-                />
-              </View>
-            ) : null}
-            {showGradeChip ? (
-              <Chip
-                text={gradeChipText}
-                icon="school-outline"
-                color={themeVariables.primaryColor}
-                bg="rgba(255, 255, 255, 0.9)"
-                style={styles.profileGradeChip}
-                onPress={canOpenClass ? onOpenClass : undefined}
-                accessibilityLabel={
-                  canOpenClass ? `View classes for ${gradeChipText}` : gradeChipText
-                }
-              />
-            ) : null}
-            {canSwitchAccount ? (
-              <TouchableOpacity
-                style={styles.profileSwitcherButton}
-                onPress={canPressProfileSwitch ? onProfilePress : undefined}
-                accessibilityRole={canPressProfileSwitch ? 'button' : undefined}
-                accessibilityLabel={canPressProfileSwitch ? 'Switch profile' : undefined}
-                disabled={!canPressProfileSwitch}
-                activeOpacity={0.75}
-              >
-                <Ionicons
-                  name="chevron-down"
-                  size={16}
-                  color={themeVariables.blackColor}
-                />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
       {/* Prayer and Quote Blocks */}
       <View style={styles.contentContainer}>
         <FastImage
@@ -386,6 +296,20 @@ const HomeScreen = ({
 
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
+        {typeof onOpenStoryMode === 'function' ? (
+          <View style={styles.storyModeButtonWrapper}>
+            <StyleguideButton
+              label="Story Mode"
+              onPress={onOpenStoryMode}
+              size="large"
+              style={styles.storyModeButton}
+              textStyle={styles.storyModeButtonText}
+            />
+            <View pointerEvents="none" style={styles.storyModeIconWrapper}>
+              <Ionicons name="book-outline" size={22} color={themeVariables.whiteColor} />
+            </View>
+          </View>
+        ) : null}
         {typeof onOpenClass === 'function' ? (
           <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenClass}>
             <Text style={styles.customButtonText}>My Class</Text>
@@ -420,56 +344,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     // Let the global ScreenBackground gradient show through
     backgroundColor: 'transparent',
-  },
-  profileMetaContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  profileNameButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  profileName: {
-    color: themeVariables.whiteColor,
-    fontSize: 22,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  profileMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  profileLinkBadge: {
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 16,
-    padding: 6,
-    marginRight: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  profileGradeChip: {
-    marginRight: 8,
-  },
-  profileSwitcherButton: {
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
   },
   contentContainer: {
     flex: 1,
@@ -552,6 +426,36 @@ const styles = StyleSheet.create({
     marginTop: 24,
     gap: 12,
     marginBottom: 16,
+  },
+  storyModeButtonWrapper: {
+    width: '100%',
+    position: 'relative',
+    marginBottom: 12,
+  },
+  storyModeButton: {
+    width: '100%',
+    paddingLeft: 60,
+    paddingRight: 24,
+    alignItems: 'flex-start',
+  },
+  storyModeButtonText: {
+    width: '100%',
+    textAlign: 'left',
+    fontSize: 18,
+    fontWeight: '700',
+    color: themeVariables.whiteColor,
+  },
+  storyModeIconWrapper: {
+    position: 'absolute',
+    left: 24,
+    top: '50%',
+    transform: [{ translateY: -16 }],
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   customButton: {
     flexDirection: 'row',

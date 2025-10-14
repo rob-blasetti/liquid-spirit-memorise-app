@@ -26,6 +26,22 @@ const ProfileSwitcherModal = ({
   };
 
   const childEntries = Array.isArray(children) ? children : [];
+  const activeAvatarUri = profile?.profilePicture || profile?.avatar;
+  const activeDisplayName = (() => {
+    if (!profile || typeof profile !== 'object') return 'Current Profile';
+    const parts = [profile.firstName, profile.lastName]
+      .filter(part => typeof part === 'string' && part.trim().length > 0);
+    if (parts.length > 0) {
+      return parts.join(' ');
+    }
+    if (profile.username && profile.username.trim().length > 0) {
+      return profile.username.trim();
+    }
+    if (profile.name && profile.name.trim().length > 0) {
+      return profile.name.trim();
+    }
+    return 'Current Profile';
+  })();
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -39,6 +55,26 @@ const ProfileSwitcherModal = ({
           >
             <Ionicons name="close" size={24} color="black" />
           </TouchableOpacity>
+          <View style={localStyles.activeProfileRow}>
+            {activeAvatarUri ? (
+              <FastImage
+                source={{
+                  uri: activeAvatarUri,
+                  priority: FastImage.priority.normal,
+                  cache: FastImage.cacheControl.immutable,
+                }}
+                style={localStyles.activeAvatar}
+                resizeMode={FastImage.resizeMode.cover}
+              />
+            ) : (
+              <View style={localStyles.activeAvatar}>
+                <Avatar size={56} name={activeDisplayName} variant="beam" />
+              </View>
+            )}
+            <Text style={localStyles.activeName} numberOfLines={1}>
+              {activeDisplayName}
+            </Text>
+          </View>
           <Text style={styles.modalTitle}>Switch Profile</Text>
 
           {guestProfile && (
@@ -295,6 +331,26 @@ const ProfileSwitcherModal = ({
 };
 
 const localStyles = StyleSheet.create({
+  activeProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  activeAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  activeName: {
+    fontSize: 20,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
   disabledButton: {
     opacity: 0.5,
   },

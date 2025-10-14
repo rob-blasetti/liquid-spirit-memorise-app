@@ -22,10 +22,12 @@ import {
   GamesListScreen,
   ClassScreen,
   LessonJourneyScreen,
+  StoryModeScreen,
 } from '../screens';
 import AuthNavigator from '../navigation/AuthNavigator';
 import NotificationBanner from './NotificationBanner';
 import ProfileSwitcherModal from './ProfileSwitcherModal';
+import ProfileModal from './ProfileModal';
 import GameRenderer from './GameRenderer';
 import { isGameScreen } from '../navigation/router';
 import ScreenBackground from './ScreenBackground';
@@ -38,7 +40,6 @@ import useLessonProgress from '../hooks/useLessonProgress';
 import { AchievementsProvider } from '../contexts/AchievementsContext';
 import { createNavigationActions } from '../services/navigationService';
 import { createAppActions } from '../services/appFlowService';
-import { createAvatarActions } from '../services/avatarService';
 import { prefetchGames } from '../games/lazyGameRoutes';
 import { gameIds } from '../games';
 import {
@@ -56,6 +57,12 @@ import {
   resolveUserFromPayload,
 } from '../services/profileUtils';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
+
+const resolveProfileId = (entity) => {
+  if (!entity || typeof entity !== 'object') return null;
+  const id = entity._id ?? entity.id ?? entity.nuriUserId ?? null;
+  return id != null ? String(id) : null;
+};
 
 const transitionStyles = StyleSheet.create({
   stack: {
@@ -76,7 +83,6 @@ const Main = () => {
     profile,
     registeredProfile,
     guestProfile,
-    setProfile,
     saveProfile,
     deleteGuestAccount,
     wipeProfile,
@@ -93,6 +99,25 @@ const Main = () => {
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+
+  const profileSwitchEligible = useMemo(() => {
+    if (!profile) return false;
+    const activeProfileId = resolveProfileId(profile);
+    const childEntries = Array.isArray(children) ? children : [];
+    const hasSiblingOption = childEntries.some((entry) => {
+      const childObj = entry?.child && typeof entry.child === 'object' ? entry.child : entry;
+      const childId = resolveProfileId(childObj);
+      return childId && childId !== activeProfileId;
+    });
+    const hasRegisteredOption = (() => {
+      if (!registeredProfile) return false;
+      const registeredId = resolveProfileId(registeredProfile);
+      return registeredId && registeredId !== activeProfileId;
+    })();
+    const hasGuestOption = Boolean(guestProfile) && !profile?.guest;
+    return hasRegisteredOption || hasSiblingOption || hasGuestOption;
+  }, [profile, registeredProfile, guestProfile, children]);
 
   const navigationActions = useMemo(
     () =>
@@ -120,6 +145,7 @@ const Main = () => {
     goBackToGrade2Set,
     goBackToGrade2bSet,
     goBackToLesson,
+    goStoryMode,
   } = navigationActions;
 
   const appActions = useMemo(
@@ -134,19 +160,13 @@ const Main = () => {
     [profile, goTo, nav, getCurrentProgress, awardAchievement],
   );
 
-  const { handleDailyChallenge, playSelectedGame, getHomeProgress } = appActions;
-
-  const avatarActions = useMemo(
-    () =>
-      createAvatarActions({
-        profile,
-        setProfile,
-        saveProfile,
-      }),
-    [profile, setProfile, saveProfile],
-  );
-
-  const { pickNewAvatar } = avatarActions;
+  const {
+    handleDailyChallenge,
+    playSelectedGame,
+    getHomeProgress,
+    launchStoryModeGame,
+    getQuoteOfTheWeek,
+  } = appActions;
 
   // Preload Pearlina image for Home screen into FastImage cache
   // Animate slide transitions when toggling between home and classes
@@ -220,12 +240,6 @@ const Main = () => {
     }
   }, [profile, registeredProfile, children]);
 
-  const resolveProfileId = (entity) => {
-    if (!entity || typeof entity !== 'object') return null;
-    const id = entity._id ?? entity.id ?? entity.nuriUserId ?? null;
-    return id != null ? String(id) : null;
-  };
-
   if (showSplash) return <Splash />;
 
   const renderScreenForNav = (navState) => {
@@ -268,7 +282,15 @@ const Main = () => {
     }
     // Render games within the main layout instead of early-returning
     if (isGameScreen(currentNav.screen)) {
-      const backHandler = currentNav.fromGames ? () => goTo('games') : goBackToLesson;
+      const backHandler = (() => {
+        if (currentNav.fromStoryMode) {
+          return () => goTo('storyMode');
+        }
+        if (currentNav.fromGames) {
+          return () => goTo('games');
+        }
+        return goBackToLesson;
+      })();
       return (
         <GameRenderer
           screen={currentNav.screen}
@@ -389,6 +411,19 @@ const Main = () => {
           if (!config) return null;
           return <GradeComingSoon title={config.title} message={config.message} onBack={goHome} />;
         }
+      case 'storyMode': {
+        const { quote, setNumber, lessonNumber } = getQuoteOfTheWeek();
+        return (
+          <StoryModeScreen
+            profile={profile}
+            quote={quote}
+            setNumber={setNumber}
+            lessonNumber={lessonNumber}
+            onBack={goHome}
+            onStartGame={launchStoryModeGame}
+          />
+        );
+      }
       case 'achievements':
         return <AchievementsScreen onBack={goHome} />;
       case 'games':
@@ -457,20 +492,6 @@ const Main = () => {
         );
       default: {
         const { setNumber, lessonNumber } = getHomeProgress();
-        const activeProfileId = resolveProfileId(profile);
-        const childEntries = Array.isArray(children) ? children : [];
-        const hasSiblingOption = childEntries.some((entry) => {
-          const childObj = entry?.child && typeof entry.child === 'object' ? entry.child : entry;
-          const childId = resolveProfileId(childObj);
-          return childId && childId !== activeProfileId;
-        });
-        const hasRegisteredOption = (() => {
-          if (!registeredProfile) return false;
-          const registeredId = resolveProfileId(registeredProfile);
-          return registeredId && registeredId !== activeProfileId;
-        })();
-        const hasGuestOption = Boolean(guestProfile) && !profile?.guest;
-        const profileSwitchEligible = hasRegisteredOption || hasSiblingOption || hasGuestOption;
         return (
           <HomeScreen
             profile={profile}
@@ -478,15 +499,14 @@ const Main = () => {
             onDailyChallenge={handleDailyChallenge}
             currentSet={setNumber}
             currentLesson={lessonNumber}
-            onProfilePress={profileSwitchEligible ? () => setProfileSwitcherVisible(true) : undefined}
-            onAvatarPress={pickNewAvatar}
+            onAvatarPress={() => setProfileModalVisible(true)}
             onJourney={() => goTo('lessonJourney')}
-            canSwitchAccount={profileSwitchEligible}
             onOpenSettings={() => goTo('settings')}
             onOpenAchievements={() => goTo('achievements')}
             onOpenClass={() => goTo('class')}
             onOpenLibrary={() => goTo('grades')}
             onOpenGames={() => goTo('games')}
+            onOpenStoryMode={goStoryMode}
           />
         );
       }
@@ -546,6 +566,18 @@ const Main = () => {
           onHide={() => setNotification(null)}
         />
       )}
+      <ProfileModal
+        visible={profileModalVisible}
+        profile={profile}
+        onClose={() => setProfileModalVisible(false)}
+        onOpenSwitcher={() => {
+          setProfileModalVisible(false);
+          if (profileSwitchEligible) {
+            setProfileSwitcherVisible(true);
+          }
+        }}
+        switcherAvailable={profileSwitchEligible}
+      />
       <ProfileSwitcherModal
         visible={profileSwitcherVisible}
         registeredProfile={registeredProfile}

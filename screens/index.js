@@ -10,6 +10,7 @@ export { default as HomeScreen } from './HomeScreen';
 export { default as Splash } from './Splash';
 export { default as GamesListScreen } from './GamesListScreen';
 export { default as ClassScreen } from './ClassScreen';
+export { default as StoryModeScreen } from './StoryModeScreen';
 export { default as GuestLogin } from './auth/GuestLogin';
 export { default as Register } from './auth/Register';
 export { default as Login } from './auth/Login';
