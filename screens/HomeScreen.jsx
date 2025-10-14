@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FastImage from 'react-native-fast-image';
-import { Button as StyleguideButton } from 'liquid-spirit-styleguide';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -16,7 +15,6 @@ const bookImage = require('../assets/img/Book.png');
 const HomeScreen = ({
   profile,
   achievements,
-  onDailyChallenge,
   currentSet,
   currentLesson,
   onAvatarPress,
@@ -26,7 +24,6 @@ const HomeScreen = ({
   onOpenClass,
   onOpenLibrary,
   onOpenGames,
-  onOpenStoryMode,
 }) => {
   if (__DEV__) {
     // eslint-disable-next-line no-console
@@ -296,26 +293,6 @@ const HomeScreen = ({
 
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
-        {typeof onOpenStoryMode === 'function' ? (
-          <View style={styles.storyModeButtonWrapper}>
-            <StyleguideButton
-              label="Story Mode"
-              onPress={onOpenStoryMode}
-              size="large"
-              style={styles.storyModeButton}
-              textStyle={styles.storyModeButtonText}
-            />
-            <View pointerEvents="none" style={styles.storyModeIconWrapper}>
-              <Ionicons name="book-outline" size={22} color={themeVariables.whiteColor} />
-            </View>
-          </View>
-        ) : null}
-        {typeof onOpenClass === 'function' ? (
-          <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenClass}>
-            <Text style={styles.customButtonText}>My Class</Text>
-            <Ionicons name="people" size={20} color="white" />
-          </TouchableOpacity>
-        ) : null}
         {typeof onOpenLibrary === 'function' ? (
           <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenLibrary}>
             <Text style={styles.customButtonText}>Go To Library</Text>
@@ -328,10 +305,6 @@ const HomeScreen = ({
             <Ionicons name="game-controller" size={20} color="white" />
           </TouchableOpacity>
         ) : null}
-        <TouchableOpacity style={styles.customButton} onPress={onDailyChallenge}>
-          <Text style={styles.customButtonText}>Daily Challenge</Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -426,36 +399,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     gap: 12,
     marginBottom: 16,
-  },
-  storyModeButtonWrapper: {
-    width: '100%',
-    position: 'relative',
-    marginBottom: 12,
-  },
-  storyModeButton: {
-    width: '100%',
-    paddingLeft: 60,
-    paddingRight: 24,
-    alignItems: 'flex-start',
-  },
-  storyModeButtonText: {
-    width: '100%',
-    textAlign: 'left',
-    fontSize: 18,
-    fontWeight: '700',
-    color: themeVariables.whiteColor,
-  },
-  storyModeIconWrapper: {
-    position: 'absolute',
-    left: 24,
-    top: '50%',
-    transform: [{ translateY: -16 }],
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   customButton: {
     flexDirection: 'row',

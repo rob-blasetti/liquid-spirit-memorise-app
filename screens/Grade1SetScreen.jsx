@@ -1,12 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 import { grade1Lessons } from '../data/grade1';
 
 const Grade1SetScreen = ({ onLessonSelect, onBack }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Grade 1</Text>
+      <View style={styles.header}>
+        {typeof onBack === 'function' ? (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Back to library"
+          >
+            <Ionicons name="chevron-back" size={22} color={themeVariables.whiteColor} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
+        <Text style={styles.title}>Grade 1</Text>
+        <View style={styles.headerSpacer} />
+      </View>
       <View style={styles.grid}>
         {grade1Lessons.map(lesson => (
           <TouchableOpacity
@@ -18,11 +34,6 @@ const Grade1SetScreen = ({ onLessonSelect, onBack }) => {
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -31,12 +42,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
+  },
+  header: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  headerSpacer: {
+    width: 40,
+    height: 40,
   },
   title: {
     fontSize: 24,
-    marginBottom: 16,
+    textAlign: 'center',
     color: themeVariables.whiteColor,
   },
   grid: {
@@ -59,20 +89,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     color: themeVariables.primaryColor,
-  },
-  buttonContainer: {
-    marginTop: 24,
-    width: '80%',
-  },
-  backButton: {
-    backgroundColor: themeVariables.primaryColor,
-    paddingVertical: 12,
-    borderRadius: themeVariables.borderRadiusPill,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: themeVariables.whiteColor,
-    fontSize: 16,
   },
 });
 

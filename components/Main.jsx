@@ -31,6 +31,7 @@ import ProfileModal from './ProfileModal';
 import GameRenderer from './GameRenderer';
 import { isGameScreen } from '../navigation/router';
 import ScreenBackground from './ScreenBackground';
+import ComingSoonModal from './ComingSoonModal';
 import FastImage from 'react-native-fast-image';
 import { preloadImages, collectChildAndClassImageUris } from '../services/imageCache';
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
@@ -100,6 +101,7 @@ const Main = () => {
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [comingSoonGrade, setComingSoonGrade] = useState(null);
 
   const profileSwitchEligible = useMemo(() => {
     if (!profile) return false;
@@ -142,10 +144,7 @@ const Main = () => {
     goGrade2b,
     goGrade2bSet,
     goGrade2bLesson,
-    goBackToGrade2Set,
-    goBackToGrade2bSet,
     goBackToLesson,
-    goStoryMode,
   } = navigationActions;
 
   const appActions = useMemo(
@@ -161,7 +160,6 @@ const Main = () => {
   );
 
   const {
-    handleDailyChallenge,
     playSelectedGame,
     getHomeProgress,
     launchStoryModeGame,
@@ -305,7 +303,7 @@ const Main = () => {
       case 'grade1':
         return (
           <Grade1SetScreen
-            onBack={goHome}
+            onBack={() => goTo('grades')}
             onLessonSelect={lessonNumber => goTo('grade1Lesson', { lessonNumber })}
           />
         );
@@ -313,7 +311,7 @@ const Main = () => {
         return (
           <Grade1LessonScreen
             lessonNumber={currentNav.lessonNumber}
-            onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grade1')}
+            onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
           />
         );
       case 'grade2Lesson':
@@ -327,7 +325,7 @@ const Main = () => {
               lessonNumber={currentNav.lessonNumber}
               getLessonContent={config.getLessonContent}
               fallbackQuote={config.fallbackQuote}
-              onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2Set}
+              onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
               onComplete={completeLesson}
               onPractice={(q) => goTo('practice', { quote: q })}
               onPlayGame={(q) => goTo('tapGame', { quote: q })}
@@ -345,7 +343,7 @@ const Main = () => {
               lessonNumber={currentNav.lessonNumber}
               getLessonContent={config.getLessonContent}
               fallbackQuote={config.fallbackQuote}
-              onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : goBackToGrade2bSet}
+              onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
               onComplete={completeLesson}
               onPractice={(q) => goTo('practice', { quote: q })}
               onPlayGame={(q) => goTo('tapGame', { quote: q })}
@@ -361,7 +359,7 @@ const Main = () => {
               title={`${config.title} - Set ${currentNav.setNumber}`}
               lessonNumbers={config.lessonNumbers}
               onLessonSelect={goGrade2Lesson}
-              onBack={goGrade2}
+              onBack={() => goTo('grades')}
             />
           );
         }
@@ -374,7 +372,7 @@ const Main = () => {
               title={`${config.title} - Set ${currentNav.setNumber}`}
               lessonNumbers={config.lessonNumbers}
               onLessonSelect={goGrade2bLesson}
-              onBack={goGrade2b}
+              onBack={() => goTo('grades')}
             />
           );
         }
@@ -383,7 +381,12 @@ const Main = () => {
           const config = GRADE_SCREEN_CONFIG[2];
           if (!config) return null;
           return (
-            <GradeSetLanding title={config.title} sets={config.sets} onSetSelect={goGrade2Set} onBack={goHome} />
+            <GradeSetLanding
+              title={config.title}
+              sets={config.sets}
+              onSetSelect={goGrade2Set}
+              onBack={() => goTo('grades')}
+            />
           );
         }
       case 'grade2b':
@@ -395,7 +398,7 @@ const Main = () => {
               title={config.title}
               sets={config.sets}
               onSetSelect={goGrade2bSet}
-              onBack={goHome}
+              onBack={() => goTo('grades')}
             />
           );
         }
@@ -403,13 +406,25 @@ const Main = () => {
         {
           const config = GRADE_SCREEN_CONFIG[3];
           if (!config) return null;
-          return <GradeComingSoon title={config.title} message={config.message} onBack={goHome} />;
+          return (
+            <GradeComingSoon
+              title={config.title}
+              message={config.message}
+              onBack={() => goTo('grades')}
+            />
+          );
         }
       case 'grade4':
         {
           const config = GRADE_SCREEN_CONFIG[4];
           if (!config) return null;
-          return <GradeComingSoon title={config.title} message={config.message} onBack={goHome} />;
+          return (
+            <GradeComingSoon
+              title={config.title}
+              message={config.message}
+              onBack={() => goTo('grades')}
+            />
+          );
         }
       case 'storyMode': {
         const { quote, setNumber, lessonNumber } = getQuoteOfTheWeek();
@@ -471,6 +486,8 @@ const Main = () => {
         return (
           <GradesScreen
             onBack={goHome}
+            comingSoonGrades={[3, 4, 5]}
+            onComingSoonGrade={grade => setComingSoonGrade(grade)}
             onGradeSelect={(g, setNumber) => {
               if (g === 1) {
                 goGrade1();
@@ -482,10 +499,6 @@ const Main = () => {
                 } else {
                   goGrade2();
                 }
-              } else if (g === 3) {
-                goGrade3();
-              } else if (g === 4) {
-                goGrade4();
               }
             }}
           />
@@ -496,7 +509,6 @@ const Main = () => {
           <HomeScreen
             profile={profile}
             achievements={achievements}
-            onDailyChallenge={handleDailyChallenge}
             currentSet={setNumber}
             currentLesson={lessonNumber}
             onAvatarPress={() => setProfileModalVisible(true)}
@@ -506,7 +518,6 @@ const Main = () => {
             onOpenClass={() => goTo('class')}
             onOpenLibrary={() => goTo('grades')}
             onOpenGames={() => goTo('games')}
-            onOpenStoryMode={goStoryMode}
           />
         );
       }
@@ -590,6 +601,11 @@ const Main = () => {
         deleteGuestAccount={deleteGuestAccount}
       />
       <View style={styles.container}>{screenContent}</View>
+      <ComingSoonModal
+        visible={comingSoonGrade != null}
+        grade={comingSoonGrade}
+        onClose={() => setComingSoonGrade(null)}
+      />
     </SafeAreaView>
     </ScreenBackground>
     </AchievementsProvider>

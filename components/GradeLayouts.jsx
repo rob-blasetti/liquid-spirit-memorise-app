@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import ButtonList from './ButtonList';
 import ThemedButton from './ThemedButton';
 import QuoteBlock from './QuoteBlock';
@@ -7,18 +8,38 @@ import PrayerBlock from './PrayerBlock';
 import { useProfile } from '../hooks/useProfile';
 import themeVariables from '../styles/theme';
 
+const ScreenHeader = ({ title, onBack, accessibilityLabel = 'Back to library' }) => (
+  <View style={headerStyles.container}>
+    {typeof onBack === 'function' ? (
+      <TouchableOpacity
+        style={headerStyles.button}
+        onPress={onBack}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
+        <Ionicons name="chevron-back" size={22} color={themeVariables.whiteColor} />
+      </TouchableOpacity>
+    ) : (
+      <View style={headerStyles.spacer} />
+    )}
+    <Text style={headerStyles.title} numberOfLines={1}>
+      {title}
+    </Text>
+    <View style={headerStyles.spacer} />
+  </View>
+);
+
 export const GradeSetLanding = ({ title, sets = [], onSetSelect, onBack }) => (
   <View style={baseStyles.container}>
-    <Text style={baseStyles.title}>{title}</Text>
-    <ButtonList
-      buttons={[
-        ...sets.map(setNumber => ({
+    <ScreenHeader title={title} onBack={onBack} />
+    <View style={baseStyles.section}>
+      <ButtonList
+        buttons={sets.map(setNumber => ({
           title: `Set ${setNumber}`,
           onPress: () => onSetSelect(setNumber),
-        })),
-        { title: 'Back', onPress: onBack },
-      ]}
-    />
+        }))}
+      />
+    </View>
   </View>
 );
 
@@ -29,25 +50,22 @@ export const GradeLessonSelector = ({
   onBack,
 }) => (
   <View style={baseStyles.container}>
-    <Text style={baseStyles.title}>{title}</Text>
+    <ScreenHeader title={title} onBack={onBack} />
+    <Text style={baseStyles.helperText}>Choose a lesson to continue</Text>
     <ButtonList
       containerStyle={selectorStyles.buttonList}
-      buttons={[
-        ...lessonNumbers.map(number => ({
-          title: `Lesson ${number}`,
-          onPress: () => onLessonSelect(number),
-        })),
-        { title: 'Back', onPress: onBack },
-      ]}
+      buttons={lessonNumbers.map(number => ({
+        title: `Lesson ${number}`,
+        onPress: () => onLessonSelect(number),
+      }))}
     />
   </View>
 );
 
 export const GradeComingSoon = ({ title, message, onBack }) => (
   <View style={baseStyles.container}>
-    <Text style={baseStyles.title}>{title}</Text>
+    <ScreenHeader title={title} onBack={onBack} />
     <Text style={comingSoonStyles.subtitle}>{message}</Text>
-    <ButtonList buttons={[{ title: 'Back', onPress: onBack }]} />
   </View>
 );
 
@@ -75,6 +93,7 @@ export const GradeLessonContent = ({
 
   return (
     <View style={lessonStyles.container}>
+      <ScreenHeader title={gradeTitle} onBack={onBack} />
       <Text style={lessonStyles.title}>
         {gradeTitle} - Set {setNumber} Lesson {lessonNumber}
       </Text>
@@ -103,7 +122,7 @@ export const GradeLessonContent = ({
         />
       </View>
       <View style={lessonStyles.buttonContainer}>
-        <ThemedButton title="Back" onPress={onBack} />
+        <ThemedButton title="Back to Library" onPress={onBack} />
       </View>
     </View>
   );
@@ -112,14 +131,18 @@ export const GradeLessonContent = ({
 const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     padding: 16,
   },
-  title: {
-    fontSize: 24,
-    marginBottom: 16,
-    color: themeVariables.whiteColor,
+  section: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  helperText: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: themeVariables.greyColor,
   },
 });
 
@@ -132,7 +155,7 @@ const selectorStyles = StyleSheet.create({
 const comingSoonStyles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
-    marginBottom: 24,
+    marginTop: 32,
     color: themeVariables.greyColor,
     textAlign: 'center',
   },
@@ -141,19 +164,49 @@ const comingSoonStyles = StyleSheet.create({
 const lessonStyles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     padding: 16,
   },
   title: {
     fontSize: 24,
-    marginBottom: 16,
+    marginVertical: 16,
     textAlign: 'center',
     color: themeVariables.whiteColor,
   },
   buttonContainer: {
     width: '80%',
     marginTop: 16,
+    alignSelf: 'center',
+  },
+});
+
+const headerStyles = StyleSheet.create({
+  container: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  button: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  spacer: {
+    width: 40,
+    height: 40,
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '600',
+    color: themeVariables.whiteColor,
+    marginHorizontal: 8,
   },
 });
 
@@ -163,4 +216,3 @@ export default {
   GradeComingSoon,
   GradeLessonContent,
 };
-
