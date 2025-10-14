@@ -294,15 +294,36 @@ const HomeScreen = ({
       {/* Action Buttons */}
       <View style={styles.bottomButtonContainer}>
         {typeof onOpenLibrary === 'function' ? (
-          <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenLibrary}>
-            <Text style={styles.customButtonText}>Go To Library</Text>
-            <Ionicons name="library" size={20} color="white" />
+          <TouchableOpacity style={styles.actionButton} onPress={onOpenLibrary}>
+            <Ionicons
+              name="library-outline"
+              size={28}
+              color={themeVariables.whiteColor}
+              style={styles.actionButtonIcon}
+            />
+            <Text style={styles.actionButtonText}>Go To Library</Text>
           </TouchableOpacity>
         ) : null}
         {typeof onOpenGames === 'function' ? (
-          <TouchableOpacity style={[styles.customButton, styles.secondaryButton]} onPress={onOpenGames}>
-            <Text style={styles.customButtonText}>Games</Text>
-            <Ionicons name="game-controller" size={20} color="white" />
+          <TouchableOpacity style={styles.actionButton} onPress={onOpenGames}>
+            <Ionicons
+              name="game-controller-outline"
+              size={28}
+              color={themeVariables.whiteColor}
+              style={styles.actionButtonIcon}
+            />
+            <Text style={styles.actionButtonText}>Games</Text>
+          </TouchableOpacity>
+        ) : null}
+        {typeof onOpenClass === 'function' ? (
+          <TouchableOpacity style={styles.actionButton} onPress={onOpenClass}>
+            <Ionicons
+              name="people-circle-outline"
+              size={28}
+              color={themeVariables.whiteColor}
+              style={styles.actionButtonIcon}
+            />
+            <Text style={styles.actionButtonText}>See My Class</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -397,28 +418,33 @@ const styles = StyleSheet.create({
   bottomButtonContainer: {
     width: '100%',
     marginTop: 24,
-    gap: 12,
     marginBottom: 16,
-  },
-  customButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  actionButton: {
+    flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderWidth: 1,
     borderColor: themeVariables.whiteColor,
-    borderRadius: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    width: '100%',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    width: 108,
+    minHeight: 108,
+    marginHorizontal: 2,
   },
-  secondaryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  actionButtonIcon: {
+    marginBottom: 8,
   },
-  customButtonText: {
+  actionButtonText: {
     color: themeVariables.whiteColor,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   pearlinaImage: {
     position: 'absolute',
