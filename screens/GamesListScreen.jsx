@@ -14,6 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { gameIds } from '../games';
 import { prefetchGames } from '../games/lazyGameRoutes';
 import themeVariables from '../styles/theme';
+import TopNav from '../components/TopNav';
 
 const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16; // increased padding
@@ -82,22 +83,7 @@ const GamesListScreen = ({ onSelect, onBack }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        {typeof onBack === 'function' ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={onBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to home"
-          >
-            <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerButtonPlaceholder} />
-        )}
-        <Text style={styles.title}>Games</Text>
-        <View style={styles.headerButtonPlaceholder} />
-      </View>
+      <TopNav title="Games" onBack={onBack} containerStyle={styles.header} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -139,32 +125,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: HORIZONTAL_PADDING,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: 12,
     paddingBottom: 20,
     paddingLeft: 4,
     paddingRight: 4,
-  },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerButtonPlaceholder: {
-    width: 36,
-    height: 36,
-  },
-  title: {
-    color: themeVariables.whiteColor,
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    flex: 1,
   },
   content: {
     paddingBottom: 24,

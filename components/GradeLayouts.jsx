@@ -1,37 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { View, Text, StyleSheet } from 'react-native';
 import ButtonList from './ButtonList';
 import ThemedButton from './ThemedButton';
 import QuoteBlock from './QuoteBlock';
 import PrayerBlock from './PrayerBlock';
 import { useProfile } from '../hooks/useProfile';
 import themeVariables from '../styles/theme';
-
-const ScreenHeader = ({ title, onBack, accessibilityLabel = 'Back to library' }) => (
-  <View style={headerStyles.container}>
-    {typeof onBack === 'function' ? (
-      <TouchableOpacity
-        style={headerStyles.button}
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-      >
-        <Ionicons name="chevron-back" size={22} color={themeVariables.whiteColor} />
-      </TouchableOpacity>
-    ) : (
-      <View style={headerStyles.spacer} />
-    )}
-    <Text style={headerStyles.title} numberOfLines={1}>
-      {title}
-    </Text>
-    <View style={headerStyles.spacer} />
-  </View>
-);
+import TopNav from './TopNav';
 
 export const GradeSetLanding = ({ title, sets = [], onSetSelect, onBack }) => (
   <View style={baseStyles.container}>
-    <ScreenHeader title={title} onBack={onBack} />
+    <TopNav
+      title={title}
+      onBack={onBack}
+      containerStyle={headerStyles.container}
+      backAccessibilityLabel="Back to library"
+    />
     <View style={baseStyles.section}>
       <ButtonList
         buttons={sets.map(setNumber => ({
@@ -50,7 +34,12 @@ export const GradeLessonSelector = ({
   onBack,
 }) => (
   <View style={baseStyles.container}>
-    <ScreenHeader title={title} onBack={onBack} />
+    <TopNav
+      title={title}
+      onBack={onBack}
+      containerStyle={headerStyles.container}
+      backAccessibilityLabel="Back to library"
+    />
     <Text style={baseStyles.helperText}>Choose a lesson to continue</Text>
     <ButtonList
       containerStyle={selectorStyles.buttonList}
@@ -64,7 +53,12 @@ export const GradeLessonSelector = ({
 
 export const GradeComingSoon = ({ title, message, onBack }) => (
   <View style={baseStyles.container}>
-    <ScreenHeader title={title} onBack={onBack} />
+    <TopNav
+      title={title}
+      onBack={onBack}
+      containerStyle={headerStyles.container}
+      backAccessibilityLabel="Back to library"
+    />
     <Text style={comingSoonStyles.subtitle}>{message}</Text>
   </View>
 );
@@ -93,7 +87,12 @@ export const GradeLessonContent = ({
 
   return (
     <View style={lessonStyles.container}>
-      <ScreenHeader title={gradeTitle} onBack={onBack} />
+      <TopNav
+        title={gradeTitle}
+        onBack={onBack}
+        containerStyle={headerStyles.container}
+        backAccessibilityLabel="Back to library"
+      />
       <Text style={lessonStyles.title}>
         {gradeTitle} - Set {setNumber} Lesson {lessonNumber}
       </Text>
@@ -184,29 +183,8 @@ const lessonStyles = StyleSheet.create({
 const headerStyles = StyleSheet.create({
   container: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  button: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  spacer: {
-    width: 40,
-    height: 40,
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: '600',
-    color: themeVariables.whiteColor,
-    marginHorizontal: 8,
+    paddingHorizontal: 0,
+    marginBottom: 16,
   },
 });
 

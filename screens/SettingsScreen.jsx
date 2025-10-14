@@ -8,6 +8,7 @@ import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import { Button } from 'liquid-spirit-styleguide';
 import elevenLabs from '../services/elevenLabsTTS';
+import TopNav from '../components/TopNav';
 
 const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset, onSaveProfile }) => {
   const [selectedSet, setSelectedSet] = useState(
@@ -100,22 +101,12 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
   const hasBackHandler = typeof onBack === 'function';
   const renderHeader = () => (
-    <View style={styles.headerRow}>
-      {hasBackHandler ? (
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to home"
-        >
-          <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.headerButtonPlaceholder} />
-      )}
-      <Text style={styles.headerTitle}>Settings</Text>
-      <View style={styles.headerButtonPlaceholder} />
-    </View>
+    <TopNav
+      title="Settings"
+      onBack={hasBackHandler ? onBack : undefined}
+      containerStyle={styles.headerRow}
+      backAccessibilityLabel="Back to home"
+    />
   );
 
   if (!profile) {
@@ -402,29 +393,9 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginTop: 16,
     marginBottom: 16,
-  },
-  headerButton: {
-    minWidth: 36,
-    minHeight: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerButtonPlaceholder: {
-    width: 36,
-    height: 36,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: themeVariables.whiteColor,
-    fontSize: 24,
-    fontWeight: '700',
+    paddingHorizontal: 0,
   },
   subtitle: {
     color: themeVariables.whiteColor,

@@ -1,28 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 import { grade1Lessons } from '../data/grade1';
+import TopNav from '../components/TopNav';
 
 const Grade1SetScreen = ({ onLessonSelect, onBack }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {typeof onBack === 'function' ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={onBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to library"
-          >
-            <Ionicons name="chevron-back" size={22} color={themeVariables.whiteColor} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
-        <Text style={styles.title}>Grade 1</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <TopNav title="Grade 1" onBack={onBack} containerStyle={styles.header} />
       <View style={styles.grid}>
         {grade1Lessons.map(lesson => (
           <TouchableOpacity
@@ -47,27 +32,8 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 24,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerSpacer: {
-    width: 40,
-    height: 40,
-  },
-  title: {
-    fontSize: 24,
-    textAlign: 'center',
-    color: themeVariables.whiteColor,
+    paddingHorizontal: 0,
   },
   grid: {
     flexDirection: 'row',

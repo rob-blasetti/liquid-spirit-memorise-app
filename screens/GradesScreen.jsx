@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 import { GRADE_CARD_DATA } from '../data/gradesConfig';
+import TopNav from '../components/TopNav';
 
 const HORIZONTAL_PADDING = 16;
 const TILE_HEIGHT = 115; // reduced slightly so bottom item clears nav
@@ -23,22 +23,7 @@ const GradesScreen = ({
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        {typeof onBack === 'function' ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={onBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to home"
-          >
-            <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerButtonPlaceholder} />
-        )}
-        <Text style={styles.title}>Library</Text>
-        <View style={styles.headerButtonPlaceholder} />
-      </View>
+      <TopNav title="Library" onBack={onBack} containerStyle={styles.header} />
 
       {/* Grade Cards */}
       <ScrollView
@@ -112,31 +97,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingTop: 12,
     paddingBottom: 16,
-  },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerButtonPlaceholder: {
-    width: 36,
-    height: 36,
-  },
-  title: {
-    color: themeVariables.whiteColor,
-    fontSize: 24,
-    fontWeight: '600',
-    textAlign: 'center',
-    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: HORIZONTAL_PADDING,

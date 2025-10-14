@@ -3,7 +3,6 @@ import {
   SafeAreaView,
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   useWindowDimensions,
@@ -13,10 +12,11 @@ import { TabView, TabBar } from 'react-native-tab-view';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
 import themeVariables from '../styles/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import ScreenBackground from '../components/ScreenBackground';
 import LinearGradient from 'react-native-linear-gradient';
 import { preloadImages } from '../services/imageCache';
 import Chip from '../components/Chip';
+import ScreenBackground from '../components/ScreenBackground';
+import TopNav from '../components/TopNav';
 
 const SectionScrollableGrid = ({ title, items = [], emptyText, maxHeight = 180 }) => {
   const [contentHeight, setContentHeight] = useState(0);
@@ -179,22 +179,7 @@ const ClassScreen = ({ childEntries = [], onBack }) => {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          {typeof onBack === 'function' ? (
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={onBack}
-              accessibilityRole="button"
-              accessibilityLabel="Back to home"
-            >
-              <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.headerButtonPlaceholder} />
-          )}
-          <Text style={styles.title}>My Class</Text>
-          <View style={styles.headerButtonPlaceholder} />
-        </View>
+        <TopNav title="My Class" onBack={onBack} containerStyle={styles.header} />
 
         <TabView
           navigationState={{ index, routes }}
@@ -257,34 +242,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent'
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
     backgroundColor: 'transparent',
-  },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerButtonPlaceholder: {
-    width: 36,
-    height: 36,
-  },
-  title: {
-    color: themeVariables.whiteColor,
-    fontSize: 24,
-    fontWeight: '600',
-    backgroundColor: 'transparent',
-    textAlign: 'center',
-    flex: 1,
   },
   scene: { flex: 1, paddingHorizontal: 16 },
   sceneContent: { paddingBottom: 48, paddingTop: 8 },

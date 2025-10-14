@@ -14,6 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../styles/theme';
 import { useAchievementsContext } from '../contexts/AchievementsContext';
+import TopNav from '../components/TopNav';
 
 const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
@@ -116,22 +117,12 @@ const AchievementsScreen = ({ onBack }) => {
             color="rgba(255,255,255,0.1)"
             style={styles.headerBgIcon}
           />
-          <View style={styles.topRow}>
-            {hasBackHandler ? (
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={onBack}
-                accessibilityRole="button"
-                accessibilityLabel="Back to home"
-              >
-                <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.backPlaceholder} />
-            )}
-            <Text style={styles.topRowTitle}>Achievements</Text>
-            <View style={styles.backPlaceholder} />
-          </View>
+          <TopNav
+            title="Achievements"
+            onBack={hasBackHandler ? onBack : undefined}
+            containerStyle={styles.topRow}
+            titleStyle={styles.topRowTitle}
+          />
           <Text style={styles.title}>Achievements</Text>
           {isGuest && (
             <Text style={styles.guestBadge}>Guest Mode — Local Only</Text>
@@ -250,28 +241,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 12,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backPlaceholder: {
-    width: 36,
-    height: 36,
+    paddingHorizontal: 0,
   },
   topRowTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: themeVariables.whiteColor,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
   },
   headerBgIcon: {

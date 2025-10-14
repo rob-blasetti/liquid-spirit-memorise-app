@@ -5,12 +5,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Button as StyleguideButton } from 'liquid-spirit-styleguide';
 import QuoteBlock from '../components/QuoteBlock';
 import themeVariables from '../styles/theme';
+import TopNav from '../components/TopNav';
 
 const StoryModeScreen = ({
   profile,
@@ -120,22 +120,7 @@ const StoryModeScreen = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        {typeof onBack === 'function' ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={onBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to home"
-          >
-            <Ionicons name="chevron-back" size={20} color={themeVariables.whiteColor} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerButtonPlaceholder} />
-        )}
-        <Text style={styles.headerTitle}>Story Mode</Text>
-        <View style={styles.headerButtonPlaceholder} />
-      </View>
+      <TopNav title="Story Mode" onBack={onBack} containerStyle={styles.header} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.progressMeta}>
@@ -201,28 +186,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: 0,
     paddingTop: 12,
     paddingBottom: 20,
-  },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerButtonPlaceholder: {
-    width: 36,
-    height: 36,
-  },
-  headerTitle: {
-    color: themeVariables.whiteColor,
-    fontSize: 24,
-    fontWeight: '700',
   },
   content: {
     paddingBottom: 32,

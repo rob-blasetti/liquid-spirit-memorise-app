@@ -1,34 +1,24 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import { grade1Lessons } from '../data/grade1';
 import themeVariables from '../styles/theme';
 import { useProfile } from '../hooks/useProfile';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
+import TopNav from '../components/TopNav';
 
 const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
   const { profile } = useProfile();
   const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      {typeof onBack === 'function' ? (
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to library"
-        >
-          <Ionicons name="chevron-back" size={22} color={themeVariables.whiteColor} />
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.headerSpacer} />
-      )}
-      <Text style={styles.headerTitle}>Grade 1</Text>
-      <View style={styles.headerSpacer} />
-    </View>
+    <TopNav
+      title="Grade 1"
+      onBack={onBack}
+      containerStyle={styles.header}
+      backAccessibilityLabel="Back to library"
+    />
   );
 
   if (!lesson) {
@@ -82,29 +72,7 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerSpacer: {
-    width: 40,
-    height: 40,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: '600',
-    color: themeVariables.whiteColor,
-    marginHorizontal: 8,
+    paddingHorizontal: 0,
   },
   content: {
     flex: 1,
