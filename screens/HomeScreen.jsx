@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import FastImage from 'react-native-fast-image';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -330,12 +329,6 @@ const HomeScreen = ({
           </View>
         ) : null}
       </View>
-
-      <FastImage
-        source={require('../assets/img/pearlina-pointing-right.png')}
-        style={styles.pearlinaImage}
-        resizeMode={FastImage.resizeMode.contain}
-      />
     </View>
   );
 };
@@ -478,13 +471,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  pearlinaImage: {
-    position: 'absolute',
-    bottom: 110,
-    left: -40,
-    width: 120,
-    height: 120,
   },
   timelineColumn: {
     width: TIMELINE_WIDTH,
