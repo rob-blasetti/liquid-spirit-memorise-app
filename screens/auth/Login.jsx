@@ -6,6 +6,7 @@ import { loadCredentials, saveCredentials } from '../../services/credentialServi
 import ScreenBackground from '../../components/ScreenBackground';
 import TopNav from '../../components/TopNav';
 import themeVariables from '../../styles/theme';
+import buttonStyles from '../../styles/buttonStyles';
 import { EmailInput, PasswordInput } from '../../components/form';
 
 export default function Login({ onSignIn, navigation }) {
@@ -74,7 +75,12 @@ export default function Login({ onSignIn, navigation }) {
             Forgot your password?
           </Text>
 
-          <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+          <Button
+            label="Log In"
+            onPress={handleLogin}
+            style={[buttonStyles.pill, styles.fullWidthButton]}
+            textStyle={buttonStyles.pillText}
+          />
         </View>
       </View>
     </ScreenBackground>
@@ -105,5 +111,7 @@ const styles = StyleSheet.create({
   },
   fullWidthButton: {
     width: '80%',
+    alignSelf: 'center',
+    marginTop: 12,
   },
 });

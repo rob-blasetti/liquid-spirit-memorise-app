@@ -5,6 +5,7 @@ import { requestPasswordReset, requestLiquidSpiritPasswordReset } from '../servi
 import ScreenBackground from '../components/ScreenBackground';
 import TopNav from '../components/TopNav';
 import themeVariables from '../styles/theme';
+import buttonStyles from '../styles/buttonStyles';
 
 const ForgotYourPassword = ({ route, navigation }) => {
   const isLiquidSpiritReset = route?.params?.mode === 'ls';
@@ -75,11 +76,11 @@ const ForgotYourPassword = ({ route, navigation }) => {
           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
           <Button
-            primary
             label={loading ? 'Sending…' : 'Send Password Reset Email'}
             onPress={handleSend}
             disabled={loading}
-            style={styles.fullWidthButton}
+            style={[buttonStyles.pill, styles.fullWidthButton]}
+            textStyle={buttonStyles.pillText}
           />
         </View>
       </View>
@@ -143,5 +144,7 @@ const styles = StyleSheet.create({
   },
   fullWidthButton: {
     width: '80%',
+    alignSelf: 'center',
+    marginTop: 20,
   },
 });

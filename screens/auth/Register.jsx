@@ -5,6 +5,7 @@ import { registerNuriUser } from '../../services/authService';
 import themeVariables from '../../styles/theme';
 import ScreenBackground from '../../components/ScreenBackground';
 import TopNav from '../../components/TopNav';
+import buttonStyles from '../../styles/buttonStyles';
 import { UsernameInput, EmailInput, PasswordInput, GradeSelector } from '../../components/form';
 
 export default function Register({ onSignIn, navigation }) {
@@ -65,7 +66,8 @@ export default function Register({ onSignIn, navigation }) {
                 label={loading ? 'Registering...' : 'Register'}
                 onPress={handleRegister}
                 disabled={loading}
-                style={styles.fullWidthButton}
+                style={[buttonStyles.pill, styles.fullWidthButton]}
+                textStyle={buttonStyles.pillText}
               />
             </View>
           </ScrollView>
@@ -104,5 +106,7 @@ const styles = StyleSheet.create({
   },
   fullWidthButton: {
     width: '80%',
+    alignSelf: 'center',
+    marginTop: 16,
   },
 });

@@ -7,6 +7,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../../styles/theme';
 import ScreenBackground from '../../components/ScreenBackground';
 import TopNav from '../../components/TopNav';
+import buttonStyles from '../../styles/buttonStyles';
 import { UsernameInput, GradeSelector } from '../../components/form';
 
 export default function GuestLogin({ onSignIn, navigation }) {
@@ -84,13 +85,6 @@ export default function GuestLogin({ onSignIn, navigation }) {
                   <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
                 </View>
               </TouchableOpacity>
-              <Button
-                label="Change Avatar"
-                onPress={() => {
-                  setAvatarPhoto(null);
-                  setAvatarSeed(Math.random().toString());
-                }}
-              />
               <UsernameInput
                 label="Display Name"
                 value={displayName}
@@ -104,7 +98,12 @@ export default function GuestLogin({ onSignIn, navigation }) {
                 grades={grades}
                 disabledGrades={disabledGrades}
               />
-              <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+              <Button
+                label="Log In"
+                onPress={handleLogin}
+                style={[buttonStyles.pill, styles.fullWidthButton]}
+                textStyle={buttonStyles.pillText}
+              />
             </View>
           </ScrollView>
         </View>
@@ -129,5 +128,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  fullWidthButton: { width: '80%' },
+  secondaryButton: { width: '80%', alignSelf: 'center', marginBottom: 16 },
+  fullWidthButton: { width: '80%', alignSelf: 'center', marginTop: 16 },
 });

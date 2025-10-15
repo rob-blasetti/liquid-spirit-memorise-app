@@ -6,6 +6,7 @@ import { loadCredentials, saveCredentials } from '../../services/credentialServi
 import ScreenBackground from '../../components/ScreenBackground';
 import TopNav from '../../components/TopNav';
 import themeVariables from '../../styles/theme';
+import buttonStyles from '../../styles/buttonStyles';
 import { EmailInput, PasswordInput } from '../../components/form';
 
 export default function LSLogin({ navigation, onSignIn }) {
@@ -81,7 +82,8 @@ export default function LSLogin({ navigation, onSignIn }) {
                 label={loading ? 'Logging in…' : 'Log In'}
                 onPress={handleLogin}
                 disabled={loading}
-                style={styles.fullWidthButton}
+                style={[buttonStyles.pill, styles.fullWidthButton]}
+                textStyle={buttonStyles.pillText}
               />
             </View>
           </ScrollView>
@@ -125,5 +127,7 @@ const styles = StyleSheet.create({
   },
   fullWidthButton: {
     width: '80%',
+    alignSelf: 'center',
+    marginTop: 12,
   },
 });
