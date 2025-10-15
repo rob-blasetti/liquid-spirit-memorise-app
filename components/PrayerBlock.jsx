@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import speechService from '../services/speechService';
@@ -14,6 +15,10 @@ const PrayerBlock = ({
   profile,
 }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [scrollMetrics, setScrollMetrics] = useState({
+    containerHeight: 0,
+    contentHeight: 0,
+  });
   const cancelRef = useRef(false);
 
   const handleAudioPress = async () => {
@@ -45,10 +50,39 @@ const PrayerBlock = ({
     };
   }, []);
 
+  const handleScrollLayout = useCallback(({ nativeEvent }) => {
+    const { height } = nativeEvent.layout;
+    setScrollMetrics(prev =>
+      prev.containerHeight === height
+        ? prev
+        : { ...prev, containerHeight: height }
+    );
+  }, []);
+
+  const handleContentSizeChange = useCallback((_, height) => {
+    setScrollMetrics(prev =>
+      prev.contentHeight === height
+        ? prev
+        : { ...prev, contentHeight: height }
+    );
+  }, []);
+
+  const isScrollable = scrollMetrics.contentHeight > scrollMetrics.containerHeight + 1;
+
   return (
     <View style={styles.container}>
       <View style={styles.textColumn}>
-        <Text style={styles.prayerText}>{prayer}</Text>
+        <ScrollView
+          style={styles.textScroll}
+          contentContainerStyle={styles.textScrollContent}
+          onLayout={handleScrollLayout}
+          onContentSizeChange={handleContentSizeChange}
+          scrollEnabled={isScrollable}
+          showsVerticalScrollIndicator={isScrollable}
+          nestedScrollEnabled
+        >
+          <Text style={styles.prayerText}>{prayer}</Text>
+        </ScrollView>
       </View>
       <View style={styles.audioColumn}>
         {prayer && prayer.trim() ? (
@@ -85,20 +119,25 @@ const AUDIO_COLUMN_WIDTH = 56;
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: '130%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     position: 'relative',
     paddingTop: 8,
     paddingBottom: 16,
     alignSelf: 'stretch',
-    paddingLeft: 16,
     paddingRight: 0,
   },
   textColumn: {
     flex: 1,
     paddingRight: 12,
     minHeight: 0,
+  },
+  textScroll: {
+    maxHeight: '100%',
+  },
+  textScrollContent: {
+    paddingRight: 2,
   },
   prayerText: {
     fontSize: 18,

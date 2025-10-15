@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     width: TIMELINE_WIDTH,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingLeft: 8,
+    paddingLeft: 40,
   },
   lessonTimelineContainer: {
     width: TIMELINE_WIDTH,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,10 @@ const QuoteBlock = ({
 }) => {
   const [activeRef, setActiveRef] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [scrollMetrics, setScrollMetrics] = useState({
+    containerHeight: 0,
+    contentHeight: 0,
+  });
   const cancelRef = useRef(false);
 
   let displayText = '';
@@ -111,6 +115,25 @@ const QuoteBlock = ({
     };
   }, []);
 
+  const handleScrollLayout = useCallback(({ nativeEvent }) => {
+    const { height } = nativeEvent.layout;
+    setScrollMetrics(prev =>
+      prev.containerHeight === height
+        ? prev
+        : { ...prev, containerHeight: height }
+    );
+  }, []);
+
+  const handleContentSizeChange = useCallback((_, height) => {
+    setScrollMetrics(prev =>
+      prev.contentHeight === height
+        ? prev
+        : { ...prev, contentHeight: height }
+    );
+  }, []);
+
+  const isScrollable = scrollMetrics.contentHeight > scrollMetrics.containerHeight + 1;
+
   return (
     <>
       <View style={styles.container}>
@@ -118,7 +141,10 @@ const QuoteBlock = ({
           <ScrollView
             style={styles.textScroll}
             contentContainerStyle={styles.textScrollContent}
-            showsVerticalScrollIndicator
+            onLayout={handleScrollLayout}
+            onContentSizeChange={handleContentSizeChange}
+            scrollEnabled={isScrollable}
+            showsVerticalScrollIndicator={isScrollable}
             nestedScrollEnabled
           >
             <Text style={styles.quoteText}>
@@ -199,20 +225,25 @@ const AUDIO_COLUMN_WIDTH = 56;
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: '130%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     position: 'relative',
     paddingTop: 8,
     paddingBottom: 16,
     alignSelf: 'stretch',
-    paddingLeft: 16,
     paddingRight: 0,
   },
   textColumn: {
     flex: 1,
     paddingRight: 12,
     minHeight: 0,
+  },
+  textScroll: {
+    maxHeight: '100%',
+  },
+  textScrollContent: {
+    paddingRight: 2,
   },
   quoteText: {
     fontSize: 18,
