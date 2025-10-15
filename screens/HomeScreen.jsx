@@ -170,6 +170,7 @@ const HomeScreen = ({
           <View style={styles.lessonColumn}>
             <View style={styles.lessonContent}>
               <View style={styles.lessonInner}>
+                <Text style={styles.lessonSectionTitle}>Current Lesson:</Text>
                 {hasPrayer && hasQuote ? (
                   <View style={styles.lessonTabs}>
                     <TouchableOpacity
@@ -386,6 +387,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingBottom: 16,
   },
+  lessonSectionTitle: {
+    color: themeVariables.whiteColor,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   lessonContentInner: {
     width: '100%',
     alignItems: 'stretch',
@@ -396,20 +407,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignSelf: 'stretch',
     borderRadius: themeVariables.borderRadiusPill + 4,
-    paddingHorizontal: 4,
+    paddingHorizontal: -4,
   },
   lessonTab: {
     flex: 1,
-    paddingVertical: 8,
-    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: themeVariables.whiteColor,
     borderRadius: themeVariables.borderRadiusPill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  lessonTabActive: {
-    backgroundColor: 'transparent',
-    borderBottomWidth: 2,
-    borderBottomColor: themeVariables.whiteColor,
+    minHeight: 60,
+    marginHorizontal: 4,
   },
   lessonTabLabel: {
     color: themeVariables.whiteColor,
@@ -420,10 +431,14 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.45)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    paddingBottom: 6,
   },
   lessonTabLabelActive: {
     color: themeVariables.whiteColor,
     opacity: 1,
+    borderBottomWidth: 3,
+    borderBottomColor: themeVariables.pinkColor,
+    paddingBottom: 3,
   },
   emptyLessonText: {
     color: themeVariables.primaryColor,
