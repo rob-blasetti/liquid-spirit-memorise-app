@@ -10,7 +10,11 @@ import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import HomeTopBar from '../components/HomeTopBar';
 
-const bookImage = require('../assets/img/Book.png');
+const TIMELINE_WIDTH = 56;
+const CONTENT_MAX_WIDTH = 336;
+const CONTENT_COLUMN_WIDTH = CONTENT_MAX_WIDTH - TIMELINE_WIDTH;
+const BOTTOM_BUTTON_HEIGHT = 108;
+const BOTTOM_BUTTON_MARGIN_TOP = 24;
 
 const HomeScreen = ({
   profile,
@@ -57,6 +61,11 @@ const HomeScreen = ({
   const [activeContent, setActiveContent] = useState(
     hasQuote ? 'quote' : hasPrayer ? 'prayer' : null
   );
+  const hasLibraryButton = typeof onOpenLibrary === 'function';
+  const hasGamesButton = typeof onOpenGames === 'function';
+  const hasClassButton = typeof onOpenClass === 'function';
+  const hasBottomButtons =
+    hasLibraryButton || hasGamesButton || hasClassButton;
 
   useEffect(() => {
     if (hasPrayer && hasQuote) {
@@ -156,177 +165,176 @@ const HomeScreen = ({
         onOpenClass={onOpenClass}
       />
 
-      {/* Prayer and Quote Blocks */}
-      <View style={styles.contentContainer}>
-        <FastImage
-          source={bookImage}
-          style={styles.lessonBackground}
-          resizeMode={FastImage.resizeMode.cover}
-        />
-        <View style={styles.lessonContent}>
-          <View style={styles.lessonInner}>
-            {hasPrayer && hasQuote ? (
-              <View style={styles.lessonTabs}>
-                <TouchableOpacity
-                  style={[
-                    styles.lessonTab,
-                    activeContent === 'quote' && styles.lessonTabActive,
-                  ]}
-                  onPress={() => setActiveContent('quote')}
-                >
-                  <Text
-                    style={[
-                      styles.lessonTabLabel,
-                      activeContent === 'quote' && styles.lessonTabLabelActive,
-                    ]}
-                  >
-                    Quote
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.lessonTab,
-                    activeContent === 'prayer' && styles.lessonTabActive,
-                  ]}
-                  onPress={() => setActiveContent('prayer')}
-                >
-                  <Text
-                    style={[
-                      styles.lessonTabLabel,
-                      activeContent === 'prayer' && styles.lessonTabLabelActive,
-                    ]}
-                  >
-                    Prayer
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-            {(activeContent === 'quote' && hasQuote) || (activeContent === 'prayer' && hasPrayer) ? (
-              <View style={styles.lessonContentInner}>
-                {activeContent === 'quote' && hasQuote ? (
-                  <QuoteBlock
-                    quote={quoteToShow}
-                    profile={profile}
-                    references={references}
-                  />
+      <View style={styles.mainContent}>
+        <View style={styles.contentContainer}>
+          <View style={styles.lessonColumn}>
+            <View style={styles.lessonContent}>
+              <View style={styles.lessonInner}>
+                {hasPrayer && hasQuote ? (
+                  <View style={styles.lessonTabs}>
+                    <TouchableOpacity
+                      style={[
+                        styles.lessonTab,
+                        activeContent === 'quote' && styles.lessonTabActive,
+                      ]}
+                      onPress={() => setActiveContent('quote')}
+                    >
+                      <Text
+                        style={[
+                          styles.lessonTabLabel,
+                          activeContent === 'quote' && styles.lessonTabLabelActive,
+                        ]}
+                      >
+                        Quote
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.lessonTab,
+                        activeContent === 'prayer' && styles.lessonTabActive,
+                      ]}
+                      onPress={() => setActiveContent('prayer')}
+                    >
+                      <Text
+                        style={[
+                          styles.lessonTabLabel,
+                          activeContent === 'prayer' && styles.lessonTabLabelActive,
+                        ]}
+                      >
+                        Prayer
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : null}
-                {activeContent === 'prayer' && hasPrayer ? (
-                  <PrayerBlock
-                    prayer={prayerToShow}
-                    profile={profile}
-                  />
+                {(activeContent === 'quote' && hasQuote) || (activeContent === 'prayer' && hasPrayer) ? (
+                  <View style={styles.lessonContentInner}>
+                    {activeContent === 'quote' && hasQuote ? (
+                      <QuoteBlock
+                        quote={quoteToShow}
+                        profile={profile}
+                        references={references}
+                      />
+                    ) : null}
+                    {activeContent === 'prayer' && hasPrayer ? (
+                      <PrayerBlock
+                        prayer={prayerToShow}
+                        profile={profile}
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+                {!hasPrayer && !hasQuote ? (
+                  <View style={styles.lessonContentInner}>
+                    <Text style={styles.emptyLessonText}>
+                      Content for this lesson will appear here.
+                    </Text>
+                  </View>
                 ) : null}
               </View>
-            ) : null}
-            {!hasPrayer && !hasQuote ? (
-              <View style={styles.lessonContentInner}>
-                <Text style={styles.emptyLessonText}>
-                  Content for this lesson will appear here.
-                </Text>
+            </View>
+          </View>
+          <View style={styles.timelineColumn}>
+            {lessonTimeline.length > 0 ? (
+              <View style={styles.lessonTimelineContainer}>
+                {lessonTimeline.map((item, index) => {
+                  const isFirst = index === 0;
+                  const isLast = index === lessonTimeline.length - 1;
+                  const prevStatus = index > 0 ? lessonTimeline[index - 1].status : null;
+                  const topSegmentStyles = [
+                    styles.lessonTimelineLineSegment,
+                    isFirst && styles.lessonTimelineLineSegmentHidden,
+                  ];
+                  if (!isFirst && prevStatus === 'completed') {
+                    topSegmentStyles.push(styles.lessonTimelineLineSegmentCompleted);
+                  }
+                  const bottomSegmentStyles = [
+                    styles.lessonTimelineLineSegment,
+                    isLast && styles.lessonTimelineLineSegmentHidden,
+                  ];
+                  if (!isLast && item.status === 'completed') {
+                    bottomSegmentStyles.push(styles.lessonTimelineLineSegmentCompleted);
+                  }
+                  if (!isLast && item.status === 'active') {
+                    bottomSegmentStyles.push(styles.lessonTimelineLineSegmentActive);
+                  }
+                  const circleStyles = [styles.lessonTimelineCircle];
+                  if (item.status === 'completed') {
+                    circleStyles.push(styles.lessonTimelineCircleCompleted);
+                  } else if (item.status === 'active') {
+                    circleStyles.push(styles.lessonTimelineCircleActive);
+                  }
+                  const itemStyles = [styles.lessonTimelineItem];
+                  if (isLast) {
+                    itemStyles.push(styles.lessonTimelineItemLast);
+                  }
+                  return (
+                    <View key={item.id} style={itemStyles}>
+                      <View style={styles.lessonTimelineIndicator}>
+                        <View style={topSegmentStyles} />
+                        <View style={circleStyles}>
+                          <Text
+                            style={[
+                              styles.lessonTimelineCircleText,
+                              item.status === 'completed' && styles.lessonTimelineCircleTextCompleted,
+                              item.status === 'active' && styles.lessonTimelineCircleTextActive,
+                            ]}
+                          >
+                            {item.lessonNumber}
+                          </Text>
+                        </View>
+                        <View style={bottomSegmentStyles} />
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
           </View>
         </View>
-        {lessonTimeline.length > 0 ? (
-          <View style={styles.lessonTimelineContainer}>
-            {lessonTimeline.map((item, index) => {
-              const isFirst = index === 0;
-              const isLast = index === lessonTimeline.length - 1;
-              const prevStatus = index > 0 ? lessonTimeline[index - 1].status : null;
-              const topSegmentStyles = [
-                styles.lessonTimelineLineSegment,
-                isFirst && styles.lessonTimelineLineSegmentHidden,
-              ];
-              if (!isFirst && prevStatus === 'completed') {
-                topSegmentStyles.push(styles.lessonTimelineLineSegmentCompleted);
-              }
-              const bottomSegmentStyles = [
-                styles.lessonTimelineLineSegment,
-                isLast && styles.lessonTimelineLineSegmentHidden,
-              ];
-              if (!isLast && item.status === 'completed') {
-                bottomSegmentStyles.push(styles.lessonTimelineLineSegmentCompleted);
-              }
-              if (!isLast && item.status === 'active') {
-                bottomSegmentStyles.push(styles.lessonTimelineLineSegmentActive);
-              }
-              const circleStyles = [styles.lessonTimelineCircle];
-              if (item.status === 'completed') {
-                circleStyles.push(styles.lessonTimelineCircleCompleted);
-              } else if (item.status === 'active') {
-                circleStyles.push(styles.lessonTimelineCircleActive);
-              }
-              const itemStyles = [styles.lessonTimelineItem];
-              if (isLast) {
-                itemStyles.push(styles.lessonTimelineItemLast);
-              }
-              return (
-                <View key={item.id} style={itemStyles}>
-                  <View style={styles.lessonTimelineIndicator}>
-                    <View style={topSegmentStyles} />
-                    <View style={circleStyles}>
-                      <Text
-                        style={[
-                          styles.lessonTimelineCircleText,
-                          item.status === 'completed' && styles.lessonTimelineCircleTextCompleted,
-                          item.status === 'active' && styles.lessonTimelineCircleTextActive,
-                        ]}
-                      >
-                        {item.lessonNumber}
-                      </Text>
-                    </View>
-                    <View style={bottomSegmentStyles} />
-                  </View>
-                </View>
-              );
-            })}
+        {hasBottomButtons ? (
+          <View style={styles.bottomButtonContainer}>
+            {hasLibraryButton ? (
+              <TouchableOpacity style={styles.actionButton} onPress={onOpenLibrary}>
+                <Ionicons
+                  name="library-outline"
+                  size={28}
+                  color={themeVariables.whiteColor}
+                  style={styles.actionButtonIcon}
+                />
+                <Text style={styles.actionButtonText}>Go To Library</Text>
+              </TouchableOpacity>
+            ) : null}
+            {hasGamesButton ? (
+              <TouchableOpacity style={styles.actionButton} onPress={onOpenGames}>
+                <Ionicons
+                  name="game-controller-outline"
+                  size={28}
+                  color={themeVariables.whiteColor}
+                  style={styles.actionButtonIcon}
+                />
+                <Text style={styles.actionButtonText}>Games</Text>
+              </TouchableOpacity>
+            ) : null}
+            {hasClassButton ? (
+              <TouchableOpacity style={styles.actionButton} onPress={onOpenClass}>
+                <Ionicons
+                  name="people-circle-outline"
+                  size={28}
+                  color={themeVariables.whiteColor}
+                  style={styles.actionButtonIcon}
+                />
+                <Text style={styles.actionButtonText}>See My Class</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : null}
       </View>
 
-      {/* Pearlina image positioned bottom-left pointing towards quote */}
       <FastImage
         source={require('../assets/img/pearlina-pointing-right.png')}
         style={styles.pearlinaImage}
         resizeMode={FastImage.resizeMode.contain}
       />
-
-      {/* Action Buttons */}
-      <View style={styles.bottomButtonContainer}>
-        {typeof onOpenLibrary === 'function' ? (
-          <TouchableOpacity style={styles.actionButton} onPress={onOpenLibrary}>
-            <Ionicons
-              name="library-outline"
-              size={28}
-              color={themeVariables.whiteColor}
-              style={styles.actionButtonIcon}
-            />
-            <Text style={styles.actionButtonText}>Go To Library</Text>
-          </TouchableOpacity>
-        ) : null}
-        {typeof onOpenGames === 'function' ? (
-          <TouchableOpacity style={styles.actionButton} onPress={onOpenGames}>
-            <Ionicons
-              name="game-controller-outline"
-              size={28}
-              color={themeVariables.whiteColor}
-              style={styles.actionButtonIcon}
-            />
-            <Text style={styles.actionButtonText}>Games</Text>
-          </TouchableOpacity>
-        ) : null}
-        {typeof onOpenClass === 'function' ? (
-          <TouchableOpacity style={styles.actionButton} onPress={onOpenClass}>
-            <Ionicons
-              name="people-circle-outline"
-              size={28}
-              color={themeVariables.whiteColor}
-              style={styles.actionButtonIcon}
-            />
-            <Text style={styles.actionButtonText}>See My Class</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
     </View>
   );
 };
@@ -336,77 +344,85 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     alignItems: 'center',
-    // Let the global ScreenBackground gradient show through
     backgroundColor: 'transparent',
   },
-  contentContainer: {
+  mainContent: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingRight: 0,
-    marginTop: 24,
     width: '100%',
-    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  contentContainer: {
+    width: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    paddingHorizontal: 0,
+    marginBottom: BOTTOM_BUTTON_MARGIN_TOP,
+    maxHeight: '100%',
+    minHeight: 0,
+  },
+  lessonColumn: {
+    width: CONTENT_COLUMN_WIDTH,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    paddingRight: 8,
   },
   lessonContent: {
-    flex: 1,
-    alignItems: 'center',
-    width: '100%',
-    position: 'relative',
-    paddingBottom: 0,
-  },
-  lessonBackground: {
-    position: 'absolute',
-    left: -250,
-    right: -49,
-    top: 0,
-    bottom: 0,
-    pointerEvents: 'none',
+    flexGrow: 1,
+    flexShrink: 1,
+    alignItems: 'stretch',
+    minHeight: 0,
   },
   lessonInner: {
     flex: 1,
     width: '100%',
-    alignItems: 'center',
-    paddingTop: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    alignItems: 'stretch',
+    paddingHorizontal: 0,
+    paddingBottom: 16,
   },
   lessonContentInner: {
     width: '100%',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 12,
   },
   lessonTabs: {
     flexDirection: 'row',
     marginBottom: 16,
     alignSelf: 'stretch',
-    backgroundColor: 'transparent',
-    borderRadius: 20,
-    padding: 4,
+    borderRadius: themeVariables.borderRadiusPill + 4,
+    paddingHorizontal: 4,
   },
   lessonTab: {
     flex: 1,
     paddingVertical: 8,
     backgroundColor: 'transparent',
-    borderRadius: 16,
+    borderRadius: themeVariables.borderRadiusPill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lessonTabActive: {
     backgroundColor: 'transparent',
     borderBottomWidth: 2,
-    borderBottomColor: themeVariables.blackColor,
+    borderBottomColor: themeVariables.whiteColor,
   },
   lessonTabLabel: {
-    color: themeVariables.blackColor,
-    fontSize: 14,
-    fontWeight: '600',
-    opacity: 0.6,
+    color: themeVariables.whiteColor,
+    fontSize: 15,
+    fontWeight: '700',
+    opacity: 0.85,
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   lessonTabLabelActive: {
-    color: themeVariables.blackColor,
+    color: themeVariables.whiteColor,
     opacity: 1,
   },
   emptyLessonText: {
@@ -416,14 +432,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   bottomButtonContainer: {
-    width: '100%',
-    marginTop: 24,
+    width: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    marginTop: 0,
     marginBottom: 16,
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    gap: 12,
   },
   actionButton: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
@@ -433,9 +453,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 12,
     paddingHorizontal: 6,
-    width: 108,
-    minHeight: 108,
-    marginHorizontal: 2,
+    minHeight: 100,
   },
   actionButtonIcon: {
     marginBottom: 8,
@@ -453,15 +471,20 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
   },
+  timelineColumn: {
+    width: TIMELINE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingLeft: 8,
+  },
   lessonTimelineContainer: {
-    width: 56,
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    width: TIMELINE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   lessonTimelineItem: {
     marginBottom: 24,
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   lessonTimelineItemLast: {
     marginBottom: 0,
