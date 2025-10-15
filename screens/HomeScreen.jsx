@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     width: TIMELINE_WIDTH,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingLeft: 40,
+    paddingLeft: 10,
   },
   lessonTimelineContainer: {
     width: TIMELINE_WIDTH,
@@ -524,9 +524,9 @@ const styles = StyleSheet.create({
     backgroundColor: themeVariables.primaryColor,
   },
   lessonTimelineCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 28,
     borderWidth: 2,
     borderColor: themeVariables.primaryColor,
     backgroundColor: themeVariables.whiteColor,

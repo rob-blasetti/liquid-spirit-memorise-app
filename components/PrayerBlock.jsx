@@ -104,8 +104,8 @@ const PrayerBlock = ({
           >
             <Ionicons
               name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
-              size={20}
-              color={isSpeaking ? themeVariables.whiteColor : themeVariables.primaryColor}
+              size={28}
+              color={isSpeaking ? themeVariables.whiteColor : themeVariables.blackColor}
             />
           </TouchableOpacity>
         ) : null}
@@ -114,8 +114,8 @@ const PrayerBlock = ({
   );
 };
 
-const AUDIO_BUTTON_SIZE = 32;
-const AUDIO_COLUMN_WIDTH = 56;
+const AUDIO_BUTTON_SIZE = 40;
+const AUDIO_COLUMN_WIDTH = 80;
 
 const styles = StyleSheet.create({
   container: {

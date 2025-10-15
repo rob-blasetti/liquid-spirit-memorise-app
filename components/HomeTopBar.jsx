@@ -70,9 +70,11 @@ const HomeTopBar = ({
             <Chip
               text={gradeChipText}
               icon="school-outline"
-              color={themeVariables.primaryColor}
-              bg="rgba(255, 255, 255, 0.9)"
+              color={themeVariables.whiteColor}
+              bg="rgba(255, 255, 255, 0.18)"
+              iconSize={18}
               style={styles.gradeChip}
+              textStyle={styles.gradeChipText}
               onPress={canOpenClass ? onOpenClass : undefined}
               accessibilityLabel={
                 canOpenClass ? `View classes for ${gradeChipText}` : gradeChipText
@@ -89,13 +91,12 @@ const HomeTopBar = ({
               accessibilityLabel="View achievements"
               activeOpacity={0.75}
             >
-              <View style={styles.starIconWrapper}>
-                <Ionicons
-                  name="star-outline"
-                  size={18}
-                  color={themeVariables.blackColor}
-                />
-              </View>
+              <Ionicons
+                name="star-outline"
+                size={20}
+                color={themeVariables.whiteColor}
+                style={styles.pointsIcon}
+              />
               <Text style={styles.pointsText}>{totalPoints}</Text>
             </TouchableOpacity>
           ) : null}
@@ -196,31 +197,29 @@ const styles = StyleSheet.create({
   pointsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderRadius: 24,
+    padding: 10,
   },
-  starIconWrapper: {
-    backgroundColor: themeVariables.whiteColor,
-    borderRadius: 16,
-    padding: 6,
-    marginRight: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 1.5,
+  pointsIcon: {
+    marginRight: 8,
   },
   pointsText: {
     color: themeVariables.whiteColor,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
   gradeChip: {
     alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    minHeight: 40,
+  },
+  gradeChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   avatarWrapper: {
     width: AVATAR_SIZE,

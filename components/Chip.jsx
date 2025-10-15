@@ -9,6 +9,9 @@ const Chip = ({
   color = theme.whiteColor,
   bg = 'rgba(255,255,255,0.15)',
   style,
+  textStyle,
+  iconStyle,
+  iconSize = 14,
   onPress,
   disabled = false,
   accessibilityLabel,
@@ -28,8 +31,15 @@ const Chip = ({
 
   return (
     <Container style={[styles.chip, { backgroundColor: bg }, style]} {...containerProps}>
-      {icon ? <Ionicons name={icon} size={14} color={color} style={styles.icon} /> : null}
-      <Text style={[styles.text, { color }]} numberOfLines={1}>
+      {icon ? (
+        <Ionicons
+          name={icon}
+          size={iconSize}
+          color={color}
+          style={[styles.icon, iconStyle]}
+        />
+      ) : null}
+      <Text style={[styles.text, { color }, textStyle]} numberOfLines={1}>
         {text}
       </Text>
     </Container>

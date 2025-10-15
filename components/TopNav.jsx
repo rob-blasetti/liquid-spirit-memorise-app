@@ -107,7 +107,9 @@ const styles = StyleSheet.create({
     borderRadius: BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: themeVariables.whiteColor,
   },
   placeholder: {
     width: BUTTON_SIZE,
