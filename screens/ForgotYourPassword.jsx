@@ -3,9 +3,10 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { requestPasswordReset, requestLiquidSpiritPasswordReset } from '../services/authService';
 import ScreenBackground from '../components/ScreenBackground';
+import TopNav from '../components/TopNav';
 import themeVariables from '../styles/theme';
 
-const ForgotYourPassword = ({ route }) => {
+const ForgotYourPassword = ({ route, navigation }) => {
   const isLiquidSpiritReset = route?.params?.mode === 'ls';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,37 +41,47 @@ const ForgotYourPassword = ({ route }) => {
     }
   };
 
+  const handleBack = () => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation?.navigate?.('Welcome');
+    }
+  };
+
   return (
     <ScreenBackground>
-      <View style={styles.container}>
-        <Text style={styles.heading}>Forgot Your Password</Text>
-        <Text style={styles.instructions}>
-          Please enter your email address to reset your password.
-        </Text>
+      <View style={styles.outer}>
+        <TopNav title="Forgot Password" onBack={handleBack} />
+        <View style={styles.container}>
+          <Text style={styles.instructions}>
+            Please enter your email address to reset your password.
+          </Text>
 
-        <Text style={styles.label}>Email Address</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor={themeVariables.placeholderColor || '#666'}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoCorrect={false}
-          editable={!loading}
-        />
+          <Text style={styles.label}>Email Address</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={themeVariables.placeholderColor || '#666'}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            editable={!loading}
+          />
 
-        {statusMessage ? <Text style={styles.statusText}>{statusMessage}</Text> : null}
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+          {statusMessage ? <Text style={styles.statusText}>{statusMessage}</Text> : null}
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-        <Button
-          primary
-          label={loading ? 'Sending…' : 'Send Password Reset Email'}
-          onPress={handleSend}
-          disabled={loading}
-          style={styles.fullWidthButton}
-        />
+          <Button
+            primary
+            label={loading ? 'Sending…' : 'Send Password Reset Email'}
+            onPress={handleSend}
+            disabled={loading}
+            style={styles.fullWidthButton}
+          />
+        </View>
       </View>
     </ScreenBackground>
   );
@@ -79,6 +90,10 @@ const ForgotYourPassword = ({ route }) => {
 export default ForgotYourPassword;
 
 const styles = StyleSheet.create({
+  outer: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

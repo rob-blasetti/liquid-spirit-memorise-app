@@ -6,9 +6,10 @@ import Avatar from '@liquidspirit/react-native-boring-avatars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import themeVariables from '../../styles/theme';
 import ScreenBackground from '../../components/ScreenBackground';
+import TopNav from '../../components/TopNav';
 import { UsernameInput, GradeSelector } from '../../components/form';
 
-export default function GuestLogin({ onSignIn }) {
+export default function GuestLogin({ onSignIn, navigation }) {
   const [displayName, setDisplayName] = useState('');
   const [avatarSeed, setAvatarSeed] = useState(Math.random().toString());
   const [avatarPhoto, setAvatarPhoto] = useState(null);
@@ -58,51 +59,63 @@ export default function GuestLogin({ onSignIn }) {
     });
   };
 
+  const handleBack = () => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation?.navigate?.('Welcome');
+    }
+  };
+
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.container}>
-            <Text style={styles.heading}>Guest Log In</Text>
-            <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
-              {avatarPhoto ? (
-                <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
-              ) : (
-                <Avatar size={100} name={avatarSeed} variant="beam" />
-              )}
-              <View style={styles.avatarOverlay}>
-                <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
-              </View>
-            </TouchableOpacity>
-            <Button
-              label="Change Avatar"
-              onPress={() => {
-                setAvatarPhoto(null);
-                setAvatarSeed(Math.random().toString());
-              }}
-            />
-            <UsernameInput
-              label="Display Name"
-              value={displayName}
-              onChangeText={setDisplayName}
-              autoCapitalize="words"
-              autoCorrect
-            />
-            <GradeSelector
-              value={selectedGrade}
-              onChange={setSelectedGrade}
-              grades={grades}
-              disabledGrades={disabledGrades}
-            />
-            <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
-          </View>
-        </ScrollView>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.outer}>
+          <TopNav title="Guest Login" onBack={handleBack} />
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <View style={styles.container}>
+              <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
+                {avatarPhoto ? (
+                  <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
+                ) : (
+                  <Avatar size={100} name={avatarSeed} variant="beam" />
+                )}
+                <View style={styles.avatarOverlay}>
+                  <Ionicons name="camera" size={14} color={themeVariables.blackColor} />
+                </View>
+              </TouchableOpacity>
+              <Button
+                label="Change Avatar"
+                onPress={() => {
+                  setAvatarPhoto(null);
+                  setAvatarSeed(Math.random().toString());
+                }}
+              />
+              <UsernameInput
+                label="Display Name"
+                value={displayName}
+                onChangeText={setDisplayName}
+                autoCapitalize="words"
+                autoCorrect
+              />
+              <GradeSelector
+                value={selectedGrade}
+                onChange={setSelectedGrade}
+                grades={grades}
+                disabledGrades={disabledGrades}
+              />
+              <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+            </View>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  outer: { flex: 1, width: '100%' },
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16, backgroundColor: 'transparent', width: '100%' },
   scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'stretch', paddingVertical: 24 },
   heading: { fontSize: 24, marginBottom: 16, color: themeVariables.whiteColor },

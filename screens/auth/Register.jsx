@@ -4,9 +4,10 @@ import { Button } from 'liquid-spirit-styleguide';
 import { registerNuriUser } from '../../services/authService';
 import themeVariables from '../../styles/theme';
 import ScreenBackground from '../../components/ScreenBackground';
+import TopNav from '../../components/TopNav';
 import { UsernameInput, EmailInput, PasswordInput, GradeSelector } from '../../components/form';
 
-export default function Register({ onSignIn }) {
+export default function Register({ onSignIn, navigation }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,37 +36,53 @@ export default function Register({ onSignIn }) {
     }
   };
 
+  const handleBack = () => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation?.navigate?.('Welcome');
+    }
+  };
+
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.container}>
-            <Text style={styles.heading}>Register</Text>
-
-            <UsernameInput value={username} onChangeText={setUsername} />
-            <EmailInput value={email} onChangeText={setEmail} />
-            <PasswordInput value={password} onChangeText={setPassword} showToggle />
-            <GradeSelector
-              value={selectedGrade}
-              onChange={setSelectedGrade}
-              grades={grades}
-              disabledGrades={disabledGrades}
-            />
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <Button
-              label={loading ? 'Registering...' : 'Register'}
-              onPress={handleRegister}
-              disabled={loading}
-              style={styles.fullWidthButton}
-            />
-          </View>
-        </ScrollView>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.outer}>
+          <TopNav title="Register" onBack={handleBack} />
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <View style={styles.container}>
+              <UsernameInput value={username} onChangeText={setUsername} />
+              <EmailInput value={email} onChangeText={setEmail} />
+              <PasswordInput value={password} onChangeText={setPassword} showToggle />
+              <GradeSelector
+                value={selectedGrade}
+                onChange={setSelectedGrade}
+                grades={grades}
+                disabledGrades={disabledGrades}
+              />
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              <Button
+                label={loading ? 'Registering...' : 'Register'}
+                onPress={handleRegister}
+                disabled={loading}
+                style={styles.fullWidthButton}
+              />
+            </View>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  outer: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

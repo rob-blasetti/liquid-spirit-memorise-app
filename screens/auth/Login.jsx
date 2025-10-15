@@ -4,6 +4,7 @@ import { Button } from 'liquid-spirit-styleguide';
 import { loginNuriUser } from '../../services/authService';
 import { loadCredentials, saveCredentials } from '../../services/credentialService';
 import ScreenBackground from '../../components/ScreenBackground';
+import TopNav from '../../components/TopNav';
 import themeVariables from '../../styles/theme';
 import { EmailInput, PasswordInput } from '../../components/form';
 
@@ -37,41 +38,54 @@ export default function Login({ onSignIn, navigation }) {
     }
   };
 
+  const handleBack = () => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation?.navigate?.('Welcome');
+    }
+  };
+
   return (
     <ScreenBackground>
-      <View style={styles.container}>
-        <Text style={styles.heading}>Log In</Text>
+      <View style={styles.outer}>
+        <TopNav title="Log In" onBack={handleBack} />
+        <View style={styles.container}>
+          <EmailInput
+            label="Username or Email"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor={themeVariables.placeholderColor || '#666'}
+          />
 
-        <EmailInput
-          label="Username or Email"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor={themeVariables.placeholderColor || '#666'}
-        />
+          <PasswordInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            placeholderTextColor={themeVariables.placeholderColor || '#666'}
+            showToggle
+          />
 
-        <PasswordInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Password"
-          placeholderTextColor={themeVariables.placeholderColor || '#666'}
-          showToggle
-        />
+          <Text
+            style={styles.forgotLink}
+            onPress={() => navigation.navigate('ForgotYourPassword')}
+          >
+            Forgot your password?
+          </Text>
 
-        <Text
-          style={styles.forgotLink}
-          onPress={() => navigation.navigate('ForgotYourPassword')}
-        >
-          Forgot your password?
-        </Text>
-
-        <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+          <Button label="Log In" onPress={handleLogin} style={styles.fullWidthButton} />
+        </View>
       </View>
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  outer: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

@@ -4,6 +4,7 @@ import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit } from '../../services/authService';
 import { loadCredentials, saveCredentials } from '../../services/credentialService';
 import ScreenBackground from '../../components/ScreenBackground';
+import TopNav from '../../components/TopNav';
 import themeVariables from '../../styles/theme';
 import { EmailInput, PasswordInput } from '../../components/form';
 
@@ -43,45 +44,61 @@ export default function LSLogin({ navigation, onSignIn }) {
     }
   };
 
+  const handleBack = () => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation?.navigate?.('Welcome');
+    }
+  };
+
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.container}>
-            <Text style={styles.heading}>Log In With Liquid Spirit</Text>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.outer}>
+          <TopNav title="Liquid Spirit Login" onBack={handleBack} />
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <View style={styles.container}>
+              <EmailInput
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+              />
 
-            <EmailInput
-              value={email}
-              onChangeText={setEmail}
-              editable={!loading}
-            />
-
-            <PasswordInput
-              value={password}
-              onChangeText={setPassword}
-              editable={!loading}
-              showToggle
-            />
-            <Text
-              style={styles.forgotLink}
-              onPress={() => navigation.navigate('ForgotYourPassword', { mode: 'ls' })}
-            >
-              Forgot your password?
-            </Text>
-            <Button
-              label={loading ? 'Logging in…' : 'Log In'}
-              onPress={handleLogin}
-              disabled={loading}
-              style={styles.fullWidthButton}
-            />
-          </View>
-        </ScrollView>
+              <PasswordInput
+                value={password}
+                onChangeText={setPassword}
+                editable={!loading}
+                showToggle
+              />
+              <Text
+                style={styles.forgotLink}
+                onPress={() => navigation.navigate('ForgotYourPassword', { mode: 'ls' })}
+              >
+                Forgot your password?
+              </Text>
+              <Button
+                label={loading ? 'Logging in…' : 'Log In'}
+                onPress={handleLogin}
+                disabled={loading}
+                style={styles.fullWidthButton}
+              />
+            </View>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  outer: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
