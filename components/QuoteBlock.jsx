@@ -11,6 +11,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import speechService from '../services/speechService';
 import themeVariables from '../styles/theme';
 
+const DEFAULT_READING_FONT = 18;
+const clampReadingFont = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_READING_FONT;
+  const clamped = Math.min(28, Math.max(14, numeric));
+  return Number.isFinite(clamped) ? clamped : DEFAULT_READING_FONT;
+};
+
 const stripPunctuation = (str) =>
   str.replace(/[.,!?;:'"“”‘’]/g, '').toLowerCase();
 
@@ -19,6 +27,7 @@ const QuoteBlock = ({
   profile,
   references = [],
 }) => {
+  const readingFontSize = clampReadingFont(profile?.readingFontSize);
   const [activeRef, setActiveRef] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [scrollMetrics, setScrollMetrics] = useState({
@@ -147,21 +156,23 @@ const QuoteBlock = ({
             showsVerticalScrollIndicator={isScrollable}
             nestedScrollEnabled
           >
-            <Text style={styles.quoteText}>
-              {tokens.map((part) =>
-                part.underline ? (
-                  <Text
-                    key={part.key}
-                    style={styles.underline}
-                    onPress={() => setActiveRef(part.examples)}
-                  >
-                    {part.text}
-                  </Text>
-                ) : (
-                  <Text key={part.key}>{part.text}</Text>
-                )
-              )}
-            </Text>
+            <View style={styles.quoteContent}>
+              <Text style={[styles.quoteText, { fontSize: readingFontSize }]}>
+                {tokens.map((part) =>
+                  part.underline ? (
+                    <Text
+                      key={part.key}
+                      style={styles.underline}
+                      onPress={() => setActiveRef(part.examples)}
+                    >
+                      {part.text}
+                    </Text>
+                  ) : (
+                    <Text key={part.key}>{part.text}</Text>
+                  )
+                )}
+              </Text>
+            </View>
           </ScrollView>
         </View>
 
@@ -225,12 +236,12 @@ const AUDIO_COLUMN_WIDTH = 80;
 
 const styles = StyleSheet.create({
   container: {
-    width: '130%',
+    width: '130%',    
+    height: '90%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     position: 'relative',
     paddingTop: 8,
-    paddingBottom: 16,
     alignSelf: 'stretch',
   },
   textColumn: {
@@ -243,8 +254,14 @@ const styles = StyleSheet.create({
   textScrollContent: {
     paddingRight: 2,
   },
+  quoteContent: {
+    borderLeftWidth: 4,
+    borderLeftColor: themeVariables.primaryColor,
+    paddingLeft: 12,
+    alignSelf: 'flex-start',
+  },
   quoteText: {
-    fontSize: 18,
+    fontSize: 24,
     textAlign: 'left',
     fontStyle: 'italic',
     color: themeVariables.whiteColor,

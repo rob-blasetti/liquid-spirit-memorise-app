@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -25,29 +24,23 @@ const CARD_GRADIENT = ['#E21281', '#6E33A7'];
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
 const AchievementsScreen = ({ onBack }) => {
-  const { achievements = [], totalPoints = 0, isPointsSynced = true, computedPoints = 0, setAchievements, isGuest = false } = useAchievementsContext();
-  const [loading, setLoading] = useState(true);
+  const {
+    achievements = [],
+    totalPoints = 0,
+    isPointsSynced = true,
+    computedPoints = 0,
+    refreshFromServer,
+    isGuest = false,
+    isLoading = false,
+  } = useAchievementsContext();
   const [refreshing, setRefreshing] = useState(false);
   const [filterOption, setFilterOption] = useState('earned'); // 'earned' | 'unearned' | 'all'
 
-  // Refresh achievements/points from server when entering this screen
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        await setAchievements?.();
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    load();
-    return () => { mounted = false; };
-  }, [setAchievements]);
-
   const onRefresh = async () => {
+    if (isLoading) return;
     setRefreshing(true);
     try {
-      await setAchievements?.();
+      await refreshFromServer?.();
     } finally {
       setRefreshing(false);
     }
@@ -157,16 +150,16 @@ const AchievementsScreen = ({ onBack }) => {
         </View>
 
         {/* Achievement Cards */}
-        {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={themeVariables.whiteColor} />
-            <Text style={styles.loadingText}>Syncing achievements…</Text>
-          </View>
-        ) : (
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeVariables.whiteColor} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={themeVariables.whiteColor}
+            />
+          }
         >
           {order.flatMap((section) => {
             // group and sort: earned achievements first
@@ -217,7 +210,6 @@ const AchievementsScreen = ({ onBack }) => {
             });
           })}
         </ScrollView>
-        )}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -361,17 +353,6 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: themeVariables.whiteColor,
-  },
-  loadingWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 24,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: themeVariables.whiteColor,
-    fontSize: 14,
   },
   guestBadge: {
     alignSelf: 'flex-start',

@@ -10,10 +10,19 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import speechService from '../services/speechService';
 import themeVariables from '../styles/theme';
 
+const DEFAULT_READING_FONT = 18;
+const clampReadingFont = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_READING_FONT;
+  const clamped = Math.min(28, Math.max(14, numeric));
+  return Number.isFinite(clamped) ? clamped : DEFAULT_READING_FONT;
+};
+
 const PrayerBlock = ({
   prayer,
   profile,
 }) => {
+  const readingFontSize = clampReadingFont(profile?.readingFontSize);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [scrollMetrics, setScrollMetrics] = useState({
     containerHeight: 0,
@@ -81,7 +90,9 @@ const PrayerBlock = ({
           showsVerticalScrollIndicator={isScrollable}
           nestedScrollEnabled
         >
-          <Text style={styles.prayerText}>{prayer}</Text>
+          <View style={styles.textContent}>
+            <Text style={[styles.prayerText, { fontSize: readingFontSize }]}>{prayer}</Text>
+          </View>
         </ScrollView>
       </View>
       <View style={styles.audioColumn}>
@@ -120,11 +131,11 @@ const AUDIO_COLUMN_WIDTH = 80;
 const styles = StyleSheet.create({
   container: {
     width: '130%',
+    height: '90%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     position: 'relative',
     paddingTop: 8,
-    paddingBottom: 16,
     alignSelf: 'stretch',
     paddingRight: 0,
   },
@@ -139,8 +150,14 @@ const styles = StyleSheet.create({
   textScrollContent: {
     paddingRight: 2,
   },
+  textContent: {
+    borderLeftWidth: 4,
+    borderLeftColor: themeVariables.primaryColor,
+    paddingLeft: 12,
+    alignSelf: 'flex-start',
+  },
   prayerText: {
-    fontSize: 18,
+    fontSize: 24,
     textAlign: 'left',
     color: themeVariables.whiteColor,
     textShadowColor: 'rgba(0, 0, 0, 0.45)',

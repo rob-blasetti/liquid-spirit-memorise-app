@@ -10,6 +10,16 @@ import { Button } from 'liquid-spirit-styleguide';
 import elevenLabs from '../services/elevenLabsTTS';
 import TopNav from '../components/TopNav';
 
+const FONT_SIZE_OPTIONS = [16, 18, 20, 22, 24];
+const DEFAULT_READING_FONT = 18;
+const coerceFontSize = (value) => {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && FONT_SIZE_OPTIONS.includes(numeric)) {
+    return numeric;
+  }
+  return DEFAULT_READING_FONT;
+};
+
 const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset, onSaveProfile }) => {
   const [selectedSet, setSelectedSet] = useState(
     overrideProgress?.setNumber ?? currentProgress.setNumber
@@ -19,6 +29,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   );
   // ElevenLabs uses voice id from profile or env; no device voice list
   const [speed, setSpeed] = useState(profile?.ttsSpeed ?? 1.0);
+  const [fontSize, setFontSize] = useState(() => coerceFontSize(profile?.readingFontSize));
   // Slider width for rendering tick marks
   const [speedSliderWidth, setSpeedSliderWidth] = useState(0);
   const allowedSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
@@ -64,6 +75,16 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     elevenLabs.setSpeed(v);
     onSaveProfile?.({ ...profile, ttsSpeed: v });
   }, [speed]);
+
+  useEffect(() => {
+    setFontSize(coerceFontSize(profile?.readingFontSize));
+  }, [profile?.readingFontSize]);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.readingFontSize === fontSize) return;
+    onSaveProfile?.({ ...profile, readingFontSize: fontSize });
+  }, [fontSize, profile, onSaveProfile]);
 
   // Cache is managed automatically with sensible defaults; no user controls
 
@@ -305,6 +326,45 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {renderHeader()}
         <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Reading Font Size</Text>
+          <View style={styles.fontSizeRow}>
+            {FONT_SIZE_OPTIONS.map((size) => {
+              const isSelected = fontSize === size;
+              return (
+                <TouchableOpacity
+                  key={`font-size-${size}`}
+                  style={[
+                    styles.fontSizeOption,
+                    isSelected && styles.fontSizeOptionSelected,
+                  ]}
+                  onPress={() => setFontSize(size)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`Set reading font size to ${size} point`}
+                >
+                  <Text
+                    style={[
+                      styles.fontSizeSample,
+                      { fontSize: size },
+                      isSelected && styles.fontSizeSampleSelected,
+                    ]}
+                  >
+                    Aa
+                  </Text>
+                  <Text
+                    style={[
+                      styles.fontSizeLabel,
+                      isSelected && styles.fontSizeLabelSelected,
+                    ]}
+                  >
+                    {size} pt
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
         {String(profile.grade) === '1' && renderGrade1Settings()}
         {String(profile.grade) === '2' && renderGrade2Settings()}
         {String(profile.grade) === '2b' && renderGrade2bSettings()}
@@ -477,6 +537,44 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
     fontSize: 12,
     opacity: 0.85,
+  },
+  fontSizeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+  },
+  fontSizeOption: {
+    width: 84,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginRight: 12,
+    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+  },
+  fontSizeOptionSelected: {
+    backgroundColor: themeVariables.whiteColor,
+    borderColor: themeVariables.tertiaryColor,
+  },
+  fontSizeSample: {
+    color: themeVariables.whiteColor,
+    fontWeight: '600',
+  },
+  fontSizeSampleSelected: {
+    color: themeVariables.blackColor,
+  },
+  fontSizeLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+  },
+  fontSizeLabelSelected: {
+    color: themeVariables.blackColor,
+    fontWeight: '600',
   },
   // Slider container to measure width and position the floating bubble
   sliderContainer: {

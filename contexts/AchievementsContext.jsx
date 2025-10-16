@@ -5,6 +5,7 @@ const AchievementsContext = createContext({
   totalPoints: 0,
   isPointsSynced: true,
   computedPoints: 0,
+  isLoading: false,
   notification: null,
   setNotification: () => {},
   awardAchievement: () => {},

@@ -52,12 +52,14 @@ export default function useAchievements(profile, saveProfile) {
   }, [achievements, totalPoints, profile, saveProfile]);
 
   const [notification, setNotification] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Explicit refresh from server, used when entering Achievements screen
   const refreshFromServer = useCallback(async () => {
     if (isGuest) return; // guests never fetch from server
     const userId = profile?._id || profile?.id || profile?.nuriUserId;
     if (!userId) return;
+    setIsLoading(true);
     try {
       const { achievements: serverAchievements = [], totalPoints: serverTotal = 0 } = await fetchUserAchievements(userId);
       const list = serverAchievements.length ? serverAchievements : initAchievements(profile);
@@ -73,6 +75,8 @@ export default function useAchievements(profile, saveProfile) {
       }
     } catch (e) {
       console.error('refreshFromServer failed:', e);
+    } finally {
+      setIsLoading(false);
     }
   }, [profile, saveProfile, isGuest]);
 
@@ -167,6 +171,7 @@ export default function useAchievements(profile, saveProfile) {
     computedPoints,
     isPointsSynced,
     isGuest,
+    isLoading,
     notification,
     setNotification,
     awardAchievement,
