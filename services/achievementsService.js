@@ -402,9 +402,15 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
 
+    const slugValue = options.slug || achievementId || null;
     const payload = { userId };
-    if (achievementId) payload.achievementId = achievementId;
-    if (options.slug) payload.slug = options.slug;
+    if (slugValue) payload.slug = slugValue;
+    if (slugValue && slugValue !== achievementId) {
+      payload.achievementId = slugValue;
+      payload.legacyId = achievementId || null;
+    } else if (achievementId) {
+      payload.achievementId = achievementId;
+    }
     if (typeof totalPoints === 'number') payload.totalPoints = totalPoints;
     const response = await fetch(`${API_URL}/api/nuri/achievement`, {
       method: 'POST',
@@ -420,12 +426,17 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
       const err = new Error('Failed to update achievement on server');
       if (message.includes('already earned')) err.code = 'ALREADY_EARNED';
       else if (message.includes('user not found')) err.code = 'USER_NOT_FOUND';
+      else if (message.includes('achievement not found') || response.status === 404) {
+        err.code = 'ACHIEVEMENT_NOT_FOUND';
+      }
       err.status = response.status;
       // Log non-noisy errors only
       if (err.code === 'ALREADY_EARNED') {
         console.warn('Achievement already earned; skipping server update');
       } else if (err.code === 'USER_NOT_FOUND') {
         console.warn('Achievement update skipped: user not found');
+      } else if (err.code === 'ACHIEVEMENT_NOT_FOUND') {
+        console.warn('Achievement update skipped: achievement not registered on server');
       } else {
         console.error('Achievement update failed:', response.status, text);
       }
@@ -433,7 +444,11 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
     }
     return await response.json();
   } catch (err) {
-    if (err?.code === 'ALREADY_EARNED' || err?.code === 'USER_NOT_FOUND') {
+    if (
+      err?.code === 'ALREADY_EARNED' ||
+      err?.code === 'USER_NOT_FOUND' ||
+      err?.code === 'ACHIEVEMENT_NOT_FOUND'
+    ) {
       // Swallow noisy logs; propagate for caller to decide
     } else {
       console.error('updateAchievementOnServer error:', err);
@@ -496,7 +511,7 @@ export async function awardAchievement(profile, id) {
       const targetEntry = achievementsList.find((a) => a.id === id) || null;
       const serverAchievementId = targetEntry?.serverId || null;
       await updateAchievementOnServer(userId, serverAchievementId || id, totalPoints, {
-        slug: id,
+        slug: targetEntry?.slug || id,
       });
     }
     const { achievements: syncedAchievements = [], totalPoints: serverTotal = totalPoints } = await fetchUserAchievements(userId);
@@ -511,7 +526,15 @@ export async function awardAchievement(profile, id) {
     await persistProfile(syncedProfile);
     return { profile: syncedProfile, notification };
   } catch (err) {
-    console.error('awardAchievement ▶ server sync failed', err);
+    if (
+      err?.code !== 'ALREADY_EARNED' &&
+      err?.code !== 'USER_NOT_FOUND' &&
+      err?.code !== 'ACHIEVEMENT_NOT_FOUND'
+    ) {
+      console.error('awardAchievement ▶ server sync failed', err);
+    } else {
+      console.warn('awardAchievement ▶ server sync skipped', err?.code);
+    }
     // Keep optimistic state if server fails
     return { profile: optimisticProfile, notification };
   }

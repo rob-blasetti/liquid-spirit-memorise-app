@@ -130,9 +130,14 @@ export async function grantAchievement({
       return; // keep optimistic local state
     }
     const serverAchievementId = earned?.serverId || null;
-    await updateAchievementOnServer(serverUserId, serverAchievementId || id, optimisticProfile.totalPoints, {
-      slug: id,
-    });
+    await updateAchievementOnServer(
+      serverUserId,
+      serverAchievementId || id,
+      optimisticProfile.totalPoints,
+      {
+        slug: earned?.slug || id,
+      },
+    );
 
     const {
       achievements: serverAchievements = optimisticAchievements,
@@ -232,6 +237,8 @@ export async function grantAchievement({
     } else if (e?.code === 'USER_NOT_FOUND') {
       // Dev/guest accounts may not exist server-side; keep optimistic local state
       console.warn('grantAchievement: user not found on server, skipping');
+    } else if (e?.code === 'ACHIEVEMENT_NOT_FOUND') {
+      console.warn('grantAchievement: achievement not registered on server, keeping local award');
     } else {
       console.error('grantAchievement error:', e);
     }

@@ -41,7 +41,14 @@ const NotificationBanner = ({ title, onPress, onHide }) => {
   }, [translateY, onHide]);
 
   return (
-    <Modal transparent visible animationType="fade" statusBarTranslucent>
+    <Modal
+      transparent
+      visible
+      animationType="fade"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      hardwareAccelerated
+    >
       <Animated.View style={[styles.notification, { top: safeTop, transform: [{ translateY }] }]}>
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
           <View style={styles.content}>

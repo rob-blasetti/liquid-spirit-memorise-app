@@ -8,10 +8,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CAR_SIZE = 40;
 const TOP_PLAY_PADDING = 150;
 const BOTTOM_PLAY_PADDING = 160;
-const WORD_MARGIN = 40;
-const MIN_WORD_RADIUS = 32;
-const MAX_WORD_RADIUS = 56;
-const WORD_OVERLAP_BUFFER = 12;
+const WORD_MARGIN = 32;
+const MIN_WORD_RADIUS = 24;
+const MAX_WORD_RADIUS = 44;
+const WORD_OVERLAP_BUFFER = 8;
 const CAR_SPAWN_BUFFER = 96;
 const PLAY_AREA_TOP = TOP_PLAY_PADDING;
 const PLAY_AREA_BOTTOM_EDGE = SCREEN_HEIGHT - BOTTOM_PLAY_PADDING;
@@ -23,7 +23,7 @@ const clampWordCenterX = (value, radius) =>
 const clampWordCenterY = (value, radius) =>
   Math.max(PLAY_AREA_TOP + radius, Math.min(PLAY_AREA_BOTTOM_EDGE - radius, value));
 const computeWordRadius = (text) =>
-  Math.min(MAX_WORD_RADIUS, Math.max(MIN_WORD_RADIUS, text.length * 3 + 18));
+  Math.min(MAX_WORD_RADIUS, Math.max(MIN_WORD_RADIUS, text.length * 2.5 + 14));
 
 const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
   const sentence = typeof quote === 'string' ? quote : quote?.text || '';
@@ -40,6 +40,7 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
   const [lives, setLives] = useState(initialLives);
   const [message, setMessage] = useState('');
   const initializedRef = useRef(false);
+  const pendingLoseRef = useRef(false);
 
   useEffect(() => {
     const tokens = sentence.split(/\s+/).filter(Boolean);
@@ -61,28 +62,32 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
         const dist = Math.sqrt(dx * dx + dy * dy);
         return dist < p.radius + radius + WORD_OVERLAP_BUFFER;
       });
-    const generated = tokens.map((text, idx) => {
-      const radius = computeWordRadius(text);
+    const tryPlaceWord = (text, idx) => {
       const id = `${text}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
-      const minX = WORD_MARGIN + radius;
-      const maxX = SCREEN_WIDTH - WORD_MARGIN - radius;
-      const minY = PLAY_AREA_TOP + radius;
-      const maxY = PLAY_AREA_BOTTOM_EDGE - radius;
-      let candidate = null;
-      if (minX <= maxX && minY <= maxY) {
-        const attempts = 80;
+      const tryCandidate = (rawCx, rawCy, radius) => {
+        const cx = clampWordCenterX(rawCx, radius);
+        const cy = clampWordCenterY(rawCy, radius);
+        if (!isClearOfCar(cx, cy, radius)) return null;
+        if (overlapsPlaced(cx, cy, radius)) return null;
+        return { text, id, cx, cy, radius };
+      };
+      const attemptRandom = (radius) => {
+        const minX = WORD_MARGIN + radius;
+        const maxX = SCREEN_WIDTH - WORD_MARGIN - radius;
+        const minY = PLAY_AREA_TOP + radius;
+        const maxY = PLAY_AREA_BOTTOM_EDGE - radius;
+        if (minX > maxX || minY > maxY) return null;
+        const attempts = 120;
         for (let attempt = 0; attempt < attempts; attempt += 1) {
           const cx = minX + Math.random() * (maxX - minX);
           const cy = minY + Math.random() * (maxY - minY);
-          if (!isClearOfCar(cx, cy, radius)) continue;
-          if (!overlapsPlaced(cx, cy, radius)) {
-            candidate = { text, id, cx, cy, radius };
-            break;
-          }
+          const candidate = tryCandidate(cx, cy, radius);
+          if (candidate) return candidate;
         }
-      }
-      if (!candidate) {
-        const fallbackOffsets = [
+        return null;
+      };
+      const attemptOffsets = (radius) => {
+        const offsets = [
           { x: radius + CAR_SPAWN_BUFFER, y: 0 },
           { x: -(radius + CAR_SPAWN_BUFFER), y: 0 },
           { x: 0, y: radius + CAR_SPAWN_BUFFER },
@@ -92,55 +97,140 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
           { x: radius + CAR_SPAWN_BUFFER, y: -(radius + CAR_SPAWN_BUFFER) },
           { x: -(radius + CAR_SPAWN_BUFFER), y: -(radius + CAR_SPAWN_BUFFER) },
         ];
-        for (let i = 0; i < fallbackOffsets.length && !candidate; i += 1) {
-          const offset = fallbackOffsets[i];
-          const cx = clampWordCenterX(carCenterX + offset.x, radius);
-          const cy = clampWordCenterY(carCenterY + offset.y, radius);
-          if (!isClearOfCar(cx, cy, radius)) continue;
-          if (!overlapsPlaced(cx, cy, radius)) {
-            candidate = { text, id, cx, cy, radius };
+        for (let i = 0; i < offsets.length; i += 1) {
+          const offset = offsets[i];
+          const candidate = tryCandidate(carCenterX + offset.x, carCenterY + offset.y, radius);
+          if (candidate) return candidate;
+        }
+        return null;
+      };
+      const attemptGrid = (radius, stepScale = 1.25) => {
+        const minX = WORD_MARGIN + radius;
+        const maxX = SCREEN_WIDTH - WORD_MARGIN - radius;
+        const minY = PLAY_AREA_TOP + radius;
+        const maxY = PLAY_AREA_BOTTOM_EDGE - radius;
+        if (minX > maxX || minY > maxY) return null;
+        const step = Math.max(radius + WORD_OVERLAP_BUFFER, radius * stepScale);
+        const offsets = [0, step / 2];
+        for (let o = 0; o < offsets.length; o += 1) {
+          const offset = offsets[o];
+          for (let cy = minY + offset; cy <= maxY; cy += step) {
+            for (let cx = minX + offset; cx <= maxX; cx += step) {
+              const candidate = tryCandidate(cx, cy, radius);
+              if (candidate) return candidate;
+            }
           }
         }
+        return null;
+      };
+      const tryRadius = (radius) =>
+        attemptRandom(radius) || attemptOffsets(radius) || attemptGrid(radius);
+      const tryDenseRadius = (radius) =>
+        attemptGrid(radius, 1.1) || attemptGrid(radius, 1);
+
+      let desiredRadius = computeWordRadius(text);
+      let placement = tryRadius(desiredRadius);
+      let currentRadius = desiredRadius;
+      const shrinkStep = 4;
+      while (!placement && currentRadius > MIN_WORD_RADIUS) {
+        currentRadius = Math.max(MIN_WORD_RADIUS, currentRadius - shrinkStep);
+        placement = tryRadius(currentRadius);
       }
-      if (!candidate) {
-        const fallbackCx = clampWordCenterX(SCREEN_WIDTH / 2, radius);
-        const fallbackCy = clampWordCenterY(
-          (PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2,
-          radius,
-        );
-        let cx = fallbackCx;
-        let cy = fallbackCy;
-        const extraOffsets = [
-          { x: radius + CAR_SPAWN_BUFFER, y: 0 },
-          { x: -(radius + CAR_SPAWN_BUFFER), y: 0 },
-          { x: 0, y: radius + CAR_SPAWN_BUFFER },
-          { x: 0, y: -(radius + CAR_SPAWN_BUFFER) },
+      if (!placement) {
+        placement = tryDenseRadius(MIN_WORD_RADIUS);
+      }
+      if (!placement) {
+        const fallbackRadii = [
+          Math.max(16, MIN_WORD_RADIUS - 4),
+          Math.max(14, MIN_WORD_RADIUS - 8),
         ];
-        for (let i = 0; i < extraOffsets.length; i += 1) {
-          const option = extraOffsets[i];
-          const testCx = clampWordCenterX(fallbackCx + option.x, radius);
-          const testCy = clampWordCenterY(fallbackCy + option.y, radius);
-          if (!isClearOfCar(testCx, testCy, radius)) continue;
-          if (!overlapsPlaced(testCx, testCy, radius)) {
-            cx = testCx;
-            cy = testCy;
-            break;
-          }
+        for (let i = 0; i < fallbackRadii.length && !placement; i += 1) {
+          const radius = fallbackRadii[i];
+          placement = tryDenseRadius(radius) || tryRadius(radius);
         }
-        if (!isClearOfCar(cx, cy, radius)) {
-          cx = clampWordCenterX(carCenterX + radius + CAR_SPAWN_BUFFER, radius);
-          cy = clampWordCenterY(carCenterY + radius + CAR_SPAWN_BUFFER, radius);
-        }
-        if (overlapsPlaced(cx, cy, radius)) {
-          const altCy = clampWordCenterY(cy + radius + WORD_OVERLAP_BUFFER, radius);
-          if (isClearOfCar(cx, altCy, radius) && !overlapsPlaced(cx, altCy, radius)) {
-            cy = altCy;
-          }
-        }
-        candidate = { text, id, cx, cy, radius };
       }
-      placed.push(candidate);
-      return candidate;
+      if (!placement) {
+        for (let radius = Math.max(12, MIN_WORD_RADIUS - 10); radius >= 12 && !placement; radius -= 2) {
+          placement = tryDenseRadius(radius) || tryRadius(radius);
+        }
+      }
+      if (!placement) {
+        for (let radius = Math.max(10, MIN_WORD_RADIUS - 12); radius >= 8 && !placement; radius -= 2) {
+          placement = tryDenseRadius(radius) || tryRadius(radius);
+        }
+      }
+      if (!placement) {
+        const minRadius = 8;
+        const minX = WORD_MARGIN + minRadius;
+        const maxX = SCREEN_WIDTH - WORD_MARGIN - minRadius;
+        const minY = PLAY_AREA_TOP + minRadius;
+        const maxY = PLAY_AREA_BOTTOM_EDGE - minRadius;
+        if (minX <= maxX && minY <= maxY) {
+          const step = Math.max(minRadius + WORD_OVERLAP_BUFFER, minRadius * 1.2);
+          const offsets = [0, step / 2];
+          for (let o = 0; o < offsets.length && !placement; o += 1) {
+            const offset = offsets[o];
+            for (let cy = minY + offset; cy <= maxY && !placement; cy += step) {
+              for (let cx = minX + offset; cx <= maxX && !placement; cx += step) {
+                placement = tryCandidate(cx, cy, minRadius);
+              }
+            }
+          }
+          if (!placement) {
+            const attempts = 320;
+            for (let attempt = 0; attempt < attempts && !placement; attempt += 1) {
+              const cx = minX + Math.random() * (maxX - minX);
+              const cy = minY + Math.random() * (maxY - minY);
+              placement = tryCandidate(cx, cy, minRadius);
+            }
+          }
+        }
+      }
+      if (!placement) {
+        for (let radius = 6; radius >= 4 && !placement; radius -= 2) {
+          placement = tryDenseRadius(radius) || tryRadius(radius);
+        }
+      }
+      if (!placement) {
+        const safeRadius = 8;
+        const orbitDistance = safeRadius + CAR_SPAWN_BUFFER;
+        for (let angle = 0; angle < 360 && !placement; angle += 6) {
+          const radians = (angle * Math.PI) / 180;
+          const cx = carCenterX + Math.cos(radians) * orbitDistance;
+          const cy = carCenterY + Math.sin(radians) * orbitDistance;
+          placement = tryCandidate(cx, cy, safeRadius);
+        }
+      }
+      if (!placement) {
+        const safeRadius = 8;
+        placement = tryCandidate(
+          SCREEN_WIDTH / 2,
+          (PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2,
+          safeRadius,
+        );
+      }
+      if (!placement) {
+        const safeRadius = 8;
+        placement = tryCandidate(
+          clampWordCenterX(WORD_MARGIN + safeRadius, safeRadius),
+          clampWordCenterY(PLAY_AREA_TOP + safeRadius, safeRadius),
+          safeRadius,
+        );
+      }
+      return (
+        placement ?? {
+          text,
+          id,
+          cx: clampWordCenterX(SCREEN_WIDTH / 2, 8),
+          cy: clampWordCenterY((PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2, 8),
+          radius: 8,
+        }
+      );
+    };
+    const generated = tokens.map((text, idx) => {
+      const placement = tryPlaceWord(text, idx);
+      placed.push(placement);
+      return placement;
     });
     setWords(generated);
     setCollected([]);
@@ -148,6 +238,7 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
     setLives(initialLives);
     setMessage('');
     setCar({ x: startX, y: startY });
+    pendingLoseRef.current = false;
     initializedRef.current = true;
   }, [quote, sentence, level]);
 
@@ -187,8 +278,7 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
         const next = Math.max(0, lv - 1);
         if (next === 0) {
           setMessage('');
-          // trigger loss overlay
-          onLose?.();
+          pendingLoseRef.current = true;
         } else {
           setMessage('Oops! Wrong word');
         }
@@ -205,6 +295,13 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
       onWin?.();
     }
   }, [words, sentence, onWin, collected.length]);
+
+  useEffect(() => {
+    if (pendingLoseRef.current && lives === 0) {
+      pendingLoseRef.current = false;
+      onLose?.();
+    }
+  }, [lives, onLose]);
 
   const onTouchAt = (x, y) => {
     // Center the car under the finger and clamp to bounds
@@ -261,7 +358,7 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
               style={styles.wordText}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.6}
+              minimumFontScale={0.5}
             >
               {w.text}
             </Text>
@@ -347,12 +444,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     overflow: 'hidden',
   },
   wordText: {
     color: themeVariables.whiteColor,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 4,

@@ -342,16 +342,6 @@ const Main = () => {
     <AchievementsProvider value={achievementsState}>
     <ScreenBackground>
     <SafeAreaView style={styles.container}>
-      {notification && (
-        <NotificationBanner
-          title={notification.title}
-          onPress={() => {
-            goTo('achievements', { highlight: notification.id });
-            setNotification(null);
-          }}
-          onHide={() => setNotification(null)}
-        />
-      )}
       <ProfileModal
         visible={profileModalVisible}
         profile={profile}
@@ -381,6 +371,16 @@ const Main = () => {
         grade={comingSoonGrade}
         onClose={() => setComingSoonGrade(null)}
       />
+      {notification && (
+        <NotificationBanner
+          title={notification.title}
+          onPress={() => {
+            goTo('achievements', { highlight: notification.id });
+            setNotification(null);
+          }}
+          onHide={() => setNotification(null)}
+        />
+      )}
     </SafeAreaView>
     </ScreenBackground>
     </AchievementsProvider>
