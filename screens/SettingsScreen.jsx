@@ -209,7 +209,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     );
   };
 
-  const renderGrade2Settings = () => {
+const renderGrade2Settings = () => {
     const lessons = Object.keys(quoteMap)
       .filter(key => key.startsWith(`${selectedSet}-`))
       .map(key => parseInt(key.split('-')[1], 10))
@@ -325,7 +325,6 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {renderHeader()}
-        <Text style={styles.subtitle}>Grade: {profile.grade}</Text>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reading Font Size</Text>
           <View style={styles.fontSizeRow}>

@@ -1,6 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Easing,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { BlurView } from '@react-native-community/blur';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -66,6 +74,23 @@ const HomeScreen = ({
   const hasBottomButtons =
     hasLibraryButton || hasGamesButton || hasClassButton;
 
+  const currentLessonNumber = Number(currentLesson);
+  const currentSetNumber = Number(currentSet);
+
+  const [tabLayouts, setTabLayouts] = useState({
+    quote: null,
+    prayer: null,
+  });
+  const lessonIdentifier = Number.isFinite(currentLessonNumber)
+    ? Number.isFinite(currentSetNumber)
+      ? `${currentSetNumber}.${currentLessonNumber}`
+      : `${currentLessonNumber}`
+    : null;
+  const indicatorTranslate = useRef(new Animated.Value(0)).current;
+  const indicatorWidth = useRef(new Animated.Value(0)).current;
+  const contentOpacity = useRef(new Animated.Value(1)).current;
+  const contentTranslate = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (hasPrayer && hasQuote) {
       setActiveContent(prev => {
@@ -90,8 +115,8 @@ const HomeScreen = ({
     currentSetNumber,
   ]);
 
-  const currentLessonNumber = Number(currentLesson);
-  const currentSetNumber = Number(currentSet);
+  const isAnimatingRef = useRef(false);
+  const activeTabLayout = activeContent ? tabLayouts[activeContent] : null;
 
   const lessonTimeline = useMemo(() => {
     if (!Number.isFinite(currentLessonNumber)) {
@@ -154,6 +179,112 @@ const HomeScreen = ({
     return [];
   }, [profile.grade, currentLessonNumber, currentSetNumber]);
 
+  const handleTabLayout = type => event => {
+    const layout = event.nativeEvent.layout;
+    setTabLayouts(prev => {
+      const prevLayout = prev[type];
+      if (
+        prevLayout &&
+        Math.abs(prevLayout.x - layout.x) < 0.5 &&
+        Math.abs(prevLayout.width - layout.width) < 0.5
+      ) {
+        return prev;
+      }
+      return { ...prev, [type]: layout };
+    });
+    if (type === activeContent) {
+      indicatorTranslate.setValue(layout.x);
+      indicatorWidth.setValue(layout.width);
+    }
+  };
+
+  const handleTabPress = type => {
+    if (!type || type === activeContent || isAnimatingRef.current) {
+      return;
+    }
+
+    const targetLayout = tabLayouts[type];
+    const currentIndex = activeContent === 'prayer' ? 1 : 0;
+    const nextIndex = type === 'prayer' ? 1 : 0;
+    const direction = nextIndex > currentIndex ? 1 : -1;
+
+    contentOpacity.stopAnimation();
+    contentTranslate.stopAnimation();
+    indicatorTranslate.stopAnimation();
+    indicatorWidth.stopAnimation();
+
+    if (targetLayout) {
+      Animated.parallel([
+        Animated.spring(indicatorTranslate, {
+          toValue: targetLayout.x,
+          damping: 18,
+          stiffness: 250,
+          mass: 0.9,
+          useNativeDriver: false,
+        }),
+        Animated.spring(indicatorWidth, {
+          toValue: targetLayout.width,
+          damping: 20,
+          stiffness: 240,
+          mass: 1,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+
+    isAnimatingRef.current = true;
+
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: 0,
+        duration: 160,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentTranslate, {
+        toValue: direction * -14,
+        duration: 220,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setActiveContent(type);
+      const entryStart = direction * 14;
+      contentOpacity.setValue(0);
+      contentTranslate.setValue(entryStart);
+      Animated.parallel([
+        Animated.timing(contentOpacity, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(contentTranslate, {
+          toValue: 0,
+          speed: 16,
+          bounciness: 10,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        isAnimatingRef.current = false;
+      });
+    });
+  };
+
+  useEffect(() => {
+    const layout = activeContent ? tabLayouts[activeContent] : null;
+    if (layout && !isAnimatingRef.current) {
+      indicatorTranslate.setValue(layout.x);
+      indicatorWidth.setValue(layout.width);
+    }
+  }, [
+    activeContent,
+    tabLayouts.quote,
+    tabLayouts.prayer,
+    indicatorTranslate,
+    indicatorWidth,
+  ]);
+
   return (
     <View style={styles.container}>
       <HomeTopBar
@@ -169,45 +300,79 @@ const HomeScreen = ({
           <View style={styles.lessonColumn}>
             <View style={styles.lessonContent}>
               <View style={styles.lessonInner}>
-                <Text style={styles.lessonSectionTitle}>Current Lesson:</Text>
+                <Text style={styles.lessonSectionTitle}>
+                  {`Current Lesson${lessonIdentifier ? ` ${lessonIdentifier}` : ''}`}
+                </Text>
                 {hasPrayer && hasQuote ? (
-                  <View style={styles.lessonTabs}>
-                    <TouchableOpacity
-                      style={[
-                        styles.lessonTab,
-                        activeContent === 'quote' && styles.lessonTabActive,
-                      ]}
-                      onPress={() => setActiveContent('quote')}
-                    >
-                      <Text
+                  <View style={styles.lessonTabsWrapper}>
+                    <BlurView
+                      style={styles.lessonTabsBlur}
+                      blurType="light"
+                      blurAmount={20}
+                      reducedTransparencyFallbackColor="rgba(255, 255, 255, 0.3)"
+                    />
+                    <View style={styles.lessonTabs}>
+                      {activeTabLayout ? (
+                        <Animated.View
+                          pointerEvents="none"
+                          style={[
+                            styles.lessonTabIndicator,
+                            {
+                              width: indicatorWidth,
+                              transform: [{ translateX: indicatorTranslate }],
+                            },
+                          ]}
+                        />
+                      ) : null}
+                      <TouchableOpacity
                         style={[
-                          styles.lessonTabLabel,
-                          activeContent === 'quote' && styles.lessonTabLabelActive,
+                          styles.lessonTab,
+                          activeContent === 'quote' && styles.lessonTabActive,
                         ]}
+                        onPress={() => handleTabPress('quote')}
+                        onLayout={handleTabLayout('quote')}
+                        activeOpacity={0.9}
                       >
-                        Quote
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.lessonTab,
-                        activeContent === 'prayer' && styles.lessonTabActive,
-                      ]}
-                      onPress={() => setActiveContent('prayer')}
-                    >
-                      <Text
+                        <Text
+                          style={[
+                            styles.lessonTabLabel,
+                            activeContent === 'quote' && styles.lessonTabLabelActive,
+                          ]}
+                        >
+                          Quote
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
                         style={[
-                          styles.lessonTabLabel,
-                          activeContent === 'prayer' && styles.lessonTabLabelActive,
+                          styles.lessonTab,
+                          activeContent === 'prayer' && styles.lessonTabActive,
                         ]}
+                        onPress={() => handleTabPress('prayer')}
+                        onLayout={handleTabLayout('prayer')}
+                        activeOpacity={0.9}
                       >
-                        Prayer
-                      </Text>
-                    </TouchableOpacity>
+                        <Text
+                          style={[
+                            styles.lessonTabLabel,
+                            activeContent === 'prayer' && styles.lessonTabLabelActive,
+                          ]}
+                        >
+                          Prayer
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ) : null}
                 {(activeContent === 'quote' && hasQuote) || (activeContent === 'prayer' && hasPrayer) ? (
-                  <View style={styles.lessonContentInner}>
+                  <Animated.View
+                    style={[
+                      styles.lessonContentInner,
+                      {
+                        opacity: contentOpacity,
+                        transform: [{ translateX: contentTranslate }],
+                      },
+                    ]}
+                  >
                     {activeContent === 'quote' && hasQuote ? (
                       <QuoteBlock
                         quote={quoteToShow}
@@ -221,7 +386,7 @@ const HomeScreen = ({
                         profile={profile}
                       />
                     ) : null}
-                  </View>
+                  </Animated.View>
                 ) : null}
                 {!hasPrayer && !hasQuote ? (
                   <View style={styles.lessonContentInner}>
@@ -395,43 +560,70 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     gap: 12,
   },
+  lessonTabsWrapper: {
+    position: 'relative',
+    alignSelf: 'stretch',
+    marginBottom: 16,
+    borderRadius: themeVariables.borderRadiusPill + 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    overflow: 'hidden',
+  },
+  lessonTabsBlur: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: themeVariables.borderRadiusPill + 6,
+  },
   lessonTabs: {
     flexDirection: 'row',
-    marginBottom: 16,
-    alignSelf: 'stretch',
-    borderRadius: themeVariables.borderRadiusPill + 4,
-    paddingHorizontal: -4,
+    alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+  },
+  lessonTabIndicator: {
+    position: 'absolute',
+    top: 5,
+    bottom: 5,
+    left: 0,
+    borderRadius: themeVariables.borderRadiusPill,
+    backgroundColor: 'rgba(255, 255, 255, 0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.46)',
+    shadowColor: 'rgba(15, 32, 67, 0.3)',
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
   lessonTab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    minHeight: 46,
+    marginHorizontal: 3,
+    paddingVertical: 10,
+    paddingHorizontal: 9,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    borderColor: themeVariables.whiteColor,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     borderRadius: themeVariables.borderRadiusPill,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 60,
-    marginHorizontal: 4,
+  },
+  lessonTabActive: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(255, 255, 255, 0)',
   },
   lessonTabLabel: {
-    color: themeVariables.whiteColor,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 15,
     fontWeight: '700',
-    opacity: 0.85,
     letterSpacing: 0.2,
     textShadowColor: 'rgba(0, 0, 0, 0.45)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-    paddingBottom: 6,
   },
   lessonTabLabelActive: {
-    color: themeVariables.whiteColor,
-    opacity: 1,
-    borderBottomWidth: 3,
-    borderBottomColor: themeVariables.pinkColor,
-    paddingBottom: 3,
+    color: themeVariables.primaryColor,
+    textShadowRadius: 0,
   },
   emptyLessonText: {
     color: themeVariables.primaryColor,
