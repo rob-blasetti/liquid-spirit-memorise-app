@@ -11,25 +11,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import styles from '../styles/mainAppStyles';
-import {
-  GradesScreen,
-  Grade1SetScreen,
-  Grade1LessonScreen,
-  SettingsScreen,
-  AchievementsScreen,
-  HomeScreen,
-  Splash,
-  GamesListScreen,
-  ClassScreen,
-  LessonJourneyScreen,
-  StoryModeScreen,
-} from '../screens';
 import AuthNavigator from '../navigation/AuthNavigator';
 import NotificationBanner from './NotificationBanner';
 import ProfileSwitcherModal from './ProfileSwitcherModal';
 import ProfileModal from './ProfileModal';
-import GameRenderer from './GameRenderer';
-import { isGameScreen } from '../navigation/router';
+import ScreenRenderer, { renderLazy, SplashScreen } from './ScreenRenderer';
 import ScreenBackground from './ScreenBackground';
 import ComingSoonModal from './ComingSoonModal';
 import FastImage from 'react-native-fast-image';
@@ -41,15 +27,9 @@ import useLessonProgress from '../hooks/useLessonProgress';
 import { AchievementsProvider } from '../contexts/AchievementsContext';
 import { createNavigationActions } from '../services/navigationService';
 import { createAppActions } from '../services/appFlowService';
+import ScreenTransition from './ScreenTransition';
 import { prefetchGames } from '../games/lazyGameRoutes';
 import { gameIds } from '../games';
-import {
-  GradeSetLanding,
-  GradeLessonSelector,
-  GradeLessonContent,
-  GradeComingSoon,
-} from '../components/GradeLayouts';
-import { GRADE_SCREEN_CONFIG } from '../data/gradesConfig';
 import {
   buildProfileFromUser,
   deriveAuthMetadata,
@@ -65,19 +45,17 @@ const resolveProfileId = (entity) => {
   return id != null ? String(id) : null;
 };
 
-const transitionStyles = StyleSheet.create({
-  stack: {
-    flex: 1,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  pane: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});
-
 const Main = () => {
-  const { children, setUser, setUsers, setChildren, setFamily, setToken } = useUser();
+  const {
+    children,
+    setUser,
+    setUsers,
+    setChildren,
+    setFamily,
+    setToken,
+    user,
+    storageLoaded,
+  } = useUser();
   const { level } = useDifficulty();
   const {
     showSplash,
@@ -96,7 +74,14 @@ const Main = () => {
     viewportWidth,
   } = useHomeScreenTransition(nav);
   const achievementsState = useAchievements(profile, saveProfile);
-  const { achievements, notification, setNotification, awardAchievement, awardGameAchievement } = achievementsState;
+  const {
+    achievements,
+    notification,
+    setNotification,
+    awardAchievement,
+    awardGameAchievement,
+    refreshFromServer,
+  } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
   const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
@@ -133,20 +118,6 @@ const Main = () => {
     [goTo, nav, markGradeVisited, visitedGrades, awardAchievement],
   );
 
-  const {
-    goHome,
-    goGrade1,
-    goGrade2,
-    goGrade3,
-    goGrade4,
-    goGrade2Set,
-    goGrade2Lesson,
-    goGrade2b,
-    goGrade2bSet,
-    goGrade2bLesson,
-    goBackToLesson,
-  } = navigationActions;
-
   const appActions = useMemo(
     () =>
       createAppActions({
@@ -158,14 +129,6 @@ const Main = () => {
       }),
     [profile, goTo, nav, getCurrentProgress, awardAchievement],
   );
-
-  const {
-    playSelectedGame,
-    getHomeProgress,
-    launchStoryModeGame,
-    getQuoteOfTheWeek,
-  } = appActions;
-
   // Preload Pearlina image for Home screen into FastImage cache
   // Animate slide transitions when toggling between home and classes
   useEffect(() => {
@@ -194,21 +157,31 @@ const Main = () => {
     };
   }, [nav.screen]);
 
-  // Warm cache with likely avatar + class images when children load/switch
+  // Warm cache with likely avatar + class images when child list or active profile changes
   useEffect(() => {
-    if (!children || children.length === 0) return;
-    const uris = collectChildAndClassImageUris(children);
-    // Avatars and thumbnails don't need high priority globally
-    preloadImages(uris, { priority: 'low' });
-  }, [children]);
-
-  // Also preload the active profile's avatar if present (switches, uploads)
-  useEffect(() => {
+    const uris = new Set();
     const avatarUri = profile?.profilePicture || profile?.avatar;
-    if (avatarUri) preloadImages([avatarUri], { priority: 'normal' });
-  }, [profile?.profilePicture, profile?.avatar]);
+    if (avatarUri) uris.add(avatarUri);
+    const childUris = collectChildAndClassImageUris(children || []);
+    childUris.forEach((uri) => {
+      if (uri) {
+        uris.add(uri);
+      }
+    });
+    if (uris.size === 0) return;
+    const primary = [];
+    const secondary = [];
+    uris.forEach((uri) => {
+      if (!uri) return;
+      if (uri === avatarUri) primary.push(uri);
+      else secondary.push(uri);
+    });
+    if (primary.length) preloadImages(primary, { priority: 'normal' });
+    if (secondary.length) preloadImages(secondary, { priority: 'low' });
+  }, [children, profile?.profilePicture, profile?.avatar]);
 
   const setUsersRef = useRef(setUsers);
+  const achievementsFetchRef = useRef(null);
   useEffect(() => {
     setUsersRef.current = setUsers;
   }, [setUsers]);
@@ -238,10 +211,57 @@ const Main = () => {
     }
   }, [profile, registeredProfile, children]);
 
-  if (showSplash) return <Splash />;
+  const lessonState = useMemo(
+    () => ({
+      completeLesson,
+      overrideProgress,
+      setOverrideProgress,
+      getCurrentProgress,
+      completedLessons,
+    }),
+    [completeLesson, overrideProgress, setOverrideProgress, getCurrentProgress, completedLessons],
+  );
+
+  const accountActions = useMemo(
+    () => ({
+      deleteGuestAccount,
+      wipeProfile,
+      saveProfile,
+    }),
+    [deleteGuestAccount, wipeProfile, saveProfile],
+  );
+
+  const modalHandlers = useMemo(
+    () => ({
+      setProfileModalVisible,
+      setComingSoonGrade,
+    }),
+    [setProfileModalVisible, setComingSoonGrade],
+  );
+
+  useEffect(() => {
+    if (!storageLoaded) return;
+    if (!profile) {
+      achievementsFetchRef.current = null;
+      return;
+    }
+    const isGuestProfile = Boolean(profile?.guest || profile?.type === 'guest');
+    if (isGuestProfile) {
+      achievementsFetchRef.current = null;
+      return;
+    }
+    const profileId = resolveProfileId(profile);
+    if (!profileId) return;
+    const activeUserId = resolveProfileId(user);
+    if (!activeUserId) return;
+    if (achievementsFetchRef.current === profileId) return;
+    achievementsFetchRef.current = profileId;
+    refreshFromServer();
+  }, [storageLoaded, profile, user, refreshFromServer]);
+
+  if (showSplash) return renderLazy(<SplashScreen />);
 
   const renderScreenForNav = (navState) => {
-    const currentNav = navState || displayNav;
     if (!profile) {
       return (
         <NavigationContainer>
@@ -278,286 +298,36 @@ const Main = () => {
         </NavigationContainer>
       );
     }
-    // Render games within the main layout instead of early-returning
-    if (isGameScreen(currentNav.screen)) {
-      const backHandler = (() => {
-        if (currentNav.fromStoryMode) {
-          return () => goTo('storyMode');
-        }
-        if (currentNav.fromGames) {
-          return () => goTo('games');
-        }
-        return goBackToLesson;
-      })();
-      return (
-        <GameRenderer
-          screen={currentNav.screen}
-          quote={currentNav.quote}
-          onBack={backHandler}
-          level={level}
-          awardGameAchievement={awardGameAchievement}
-        />
-      );
-    }
-    switch (currentNav.screen) {
-      case 'grade1':
-        return (
-          <Grade1SetScreen
-            onBack={() => goTo('grades')}
-            onLessonSelect={lessonNumber => goTo('grade1Lesson', { lessonNumber })}
-          />
-        );
-      case 'grade1Lesson':
-        return (
-          <Grade1LessonScreen
-            lessonNumber={currentNav.lessonNumber}
-            onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
-          />
-        );
-      case 'grade2Lesson':
-        {
-          const config = GRADE_SCREEN_CONFIG[2];
-          if (!config) return null;
-          return (
-            <GradeLessonContent
-              gradeTitle={config.title}
-              setNumber={currentNav.setNumber}
-              lessonNumber={currentNav.lessonNumber}
-              getLessonContent={config.getLessonContent}
-              fallbackQuote={config.fallbackQuote}
-              onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
-              onComplete={completeLesson}
-              onPractice={(q) => goTo('practice', { quote: q })}
-              onPlayGame={(q) => goTo('tapGame', { quote: q })}
-            />
-          );
-        }
-      case 'grade2bLesson':
-        {
-          const config = GRADE_SCREEN_CONFIG['2b'];
-          if (!config) return null;
-          return (
-            <GradeLessonContent
-              gradeTitle={config.title}
-              setNumber={currentNav.setNumber}
-              lessonNumber={currentNav.lessonNumber}
-              getLessonContent={config.getLessonContent}
-              fallbackQuote={config.fallbackQuote}
-              onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
-              onComplete={completeLesson}
-              onPractice={(q) => goTo('practice', { quote: q })}
-              onPlayGame={(q) => goTo('tapGame', { quote: q })}
-            />
-          );
-        }
-      case 'grade2Set':
-        {
-          const config = GRADE_SCREEN_CONFIG[2];
-          if (!config) return null;
-          return (
-            <GradeLessonSelector
-              title={`${config.title} - Set ${currentNav.setNumber}`}
-              lessonNumbers={config.lessonNumbers}
-              onLessonSelect={goGrade2Lesson}
-              onBack={() => goTo('grades')}
-            />
-          );
-        }
-      case 'grade2bSet':
-        {
-          const config = GRADE_SCREEN_CONFIG['2b'];
-          if (!config) return null;
-          return (
-            <GradeLessonSelector
-              title={`${config.title} - Set ${currentNav.setNumber}`}
-              lessonNumbers={config.lessonNumbers}
-              onLessonSelect={goGrade2bLesson}
-              onBack={() => goTo('grades')}
-            />
-          );
-        }
-      case 'grade2':
-        {
-          const config = GRADE_SCREEN_CONFIG[2];
-          if (!config) return null;
-          return (
-            <GradeSetLanding
-              title={config.title}
-              sets={config.sets}
-              onSetSelect={goGrade2Set}
-              onBack={() => goTo('grades')}
-            />
-          );
-        }
-      case 'grade2b':
-        {
-          const config = GRADE_SCREEN_CONFIG['2b'];
-          if (!config) return null;
-          return (
-            <GradeSetLanding
-              title={config.title}
-              sets={config.sets}
-              onSetSelect={goGrade2bSet}
-              onBack={() => goTo('grades')}
-            />
-          );
-        }
-      case 'grade3':
-        {
-          const config = GRADE_SCREEN_CONFIG[3];
-          if (!config) return null;
-          return (
-            <GradeComingSoon
-              title={config.title}
-              message={config.message}
-              onBack={() => goTo('grades')}
-            />
-          );
-        }
-      case 'grade4':
-        {
-          const config = GRADE_SCREEN_CONFIG[4];
-          if (!config) return null;
-          return (
-            <GradeComingSoon
-              title={config.title}
-              message={config.message}
-              onBack={() => goTo('grades')}
-            />
-          );
-        }
-      case 'storyMode': {
-        const { quote, setNumber, lessonNumber } = getQuoteOfTheWeek();
-        return (
-          <StoryModeScreen
-            profile={profile}
-            quote={quote}
-            setNumber={setNumber}
-            lessonNumber={lessonNumber}
-            onBack={goHome}
-            onStartGame={launchStoryModeGame}
-          />
-        );
-      }
-      case 'achievements':
-        return <AchievementsScreen onBack={goHome} />;
-      case 'games':
-        return <GamesListScreen onSelect={playSelectedGame} onBack={goHome} />;
-      case 'settings':
-        return (
-        <SettingsScreen
-          profile={profile}
-          currentProgress={getCurrentProgress()}
-          overrideProgress={overrideProgress}
-          onSaveOverride={setOverrideProgress}
-          onBack={goHome}
-          // Logout: clear guest or registered profile appropriately
-          onReset={() => {
-            if (profile?.guest) {
-              deleteGuestAccount();
-            } else {
-              wipeProfile();
-            }
-          }}
-          onSaveProfile={saveProfile}
-        />
-        );
-      case 'class':
-        return <ClassScreen childEntries={children || []} onBack={goHome} />;
-      case 'lessonJourney':
-        return (
-          <LessonJourneyScreen
-            profile={profile}
-            currentProgress={getCurrentProgress()}
-            completedLessons={completedLessons}
-            onBack={goHome}
-            goToLesson={(setNumber, lessonNumber) => {
-              if (profile.grade === 1) {
-                goTo('grade1Lesson', { lessonNumber, from: 'journey' });
-              } else if (profile.grade === 2) {
-                goTo('grade2Lesson', { setNumber, lessonNumber, from: 'journey' });
-              } else if (profile.grade === '2b') {
-                goTo('grade2bLesson', { setNumber, lessonNumber, from: 'journey' });
-              }
-            }}
-          />
-        );
-      case 'grades':
-        return (
-          <GradesScreen
-            onBack={goHome}
-            comingSoonGrades={[3, 4, 5]}
-            onComingSoonGrade={grade => setComingSoonGrade(grade)}
-            onGradeSelect={(g, setNumber) => {
-              if (g === 1) {
-                goGrade1();
-              } else if (g === 2) {
-                if (setNumber === 2) {
-                  goGrade2b();
-                } else if (setNumber) {
-                  goGrade2Set(setNumber);
-                } else {
-                  goGrade2();
-                }
-              }
-            }}
-          />
-        );
-      default: {
-        const { setNumber, lessonNumber } = getHomeProgress();
-        return (
-          <HomeScreen
-            profile={profile}
-            achievements={achievements}
-            currentSet={setNumber}
-            currentLesson={lessonNumber}
-            onAvatarPress={() => setProfileModalVisible(true)}
-            onJourney={() => goTo('lessonJourney')}
-            onOpenSettings={() => goTo('settings')}
-            onOpenAchievements={() => goTo('achievements')}
-            onOpenClass={() => goTo('class')}
-            onOpenLibrary={() => goTo('grades')}
-            onOpenGames={() => goTo('games')}
-          />
-        );
-      }
-    }
+    return (
+      <ScreenRenderer
+        navState={navState || displayNav}
+        profile={profile}
+        achievements={achievements}
+        childrenProfiles={children}
+        level={level}
+        navigationActions={navigationActions}
+        goTo={goTo}
+        appActions={appActions}
+        lessonState={lessonState}
+        accountActions={accountActions}
+        modalHandlers={modalHandlers}
+        awardGameAchievement={awardGameAchievement}
+      />
+    );
   };
-
-  const canAnimateTransition =
-    transitionState
-    && transitionState.from
-    && transitionState.to
-    && viewportWidth > 0;
 
   let screenContent;
 
-  if (canAnimateTransition) {
+  if (ScreenTransition.canAnimate({ transitionState, viewportWidth })) {
     const { from, to, direction } = transitionState;
-    const fromTranslateX = transitionProgress.interpolate({
-      inputRange: [0, 1],
-      outputRange: direction === 'forward' ? [0, -viewportWidth] : [0, viewportWidth],
-    });
-    const toTranslateX = transitionProgress.interpolate({
-      inputRange: [0, 1],
-      outputRange: direction === 'forward' ? [viewportWidth, 0] : [-viewportWidth, 0],
-    });
 
     screenContent = (
-      <View style={transitionStyles.stack}>
-        <Animated.View
-          pointerEvents="none"
-          style={[transitionStyles.pane, { transform: [{ translateX: fromTranslateX }] }]}
-        >
-          {renderScreenForNav(from)}
-        </Animated.View>
-        <Animated.View
-          pointerEvents="auto"
-          style={[transitionStyles.pane, { transform: [{ translateX: toTranslateX }] }]}
-        >
-          {renderScreenForNav(to)}
-        </Animated.View>
-      </View>
+      <ScreenTransition
+        transitionState={transitionState}
+        transitionProgress={transitionProgress}
+        viewportWidth={viewportWidth}
+        renderScreenForNav={renderScreenForNav}
+      />
     );
   } else {
     screenContent = renderScreenForNav(displayNav);
