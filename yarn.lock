@@ -5882,10 +5882,10 @@ react-native-tab-view@^4.1.2:
   dependencies:
     use-latest-callback "^0.2.4"
 
-react-native-timeline-feed@^1.0.3:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/react-native-timeline-feed/-/react-native-timeline-feed-2.0.0.tgz#ca1b4340121c1044196c97f1775e22d577edf216"
-  integrity sha512-Wi5L9KHQaDOLm9GXuHXEX4C4aMiYEnQgwJArYhuyH/09sJsOgQegcsDHQdgtOZ3kdq3pdjdYQ7bK7jNdmUeUmw==
+react-native-timeline-feed@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/react-native-timeline-feed/-/react-native-timeline-feed-1.0.1.tgz#564b5f68798282e837f5fde61e66e16980cce397"
+  integrity sha512-M5027tP7lb48calaWZOZ8E0SAttU5sPaLoDOC4w3bYiWmUqlbh47awrBeGKwyOeE8ggy+j+KXrtCyA65HQzlxA==
 
 react-native-vector-icons@^10.2.0:
   version "10.3.0"
