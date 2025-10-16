@@ -10,7 +10,7 @@ import ThemedButton from './ThemedButton';
 import WinOverlay from './WinOverlay';
 import LostOverlay from './LostOverlay';
 
-const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) => {
+const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement, recordGamePlay }) => {
   const GameComponent = lazyGameScreens[screen];
   const { level: currLevel, setLevel } = useDifficulty();
   const { markDifficultyComplete } = useUser();
@@ -23,17 +23,28 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
   if (!GameComponent) return null;
   const gameProps = { quote, onBack };
   // Handle game win: award achievement and show next-level overlay
-  gameProps.onWin = () => {
+  gameProps.onWin = (details = {}) => {
     if (suppressWinsRef.current) {
       // eslint-disable-next-line no-console
       console.log('[GameRenderer:onWin] suppressed', { screen, level: currLevel });
       return;
     }
+    suppressWinsRef.current = true;
     if (typeof markDifficultyComplete === 'function') {
       markDifficultyComplete(currLevel);
     }
     // eslint-disable-next-line no-console
     console.log('[GameRenderer:onWin]', { screen, level: currLevel });
+    if (typeof recordGamePlay === 'function') {
+      Promise.resolve(
+        recordGamePlay({
+          screen,
+          level: currLevel,
+          result: 'win',
+          perfect: Boolean(details?.perfect),
+        }),
+      ).catch((error) => console.error('recordGamePlay (win) failed', error));
+    }
     // Show win overlay; ensure lose overlay is hidden
     setGameLost(false);
     setGameWon(true);
@@ -45,6 +56,16 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
     console.log('[GameRenderer:onLose]', { screen, level: currLevel });
     setGameWon(false);
     setGameLost(true);
+    if (typeof recordGamePlay === 'function') {
+      Promise.resolve(
+        recordGamePlay({
+          screen,
+          level: currLevel,
+          result: 'lose',
+          perfect: false,
+        }),
+      ).catch((error) => console.error('recordGamePlay (lose) failed', error));
+    }
   };
   // Title mapping for overlay display
   const screenTitle = useMemo(() => {
@@ -94,11 +115,13 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
           return map[currLevel] || `Level ${currLevel}`;
         })()}
         onRetry={() => {
+          suppressWinsRef.current = false;
           setGameLost(false);
           // Remount same game at same level
           setRetryTick((k) => k + 1);
         }}
         onHome={() => {
+          suppressWinsRef.current = false;
           setGameLost(false);
           onBack();
         }}
@@ -122,6 +145,7 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement }) =>
           setTimeout(() => setLevel(next), 0);
         }}
         onHome={() => {
+          suppressWinsRef.current = false;
           setGameWon(false);
           onBack();
         }}

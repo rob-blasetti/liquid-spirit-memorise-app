@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { grade1Lessons } from '../data/grade1';
 
 // Hook for tracking and overriding lesson progress
 // Accepts profile (to derive grade-specific defaults) and awardAchievement callback
 // Hook to track completed lessons and per-profile override progress
-export default function useLessonProgress(profile, awardAchievement) {
+export default function useLessonProgress(profile, awardAchievement, recordLessonCompletion) {
   const [completedLessons, setCompletedLessons] = useState({});
   // Map overrides by profile key in-memory
   const overrideMap = useRef({});
@@ -14,21 +15,60 @@ export default function useLessonProgress(profile, awardAchievement) {
   /**
    * Mark a lesson complete and award any milestones
    */
-  const completeLesson = (setNumber, lessonNumber) => {
+  const completeLesson = (setNumber, lessonNumber, lessonContent = {}, meta = {}) => {
+    const grade = meta?.grade;
+    if (grade === 1) {
+      let isNew = false;
+      setCompletedLessons(prev => {
+        const lessons = prev.grade1 || {};
+        if (lessons[lessonNumber]) {
+          return prev;
+        }
+        isNew = true;
+        const updatedLessons = { ...lessons, [lessonNumber]: true };
+        return { ...prev, grade1: updatedLessons };
+      });
+      if (isNew && recordLessonCompletion) {
+        recordLessonCompletion({ grade: 1, setNumber: meta?.setNumber ?? 0, lessonNumber, lessonContent });
+      }
+      return;
+    }
+
+    let isNew = false;
     setCompletedLessons(prev => {
       const lessons = prev[setNumber] || {};
-      const updated = { ...prev, [setNumber]: { ...lessons, [lessonNumber]: true } };
-      if (updated[setNumber] && updated[setNumber][1] && updated[setNumber][2] && updated[setNumber][3]) {
+      if (lessons[lessonNumber]) {
+        return prev;
+      }
+      isNew = true;
+      const updatedLessons = { ...lessons, [lessonNumber]: true };
+      const updated = { ...prev, [setNumber]: updatedLessons };
+      if (
+        awardAchievement &&
+        typeof setNumber === 'number' &&
+        setNumber >= 1 &&
+        setNumber <= 4 &&
+        updatedLessons[1] &&
+        updatedLessons[2] &&
+        updatedLessons[3]
+      ) {
         awardAchievement(`set${setNumber}`);
       }
-      if ([1,2,3].every(num => {
-        const l = updated[num];
-        return l && l[1] && l[2] && l[3];
-      })) {
-        awardAchievement('grade2');
+      if (awardAchievement) {
+        const gradeTwoSets = [1, 2, 3];
+        const allGradeTwoComplete = gradeTwoSets.every((num) => {
+          const lessonMap = updated[num];
+          return lessonMap && lessonMap[1] && lessonMap[2] && lessonMap[3];
+        });
+        if (allGradeTwoComplete) {
+          awardAchievement('grade2');
+        }
       }
       return updated;
     });
+    if (isNew && recordLessonCompletion) {
+      recordLessonCompletion({ grade: meta?.grade ?? 2, setNumber, lessonNumber, lessonContent });
+    }
   };
 
   /**

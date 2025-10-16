@@ -274,6 +274,7 @@ export const achievements = [
   // Bubble Pop achievements by difficulty
   {
     id: 'bubble1',
+    slug: 'bubble1',
     title: 'Bubble Pop Novice',
     description: 'Complete Bubble Pop on Easy difficulty',
     icon: 'trophy',
@@ -282,6 +283,7 @@ export const achievements = [
   },
   {
     id: 'bubble2',
+    slug: 'bubble2',
     title: 'Bubble Pop Intermediate',
     description: 'Complete Bubble Pop on Medium difficulty',
     icon: 'trophy',
@@ -291,6 +293,7 @@ export const achievements = [
   },
   {
     id: 'bubble3',
+    slug: 'bubble3',
     title: 'Bubble Pop Master',
     description: 'Complete Bubble Pop on Hard difficulty',
     icon: 'trophy',

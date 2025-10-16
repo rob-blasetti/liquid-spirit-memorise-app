@@ -81,9 +81,12 @@ const Main = () => {
     awardAchievement,
     awardGameAchievement,
     refreshFromServer,
+    recordGamePlay,
+    recordLessonCompletion,
+    recordDailyChallenge,
   } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
-  const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement);
+  const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement, recordLessonCompletion);
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [comingSoonGrade, setComingSoonGrade] = useState(null);
@@ -126,8 +129,9 @@ const Main = () => {
         nav,
         getCurrentProgress,
         awardAchievement,
+        recordDailyChallenge,
       }),
-    [profile, goTo, nav, getCurrentProgress, awardAchievement],
+    [profile, goTo, nav, getCurrentProgress, awardAchievement, recordDailyChallenge],
   );
   // Preload Pearlina image for Home screen into FastImage cache
   // Animate slide transitions when toggling between home and classes
@@ -312,6 +316,7 @@ const Main = () => {
         accountActions={accountActions}
         modalHandlers={modalHandlers}
         awardGameAchievement={awardGameAchievement}
+        recordGamePlay={recordGamePlay}
       />
     );
   };

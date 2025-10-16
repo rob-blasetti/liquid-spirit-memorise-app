@@ -15,11 +15,24 @@ const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
   const [message, setMessage] = useState('');
   const [guessesLeft, setGuessesLeft] = useState(3);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  // Notify parent on win/loss; overlays handled in GameRenderer
+  const [mistakes, setMistakes] = useState(0);
+  // Cache callbacks to avoid re-firing when parent re-renders after a win/loss
+  const winCallbackRef = useRef(onWin);
+  const loseCallbackRef = useRef(onLose);
   useEffect(() => {
-    if (status === 'won' && onWin) onWin();
-    if (status === 'lost' && onLose) onLose();
-  }, [status, onWin]);
+    winCallbackRef.current = onWin;
+  }, [onWin]);
+  useEffect(() => {
+    loseCallbackRef.current = onLose;
+  }, [onLose]);
+  // Notify parent on terminal states without depending on callback identity
+  useEffect(() => {
+    if (status === 'won') {
+      winCallbackRef.current?.({ perfect: mistakes === 0 });
+    } else if (status === 'lost') {
+      loseCallbackRef.current?.();
+    }
+  }, [status, mistakes]);
   const starAnimsRef = useRef([]);
 
   useEffect(() => {
@@ -56,7 +69,8 @@ const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
     setMessage('');
     setGuessesLeft(3);
     setStatus('playing');
-  }, [quote]);
+    setMistakes(0);
+  }, [quote, level]);
 
   const handleWordPress = word => {
     if (status !== 'playing') return;
@@ -89,6 +103,7 @@ const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
       } else {
         setMessage(`Try again (${left} left)`);
       }
+      setMistakes((prev) => prev + 1);
     }
   };
 

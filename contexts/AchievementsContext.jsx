@@ -13,6 +13,10 @@ const AchievementsContext = createContext({
   // Fetches latest achievements/points from server and updates context
   setAchievements: () => {},
   refreshFromServer: () => {},
+  recordGamePlay: () => {},
+  recordLessonCompletion: () => {},
+  recordDailyChallenge: () => {},
+  recordProfileSetup: () => {},
 });
 
 export const AchievementsProvider = ({ value, children }) => (

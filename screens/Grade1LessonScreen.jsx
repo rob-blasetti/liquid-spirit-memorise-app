@@ -8,7 +8,7 @@ import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
 import TopNav from '../components/TopNav';
 
-const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
+const Grade1LessonScreen = ({ lessonNumber, onBack, onComplete }) => {
   const { profile } = useProfile();
   const lesson = grade1Lessons.find(l => l.lesson === lessonNumber);
 
@@ -56,6 +56,11 @@ const Grade1LessonScreen = ({ lessonNumber, onBack }) => {
           />
         ) : null}
         <View style={styles.buttonContainer}>
+          <ThemedButton
+            title="Mark Lesson Complete"
+            onPress={() => onComplete?.(lesson)}
+            style={styles.primaryButton}
+          />
           <ThemedButton title="Back to Library" onPress={onBack} />
         </View>
       </View>
@@ -89,6 +94,9 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '80%',
     marginTop: 24,
+  },
+  primaryButton: {
+    marginBottom: 12,
   },
 });
 

@@ -5,7 +5,7 @@ import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const QuotePracticeScreen = ({ quote, onBack }) => {
+const QuotePracticeScreen = ({ quote, onBack, onWin }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const words = text.split(/\s+/);
   const [index, setIndex] = useState(0);
@@ -42,6 +42,7 @@ const QuotePracticeScreen = ({ quote, onBack }) => {
       if (nextIndex === words.length) {
         setMessage('Great job!');
         setOptions([]);
+        onWin?.({ practice: true, wordsLearned: words.length });
       } else {
         setMessage('');
         generateOptions(nextIndex);

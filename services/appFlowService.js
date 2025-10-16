@@ -6,10 +6,14 @@ export const createAppActions = ({
   nav,
   getCurrentProgress,
   awardAchievement,
+  recordDailyChallenge,
 }) => {
   const handleDailyChallenge = () => {
     if (awardAchievement) {
       awardAchievement('daily');
+    }
+    if (recordDailyChallenge) {
+      recordDailyChallenge();
     }
     const progress = getCurrentProgress();
     const { setNumber, lessonNumber } = progress;

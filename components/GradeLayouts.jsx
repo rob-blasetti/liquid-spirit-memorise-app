@@ -65,6 +65,7 @@ export const GradeComingSoon = ({ title, message, onBack }) => (
 
 export const GradeLessonContent = ({
   gradeTitle,
+  grade,
   setNumber,
   lessonNumber,
   getLessonContent,
@@ -84,6 +85,10 @@ export const GradeLessonContent = ({
     (typeof fallbackQuote === 'function'
       ? fallbackQuote(setNumber, lessonNumber)
       : '');
+  const completionPayload =
+    lessonContent && Object.keys(lessonContent).length > 0
+      ? lessonContent
+      : { text: quote };
 
   return (
     <View style={lessonStyles.container}>
@@ -109,15 +114,15 @@ export const GradeLessonContent = ({
       <View style={lessonStyles.buttonContainer}>
         <ThemedButton
           title="Complete Lesson"
-          onPress={() => onComplete?.(setNumber, lessonNumber)}
+          onPress={() => onComplete?.(setNumber, lessonNumber, completionPayload, { grade })}
         />
         <ThemedButton
           title="Practice"
-          onPress={() => onPractice?.(lessonContent)}
+          onPress={() => onPractice?.(completionPayload.text || completionPayload.quote || quote)}
         />
         <ThemedButton
           title="Play Game"
-          onPress={() => onPlayGame?.(lessonContent)}
+          onPress={() => onPlayGame?.(completionPayload.text || completionPayload.quote || quote)}
         />
       </View>
       <View style={lessonStyles.buttonContainer}>

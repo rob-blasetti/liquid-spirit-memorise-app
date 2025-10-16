@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { initAchievements, fetchUserAchievements } from '../services/achievementsService';
 import {
   grantAchievement,
@@ -6,6 +6,13 @@ import {
   getAchievementIdForGame,
 } from '../services/achievementGrantService';
 import { getTotalPoints } from '../services/achievementsService';
+import {
+  incrementCounter,
+  recordUniqueItem,
+  recordDailyChallenge as recordDailyProgress,
+  ensureFlag,
+} from '../services/achievementProgressService';
+import { grade1Lessons } from '../data/grade1';
 
 export default function useAchievements(profile, saveProfile) {
   if (__DEV__) {
@@ -53,6 +60,22 @@ export default function useAchievements(profile, saveProfile) {
 
   const [notification, setNotification] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const profileProgressKey = useMemo(() => {
+    if (!profile) return null;
+    const identifiers = [
+      profile._id,
+      profile.id,
+      profile.nuriUserId,
+      profile.userId,
+      profile.username,
+    ].filter(Boolean);
+    if (identifiers.length > 0) return identifiers[0];
+    if (profile.guest) {
+      return `guest:${profile.avatarSeed || profile.displayName || 'default'}`;
+    }
+    return 'local';
+  }, [profile]);
+  const grade1LessonCount = grade1Lessons?.length || 0;
 
   // Explicit refresh from server, used when entering Achievements screen
   const refreshFromServer = useCallback(async () => {
@@ -165,6 +188,108 @@ export default function useAchievements(profile, saveProfile) {
     profile?.type,
   ]);
 
+  const recordGamePlay = useCallback(
+    async ({ screen, result, perfect } = {}) => {
+      if (!profileProgressKey) return;
+      try {
+        const played = await incrementCounter(profileProgressKey, 'gamesPlayed', 1);
+        if (played === 1) await awardAchievement('game1');
+        if (played === 10) await awardAchievement('game10');
+        if (screen === 'practice' && result === 'win') {
+          const practiceCount = await incrementCounter(profileProgressKey, 'practiceSessions', 1);
+          if (practiceCount === 20) await awardAchievement('practice20');
+        }
+        if (screen === 'tapGame' && perfect) {
+          const perfectWins = await incrementCounter(profileProgressKey, 'tapPerfectWins', 1);
+          if (perfectWins === 1) await awardAchievement('tapPerfect');
+        }
+      } catch (error) {
+        console.error('recordGamePlay failed', error);
+      }
+    },
+    [profileProgressKey, awardAchievement],
+  );
+
+  const recordLessonCompletion = useCallback(
+    async ({ grade, setNumber, lessonNumber, lessonContent = {} }) => {
+      if (!profileProgressKey) return;
+      const lessonKeyParts = [
+        grade != null ? String(grade) : 'g',
+        setNumber != null ? String(setNumber) : 's',
+        lessonNumber != null ? String(lessonNumber) : 'l',
+      ];
+      const lessonKey = lessonKeyParts.join(':');
+      try {
+        if (lessonContent?.prayer) {
+          const { count, added } = await recordUniqueItem(profileProgressKey, 'prayers', lessonKey);
+          if (added) {
+            if (count >= 1) await awardAchievement('prayer1');
+            if (count >= 5) await awardAchievement('prayer5');
+            if (count >= 10) await awardAchievement('prayer10');
+          }
+        }
+        const hasQuote = Boolean(lessonContent?.text || lessonContent?.quote);
+        if (hasQuote) {
+          const { count, added } = await recordUniqueItem(profileProgressKey, 'quotes', lessonKey);
+          if (added) {
+            if (count >= 1) await awardAchievement('quote1');
+            if (count >= 5) await awardAchievement('quote5');
+            if (count >= 15) await awardAchievement('quote15');
+          }
+        }
+        if (grade === 1) {
+          const { count } = await recordUniqueItem(profileProgressKey, 'grade1Lessons', lessonKey);
+          if (grade1LessonCount > 0 && count >= grade1LessonCount) {
+            await awardAchievement('grade1');
+          }
+        }
+      } catch (error) {
+        console.error('recordLessonCompletion failed', error);
+      }
+    },
+    [profileProgressKey, awardAchievement, grade1LessonCount],
+  );
+
+  const recordDailyChallenge = useCallback(async () => {
+    if (!profileProgressKey) return;
+    try {
+      const { streak, repeated } = await recordDailyProgress(profileProgressKey);
+      if (!repeated) {
+        if (streak >= 3) await awardAchievement('streak3');
+        if (streak >= 7) await awardAchievement('streak7');
+        if (streak >= 30) await awardAchievement('streak30');
+      }
+    } catch (error) {
+      console.error('recordDailyChallenge failed', error);
+    }
+  }, [profileProgressKey, awardAchievement]);
+
+  const recordProfileSetup = useCallback(
+    async (profileSnapshot) => {
+      if (!profileProgressKey || !profileSnapshot) return;
+      const hasAvatar =
+        Boolean(profileSnapshot.profilePicture) ||
+        Boolean(profileSnapshot.avatarUri) ||
+        Boolean(profileSnapshot.avatar);
+      if (!hasAvatar) return;
+      try {
+        const newlySet = await ensureFlag(profileProgressKey, 'profileAchievement');
+        if (newlySet) {
+          await awardAchievement('profile');
+        }
+      } catch (error) {
+        console.error('recordProfileSetup failed', error);
+      }
+    },
+    [profileProgressKey, awardAchievement],
+  );
+
+  useEffect(() => {
+    if (profile) {
+      recordProfileSetup(profile);
+    }
+  }, [profile, recordProfileSetup]);
+
   return {
     achievements,
     totalPoints,
@@ -179,5 +304,9 @@ export default function useAchievements(profile, saveProfile) {
     // Public API: call to fetch latest from server and update context
     setAchievements: setAchievementsFromServer,
     refreshFromServer,
+    recordGamePlay,
+    recordLessonCompletion,
+    recordDailyChallenge,
+    recordProfileSetup,
   };
 }

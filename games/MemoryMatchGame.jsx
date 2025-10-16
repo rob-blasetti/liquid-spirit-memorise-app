@@ -20,10 +20,23 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
   const [preview, setPreview] = useState(null); // { word: string, revealed: boolean }
   const previewFlip = useRef(new Animated.Value(0)).current; // 0 => 90deg, 1 => 0deg
   const previewTimer = useRef(null);
-  // Notify parent on win; overlay is handled in GameRenderer
+  // Cache callbacks to avoid firing multiple times when parent re-renders
+  const winCallbackRef = useRef(onWin);
+  const loseCallbackRef = useRef(onLose);
   useEffect(() => {
-    if (status === 'won' && onWin) onWin();
-  }, [status, onWin]);
+    winCallbackRef.current = onWin;
+  }, [onWin]);
+  useEffect(() => {
+    loseCallbackRef.current = onLose;
+  }, [onLose]);
+  // Notify parent on terminal states without re-triggering on parent changes
+  useEffect(() => {
+    if (status === 'won') {
+      winCallbackRef.current?.();
+    } else if (status === 'lost') {
+      loseCallbackRef.current?.();
+    }
+  }, [status]);
 
   const initGame = useCallback(() => {
     const words = text.split(/\s+/);
@@ -50,11 +63,6 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
   useEffect(() => {
     initGame();
   }, [initGame]);
-  // Notify parent on loss
-  useEffect(() => {
-    if (status === 'lost' && onLose) onLose();
-  }, [status, onLose]);
-
   const handlePress = (card) => {
     if (status !== 'playing' || card.matched || selected.find((c) => c.id === card.id)) return;
     const newSelected = [...selected, card];

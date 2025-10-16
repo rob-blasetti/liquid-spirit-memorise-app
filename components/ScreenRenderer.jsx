@@ -99,6 +99,7 @@ const ScreenRenderer = ({
   accountActions,
   modalHandlers,
   awardGameAchievement,
+  recordGamePlay,
 }) => {
   if (!navState) return null;
 
@@ -153,6 +154,7 @@ const ScreenRenderer = ({
         onBack={backHandler}
         level={level}
         awardGameAchievement={awardGameAchievement}
+        recordGamePlay={recordGamePlay}
       />
     );
   }
@@ -170,6 +172,10 @@ const ScreenRenderer = ({
         <Grade1LessonScreen
           lessonNumber={currentNav.lessonNumber}
           onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
+          onComplete={(lesson) => {
+            if (!lesson) return;
+            completeLesson(null, lesson.lesson, lesson, { grade: 1, setNumber: lesson.lesson });
+          }}
         />,
       );
     case 'grade2Lesson': {
@@ -178,6 +184,7 @@ const ScreenRenderer = ({
       return (
         <GradeLessonContent
           gradeTitle={config.title}
+          grade={config.grade}
           setNumber={currentNav.setNumber}
           lessonNumber={currentNav.lessonNumber}
           getLessonContent={config.getLessonContent}
@@ -195,6 +202,7 @@ const ScreenRenderer = ({
       return (
         <GradeLessonContent
           gradeTitle={config.title}
+          grade={config.grade}
           setNumber={currentNav.setNumber}
           lessonNumber={currentNav.lessonNumber}
           getLessonContent={config.getLessonContent}

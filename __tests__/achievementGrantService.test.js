@@ -1,6 +1,7 @@
 jest.mock('../services/achievementsService', () => ({
   updateAchievementOnServer: jest.fn(() => Promise.resolve()),
   fetchUserAchievements: jest.fn(() => Promise.resolve({ achievements: [], totalPoints: 0 })),
+  getTotalPoints: (list = []) => list.reduce((sum, a) => sum + (a.earned && a.points ? a.points : 0), 0),
 }));
 
 const { grantAchievement } = require('../services/achievementGrantService');
@@ -9,7 +10,7 @@ const {
   fetchUserAchievements,
 } = require('../services/achievementsService');
 
-const A = (id, points, earned = false) => ({ id, title: id, points, earned });
+const A = (id, points, earned = false) => ({ id, title: id, points, earned, slug: id });
 
 describe('achievementGrantService', () => {
   it('syncs total points with server response', async () => {
@@ -35,7 +36,7 @@ describe('achievementGrantService', () => {
       setTotalPoints,
     });
 
-    expect(updateAchievementOnServer).toHaveBeenCalledWith('u1', 'x', 15);
+    expect(updateAchievementOnServer).toHaveBeenCalledWith('u1', 'x', 15, { slug: 'x' });
     expect(fetchUserAchievements).toHaveBeenCalledWith('u1');
     expect(setTotalPoints).toHaveBeenLastCalledWith(15);
     expect(saveProfile).toHaveBeenLastCalledWith(

@@ -4,6 +4,27 @@ import { saveProfile as persistProfile } from './profileService';
 import { API_URL } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const debugAchievements = (...args) => {
+  const isDev = typeof __DEV__ === 'boolean' ? __DEV__ : process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    // eslint-disable-next-line no-console
+    console.log('[AchievementsService]', ...args);
+  }
+};
+
+const DEFAULT_BY_ID = new Map(defaultAchievements.map((a) => [a.id, a]));
+const DEFAULT_IDS = new Set(DEFAULT_BY_ID.keys());
+const DEFAULT_BY_TITLE = new Map(defaultAchievements.map((a) => [a.title, a.id]));
+const SERVER_ID_HINTS = new Map();
+
+const registerServerIdHints = (list = []) => {
+  list.forEach((item) => {
+    if (item?.serverId) {
+      SERVER_ID_HINTS.set(String(item.serverId), item.id);
+    }
+  });
+};
+
 const toMap = (list = []) => {
   const map = new Map();
   list.forEach((item) => {
@@ -12,15 +33,162 @@ const toMap = (list = []) => {
   return map;
 };
 
+const coerceIdToDefault = (entry = {}) => {
+  const candidateIds = [
+    entry.slug,
+    entry.id,
+    entry._id,
+    entry.achievement?.slug,
+    entry.achievement?.id,
+    entry.achievement?._id,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value));
+
+  const serverIds = [
+    entry.serverId,
+    typeof entry.achievement === 'string' ? entry.achievement : null,
+    entry.achievement?._id,
+    entry._id && typeof entry._id === 'string' && entry._id.length === 24 ? entry._id : null,
+  ].filter(Boolean).map((value) => String(value));
+
+  serverIds.forEach((serverId) => {
+    const hint = SERVER_ID_HINTS.get(serverId);
+    if (hint) candidateIds.push(hint);
+  });
+
+  let resolved = candidateIds.find((value) => DEFAULT_IDS.has(value));
+  if (!resolved && entry.title) {
+    const byTitle = DEFAULT_BY_TITLE.get(entry.title);
+    if (byTitle) resolved = byTitle;
+  }
+  if (!resolved && entry.achievement?.title) {
+    const byTitle = DEFAULT_BY_TITLE.get(entry.achievement.title);
+    if (byTitle) resolved = byTitle;
+  }
+  if (!resolved && entry.achievement?.title) {
+    const byTitle = DEFAULT_BY_TITLE.get(entry.achievement.title);
+    if (byTitle) resolved = byTitle;
+  }
+  if (!resolved && serverIds.length) {
+    const hint = serverIds.map((sid) => SERVER_ID_HINTS.get(sid)).find(Boolean);
+    if (hint) resolved = hint;
+  }
+
+  debugAchievements('coerceIdToDefault', {
+    candidateIds,
+    serverIds,
+    title: entry.title || entry.achievement?.title,
+    resolved,
+  });
+
+  const chosen = resolved || candidateIds[0] || null;
+  if (chosen) {
+    serverIds.forEach((sid) => {
+      SERVER_ID_HINTS.set(sid, chosen);
+    });
+  }
+  return chosen;
+};
+
+const normalizeStoredAchievement = (entry) => {
+  if (!entry) return null;
+  const id = coerceIdToDefault(entry);
+  if (!id) return null;
+  const template = DEFAULT_BY_ID.get(id) || {};
+  const achievementSource = entry.achievement || {};
+  if (entry.achievement && entry.achievement._id && entry.achievement._id !== id) {
+    debugAchievements('normalizeStoredAchievement: resolved server _id to id', {
+      original: entry.achievement._id,
+      resolved: id,
+    });
+  }
+  const normalized = {
+    ...template,
+    ...achievementSource,
+    ...entry,
+    id,
+    slug: entry.slug || achievementSource.slug || id,
+    serverId: entry.serverId || achievementSource._id || template.serverId || null,
+    title: entry.title || achievementSource.title || template.title || id,
+    description:
+      entry.description || achievementSource.description || template.description || '',
+    points:
+      entry.points != null
+        ? entry.points
+        : achievementSource.points != null
+        ? achievementSource.points
+        : template.points || 0,
+    earned: Boolean(entry.earned ?? entry.dateEarned != null),
+    dateEarned: entry.dateEarned || null,
+  };
+  delete normalized.achievement;
+  delete normalized._id;
+  if (normalized.serverId) {
+    SERVER_ID_HINTS.set(String(normalized.serverId), normalized.id);
+  }
+  return normalized;
+};
+
 /**
  * Initialize achievements list for a profile.
  * Uses profile.achievements if available, else defaults.
  */
 export function initAchievements(profile) {
-  if (profile && Array.isArray(profile.achievements)) {
-    return profile.achievements.map(a => ({ ...a }));
+  const fromProfile = Array.isArray(profile?.achievements)
+    ? profile.achievements
+        .map(normalizeStoredAchievement)
+        .filter(Boolean)
+    : [];
+  if (fromProfile.length) {
+    debugAchievements(
+      'initAchievements: normalized stored summary',
+      fromProfile.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
+    );
   }
-  return defaultAchievements.map(a => ({ ...a }));
+  const storedMap = toMap(fromProfile);
+  const merged = defaultAchievements.map((def) => {
+    const stored = storedMap.get(def.id);
+    if (stored) {
+      storedMap.delete(def.id);
+      return {
+        ...def,
+        ...stored,
+        id: def.id,
+        slug: stored.slug || def.slug || def.id,
+        serverId: stored.serverId || null,
+        points: stored.points != null ? stored.points : def.points || 0,
+        earned: Boolean(stored.earned),
+        dateEarned: stored.dateEarned || null,
+      };
+    }
+    return {
+      ...def,
+      slug: def.slug || def.id,
+      serverId: def.serverId || null,
+      earned: false,
+      dateEarned: null,
+    };
+  });
+
+  const extras = Array.from(storedMap.values()).map((item) => ({
+    ...item,
+    slug: item.slug || item.id,
+    serverId: item.serverId || null,
+    earned: Boolean(item.earned),
+    dateEarned: item.dateEarned || null,
+  }));
+
+  if (extras.length) {
+    debugAchievements(
+      'initAchievements: extra stored achievements',
+      extras.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
+    );
+  }
+
+  const combined = [...merged, ...extras];
+  registerServerIdHints(combined);
+  return combined;
 }
 
 /**
@@ -51,15 +219,35 @@ export async function fetchUserAchievements(userId) {
     }
     const raw = await res.json();
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
+    debugAchievements('fetchUserAchievements: raw payload summary', {
+      totalPoints,
+      count: Array.isArray(serverAchievements) ? serverAchievements.length : 0,
+    });
     // Normalize server achievements; preserve earned and description
     const normalizedEarned = (serverAchievements || [])
       .map((a) => {
         // Shape A: { achievement: { _id, title, points, description }, earned, dateEarned }
         if (a && a.achievement) {
+          const achievementId =
+            coerceIdToDefault({
+              slug: a.achievement.slug,
+              id: a.achievement.id,
+              _id: a.achievement._id,
+              title: a.achievement.title,
+            }) ||
+            a.achievement.slug ||
+            a.achievement.id ||
+            a.achievement._id;
+          if (!achievementId) return null;
           const earnedFlag =
             typeof a.earned === 'boolean' ? a.earned : true;
+          if (a.achievement._id) {
+            SERVER_ID_HINTS.set(String(a.achievement._id), achievementId);
+          }
           return {
-            id: a.achievement._id || a.achievement.id,
+            id: achievementId,
+            slug: achievementId,
+            serverId: a.achievement._id || null,
             title: a.achievement.title,
             description: a.achievement.description,
             points: a.achievement.points || 0,
@@ -67,12 +255,47 @@ export async function fetchUserAchievements(userId) {
             dateEarned: a.dateEarned || null,
           };
         }
-        // Shape B: flat: { id, title, description, points, earned, dateEarned }
-        if (a && (a._id || a.id)) {
+        if (a && typeof a.achievement === 'string') {
+          const serverId = String(a.achievement);
+          let achievementId = SERVER_ID_HINTS.get(serverId) || null;
+          if (!achievementId && a.slug) achievementId = DEFAULT_IDS.has(a.slug) ? a.slug : null;
+          if (!achievementId && a.title) {
+            const byTitle = DEFAULT_BY_TITLE.get(a.title);
+            if (byTitle) achievementId = byTitle;
+          }
+          if (!achievementId) {
+            achievementId = coerceIdToDefault({ serverId, achievement: serverId, title: a.title }) || serverId;
+          }
+          const earnedFlag = typeof a.earned === 'boolean' ? a.earned : true;
+          SERVER_ID_HINTS.set(serverId, achievementId);
+          return {
+            id: achievementId,
+            slug: achievementId,
+            serverId,
+            title: a.title || achievementId,
+            description: a.description || '',
+            points: a.points || 0,
+            earned: earnedFlag,
+            dateEarned: a.dateEarned || null,
+          };
+        }
+        // Shape B: flat: { id, slug, title, description, points, earned, dateEarned }
+        if (a && (a._id || a.id || a.slug)) {
+          const achievementId =
+            coerceIdToDefault({ slug: a.slug, id: a.id, _id: a._id, title: a.title }) ||
+            a.slug ||
+            a.id ||
+            a._id;
+          if (!achievementId) return null;
           const earnedFlag =
             typeof a.earned === 'boolean' ? a.earned : true;
+          if (a._id) {
+            SERVER_ID_HINTS.set(String(a._id), achievementId);
+          }
           return {
-            id: a._id || a.id,
+            id: achievementId,
+            slug: achievementId,
+            serverId: a._id || null,
             title: a.title,
             description: a.description,
             points: a.points || 0,
@@ -95,6 +318,10 @@ export async function fetchUserAchievements(userId) {
         return null;
       })
       .filter(Boolean);
+    debugAchievements(
+      'fetchUserAchievements: normalized summary',
+      normalizedEarned.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
+    );
 
     const normalizedMap = toMap(normalizedEarned);
     const merged = defaultAchievements.map((def) => {
@@ -118,16 +345,29 @@ export async function fetchUserAchievements(userId) {
     });
 
     const extras = Array.from(normalizedMap.values()).map((item) => ({
-      id: item.id,
+      id: item.slug || item.id,
+      slug: item.slug || item.id,
+      serverId: item.serverId || null,
       title: item.title || item.id,
       description: item.description || '',
       points: item.points || 0,
       earned: Boolean(item.earned),
       dateEarned: item.dateEarned || null,
     }));
+    if (extras.length) {
+      debugAchievements(
+        'fetchUserAchievements: extras not in defaults',
+        extras.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
+      );
+    }
 
     const achievements = [...merged, ...extras];
     const computedTotal = getTotalPoints(achievements);
+    registerServerIdHints(achievements);
+    debugAchievements(
+      'fetchUserAchievements: merged summary',
+      achievements.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
+    );
 
     if (__DEV__) {
       // eslint-disable-next-line no-console
@@ -156,13 +396,15 @@ export async function fetchUserAchievements(userId) {
  * @param {number} totalPoints - New total points after awarding achievement
  * @returns {Promise<object>} - Server response JSON
  */
-export async function updateAchievementOnServer(userId, achievementId, totalPoints) {
+export async function updateAchievementOnServer(userId, achievementId, totalPoints, options = {}) {
   try {
     const token = await AsyncStorage.getItem('token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const payload = { userId, achievementId };
+    const payload = { userId };
+    if (achievementId) payload.achievementId = achievementId;
+    if (options.slug) payload.slug = options.slug;
     if (typeof totalPoints === 'number') payload.totalPoints = totalPoints;
     const response = await fetch(`${API_URL}/api/nuri/achievement`, {
       method: 'POST',
@@ -251,7 +493,11 @@ export async function awardAchievement(profile, id) {
   try {
     const userId = profile._id || profile.id || profile.nuriUserId;
     if (userId) {
-      await updateAchievementOnServer(userId, id, totalPoints);
+      const targetEntry = achievementsList.find((a) => a.id === id) || null;
+      const serverAchievementId = targetEntry?.serverId || null;
+      await updateAchievementOnServer(userId, serverAchievementId || id, totalPoints, {
+        slug: id,
+      });
     }
     const { achievements: syncedAchievements = [], totalPoints: serverTotal = totalPoints } = await fetchUserAchievements(userId);
     const resolvedAchievements = syncedAchievements.length ? syncedAchievements : achievementsList;

@@ -1,5 +1,13 @@
-import { updateAchievementOnServer, fetchUserAchievements } from './achievementsService';
+import { updateAchievementOnServer, fetchUserAchievements, getTotalPoints } from './achievementsService';
 import { achievements as defaultAchievements } from '../data/achievements';
+
+const debugGrant = (...args) => {
+  const isDev = typeof __DEV__ === 'boolean' ? __DEV__ : process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    // eslint-disable-next-line no-console
+    console.log('[AchievementGrantService]', ...args);
+  }
+};
 
 // Prevent re-entrant or repeated awards for the same user/achievement
 const inProgress = new Set();
@@ -10,6 +18,7 @@ const GAME_ACHIEVEMENT_MAP = {
   shapeBuilderGame: { 1: 'shape1', 2: 'shape2', 3: 'shape3' },
   hangmanGame: { 1: 'hangman1', 2: 'hangman2', 3: 'hangman3' },
   bubblePopOrderGame: { 1: 'bubble1', 2: 'bubble2', 3: 'bubble3' },
+  wordRacerGame: { 1: 'wordRacer1', 2: 'wordRacer2', 3: 'wordRacer3' },
   // Tap Missing Words game achievement for perfect completion
   tapGame: { 1: 'tapPerfect', 2: 'tapPerfect', 3: 'tapPerfect' },
 };
@@ -40,19 +49,43 @@ export async function grantAchievement({
 }) {
   if (!profile || !id) return;
   const isGuest = Boolean(profile?.type === 'guest' || profile?.guest);
+  const previousTotalPoints =
+    typeof profile?.totalPoints === 'number'
+      ? profile.totalPoints
+      : getTotalPoints(achievements);
+  debugGrant('grantAchievement:start', {
+    id,
+    isGuest,
+    previousTotalPoints,
+    profileId: profile?._id || profile?.id || profile?.nuriUserId,
+  });
 
   // Avoid duplicate awards
   const alreadyEarned = achievements.some(a => a.id === id && a.earned);
-  if (alreadyEarned) return;
+  if (alreadyEarned) {
+    debugGrant('grantAchievement:skip-already-earned-local', {
+      id,
+      profileId: profile?._id || profile?.id || profile?.nuriUserId,
+    });
+    return;
+  }
 
   const userId = profile._id || profile.id || profile.nuriUserId || 'local';
   const key = `${userId}:${id}`;
-  if (inProgress.has(key)) return;
+  if (inProgress.has(key)) {
+    debugGrant('grantAchievement:skip-in-progress', { id, userId });
+    return;
+  }
   inProgress.add(key);
+  debugGrant('grantAchievement:optimistic-award', {
+    id,
+    userId,
+    beforeEarned: achievements.filter((a) => a.earned).map((a) => a.id),
+  });
 
   // Optimistically award the achievement locally so the UI can react
   let optimisticAchievements = achievements.map(a =>
-    a.id === id ? { ...a, earned: true } : a,
+    a.id === id ? { ...a, earned: true, slug: a.slug || id } : a,
   );
   let earned = optimisticAchievements.find(a => a.id === id);
   // If the achievement is not present locally, seed it from defaults
@@ -60,6 +93,8 @@ export async function grantAchievement({
     const def = defaultAchievements.find(a => a.id === id);
     const newEntry = {
       id,
+      slug: def?.slug || id,
+      serverId: def?.serverId || null,
       title: def?.title || id,
       points: def?.points || 0,
       earned: true,
@@ -75,6 +110,10 @@ export async function grantAchievement({
     achievements: optimisticAchievements,
     totalPoints: (profile.totalPoints || 0) + (earned?.points || 0),
   };
+  debugGrant('grantAchievement:optimistic-profile', {
+    totalPoints: optimisticProfile.totalPoints,
+    earnedAchievement: id,
+  });
   saveProfile(optimisticProfile);
   if (typeof setTotalPoints === 'function') {
     setTotalPoints(optimisticProfile.totalPoints);
@@ -85,17 +124,25 @@ export async function grantAchievement({
       // Guests never sync with server; keep optimistic local state only
       return;
     }
-    const userId = profile._id || profile.id || profile.nuriUserId;
-    if (!userId) {
+    const serverUserId = profile._id || profile.id || profile.nuriUserId;
+    if (!serverUserId) {
       console.warn('grantAchievement: missing userId, skipping server sync');
       return; // keep optimistic local state
     }
-    await updateAchievementOnServer(userId, id, optimisticProfile.totalPoints);
+    const serverAchievementId = earned?.serverId || null;
+    await updateAchievementOnServer(serverUserId, serverAchievementId || id, optimisticProfile.totalPoints, {
+      slug: id,
+    });
 
     const {
       achievements: serverAchievements = optimisticAchievements,
       totalPoints: serverTotal = optimisticProfile.totalPoints,
-    } = await fetchUserAchievements(userId);
+    } = await fetchUserAchievements(serverUserId);
+    debugGrant('grantAchievement:server-sync-complete', {
+      id,
+      serverTotal,
+      resolvedCount: serverAchievements.length,
+    });
 
     const resolvedAchievements = serverAchievements.length ? serverAchievements : optimisticAchievements;
     const resolvedTotal = typeof serverTotal === 'number' ? serverTotal : optimisticProfile.totalPoints;
@@ -112,8 +159,76 @@ export async function grantAchievement({
     }
   } catch (e) {
     if (e?.code === 'ALREADY_EARNED') {
-      // No-op: already granted on server, keep optimistic local state
-      console.warn('grantAchievement: already earned on server, skipping');
+      console.warn('grantAchievement: already earned on server, syncing state');
+      debugGrant('grantAchievement:already-earned', {
+        id,
+        profileId: profile?._id || profile?.id || profile?.nuriUserId,
+      });
+      if (!isGuest) {
+        const syncUserId = profile._id || profile.id || profile.nuriUserId;
+        if (syncUserId) {
+          try {
+            const {
+              achievements: serverAchievements = [],
+              totalPoints: serverTotal,
+            } = await fetchUserAchievements(syncUserId);
+            debugGrant('grantAchievement:already-earned-sync-result', {
+              id,
+              serverTotal,
+              resolvedCount: serverAchievements.length,
+            });
+            const resolvedAchievements = serverAchievements.length
+              ? serverAchievements
+              : achievements;
+            const resolvedTotal =
+              typeof serverTotal === 'number'
+                ? serverTotal
+                : getTotalPoints(resolvedAchievements);
+            setAchievements(resolvedAchievements);
+            const reconciledProfile = {
+              ...profile,
+              achievements: resolvedAchievements,
+              totalPoints: resolvedTotal,
+            };
+            saveProfile(reconciledProfile);
+            if (typeof setTotalPoints === 'function') {
+              setTotalPoints(resolvedTotal);
+            }
+          } catch (syncError) {
+            console.error('grantAchievement: sync after already-earned failed', syncError);
+            const fallbackProfile = {
+              ...profile,
+              achievements: optimisticAchievements,
+              totalPoints: previousTotalPoints,
+            };
+            setAchievements(optimisticAchievements);
+            saveProfile(fallbackProfile);
+            if (typeof setTotalPoints === 'function') {
+              setTotalPoints(previousTotalPoints);
+            }
+            debugGrant('grantAchievement:already-earned-sync-failed', {
+              id,
+              error: syncError?.message,
+              previousTotalPoints,
+            });
+          }
+        } else {
+          const fallbackProfile = {
+            ...profile,
+            achievements: optimisticAchievements,
+            totalPoints: previousTotalPoints,
+          };
+          setAchievements(optimisticAchievements);
+          saveProfile(fallbackProfile);
+          if (typeof setTotalPoints === 'function') {
+            setTotalPoints(previousTotalPoints);
+          }
+          debugGrant('grantAchievement:already-earned-no-sync-user', {
+            id,
+            previousTotalPoints,
+          });
+        }
+      }
     } else if (e?.code === 'USER_NOT_FOUND') {
       // Dev/guest accounts may not exist server-side; keep optimistic local state
       console.warn('grantAchievement: user not found on server, skipping');
@@ -121,6 +236,10 @@ export async function grantAchievement({
       console.error('grantAchievement error:', e);
     }
   } finally {
+    debugGrant('grantAchievement:complete', {
+      id,
+      inProgress: false,
+    });
     inProgress.delete(key);
   }
 }
