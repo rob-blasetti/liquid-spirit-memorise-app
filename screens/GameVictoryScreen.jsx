@@ -57,43 +57,43 @@ const GameVictoryScreen = ({
               <View pointerEvents="none" style={styles.animationBackground}>
                 {playCelebrateAnimation({ style: styles.backgroundAnimation })}
               </View>
-            <View pointerEvents="none" style={styles.animationForeground}>
-              {playSuccessAnimation({ style: styles.foregroundAnimation })}
-            </View>
-          </View>
-          <View style={styles.content}>
-            <Text style={styles.heading}>Victory!</Text>
-            <Text style={styles.subHeading}>
-              {perfect ? 'Flawless run! ' : ''}
-              You conquered
-              <Text style={styles.highlight}> {resolvedGameTitle}</Text>.
-            </Text>
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Game</Text>
-                <Text style={styles.summaryValue}>{resolvedGameTitle}</Text>
+              <View pointerEvents="none" style={styles.animationForeground}>
+                {playSuccessAnimation({ style: styles.foregroundAnimation })}
               </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Difficulty</Text>
-                <View style={styles.difficultyChip}>
-                  <Text style={styles.difficultyChipText}>{currentDifficulty}</Text>
+            </View>
+            <View style={styles.content}>
+              <Text style={styles.heading}>Victory!</Text>
+              <Text style={styles.subHeading}>
+                {perfect ? 'Flawless run! ' : ''}
+                You conquered
+                <Text style={styles.highlight}> {resolvedGameTitle}</Text>.
+              </Text>
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Game</Text>
+                  <Text style={styles.summaryValue}>{resolvedGameTitle}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Difficulty</Text>
+                  <View style={styles.difficultyChip}>
+                    <Text style={styles.difficultyChipText}>{currentDifficulty}</Text>
+                  </View>
                 </View>
               </View>
+              <ThemedButton
+                title={hasNextLevel ? `Play ${nextLevelLabel}` : 'Back to Home'}
+                onPress={handlePrimaryAction}
+                style={[styles.primaryCta, !hasNextLevel ? styles.homeCta : null]}
+                textStyle={styles.primaryCtaText}
+              />
+              {onGoGames ? (
+                <TouchableOpacity style={styles.secondaryLink} onPress={onGoGames}>
+                  <Text style={styles.secondaryLinkText}>Choose another game</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
-            <ThemedButton
-              title={hasNextLevel ? `Play ${nextLevelLabel}` : 'Back to Home'}
-              onPress={handlePrimaryAction}
-              style={[styles.primaryCta, !hasNextLevel ? styles.homeCta : null]}
-              textStyle={styles.primaryCtaText}
-            />
-            {onGoGames ? (
-              <TouchableOpacity style={styles.secondaryLink} onPress={onGoGames}>
-                <Text style={styles.secondaryLinkText}>Choose another game</Text>
-              </TouchableOpacity>
-            ) : null}
           </View>
-        </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -119,7 +119,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
+    minHeight: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
