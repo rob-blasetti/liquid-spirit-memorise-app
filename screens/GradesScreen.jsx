@@ -12,8 +12,6 @@ import { GRADE_CARD_DATA } from '../data/gradesConfig';
 import TopNav from '../components/TopNav';
 
 const HORIZONTAL_PADDING = 16;
-const TILE_HEIGHT = 115; // reduced slightly so bottom item clears nav
-
 const GradesScreen = ({
   onGradeSelect,
   onBack,
@@ -58,20 +56,22 @@ const GradesScreen = ({
               onPress={handlePress}
               accessibilityLabel={isComingSoon ? `${item.title} coming soon` : `Open ${item.title}`}
             >
-              <View style={styles.left}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.gradeText}>{item.title}</Text>
-                  {isComingSoon ? (
-                    <View style={styles.chip}>
-                      <Text style={styles.chipText}>Coming Soon</Text>
-                    </View>
-                  ) : null}
+              <View style={styles.tileContent}>
+                <View style={styles.left}>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.gradeText}>{item.title}</Text>
+                    {isComingSoon ? (
+                      <View style={styles.chip}>
+                        <Text style={styles.chipText}>Coming Soon</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={styles.bookText}>{item.book}</Text>
                 </View>
-                <Text style={styles.bookText}>{item.book}</Text>
-              </View>
-              <View style={styles.right}>
-                <Text style={styles.ageLabel}>age</Text>
-                <Text style={styles.ageValue}>{range}</Text>
+                <View style={styles.right}>
+                  <Text style={styles.ageLabel}>age</Text>
+                  <Text style={styles.ageValue}>{range}</Text>
+                </View>
               </View>
               <View style={styles.progressTrack}>
                 <View
@@ -106,29 +106,35 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   tile: {
-    height: TILE_HEIGHT,
     backgroundColor: themeVariables.tertiaryDarkColor,
     borderRadius: themeVariables.borderRadiusPill,
     marginBottom: 16,
     overflow: 'hidden',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   tileDisabled: {
     opacity: 0.65,
   },
+  tileContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 24,
+  },
   left: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
+    flexShrink: 1,
   },
   right: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 72,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   gradeText: {
     color: themeVariables.whiteColor,
@@ -138,29 +144,28 @@ const styles = StyleSheet.create({
   bookText: {
     color: themeVariables.whiteColor,
     fontSize: 16,
-    marginTop: 4,
+    marginTop: 6,
   },
   ageLabel: {
     color: themeVariables.whiteColor,
     fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   ageValue: {
     color: themeVariables.whiteColor,
     fontSize: 32,
     fontWeight: '300',
-    marginTop: 2,
+    marginTop: 4,
   },
   progressTrack: {
-    position: 'absolute',
-    bottom: 12,
-    left: 16,
-    right: 16,
     height: 4,
     borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.3)',
+    marginTop: 20,
   },
   progressFill: {
-    height: 4,
+    height: '100%',
     borderRadius: 2,
     backgroundColor: themeVariables.whiteColor,
   },
@@ -169,7 +174,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginLeft: 8,
   },
   chipText: {
     color: themeVariables.whiteColor,

@@ -14,8 +14,9 @@ import themeVariables from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 const CAROUSEL_SPACING = 18;
-const CARD_WIDTH = width * 0.78;
-const CARD_HEIGHT = CARD_WIDTH * 1.05;
+const CARD_WIDTH = width * 0.64;
+const CARD_HEIGHT = CARD_WIDTH * 1.08;
+const SIDE_SPACING = (width - CARD_WIDTH) / 2;
 const DEFAULT_AUTOSCROLL_INTERVAL = 6000;
 
 const LOOP_CLONES = 2; // number of clones per side to simulate infinite loop
@@ -178,16 +179,7 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
   }, [scheduleAutoScroll, clearAutoScroll]);
 
   const renderItem = ({ item, index }) => (
-    <View
-      style={[
-        styles.cardWrapper,
-        {
-          marginLeft: index === 0 ? CAROUSEL_SPACING : CAROUSEL_SPACING / 2,
-          marginRight:
-            index === loopedData.length - 1 ? CAROUSEL_SPACING : CAROUSEL_SPACING / 2,
-        },
-      ]}
-    >
+    <View style={styles.cardWrapper}>
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() => onSelect?.(item.id)}
@@ -199,16 +191,18 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
           end={{ x: 1, y: 0 }}
           style={styles.card}
         >
-          <View style={styles.cardIconWrap}>
-            <Ionicons
-              name={item.icon || 'game-controller-outline'}
-              size={40}
-              color={themeVariables.whiteColor}
-            />
-          </View>
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <View style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>{item.buttonLabel || 'Play'}</Text>
+          <View style={styles.cardContent}>
+            <View style={styles.cardIconWrap}>
+              <Ionicons
+                name={item.icon || 'game-controller-outline'}
+                size={40}
+                color={themeVariables.whiteColor}
+              />
+            </View>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <View style={styles.cardButton}>
+              <Text style={styles.cardButtonText}>{item.buttonLabel || 'Play'}</Text>
+            </View>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -269,10 +263,12 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
 const styles = StyleSheet.create({
   carouselContent: {
     paddingVertical: 24,
+    paddingHorizontal: SIDE_SPACING,
   },
   cardWrapper: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
+    marginHorizontal: CAROUSEL_SPACING / 2,
   },
   cardTouchable: {
     flex: 1,
@@ -285,10 +281,15 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   card: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
     borderRadius: 28,
-    padding: 24,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardContent: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 24,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
+    marginBottom: 0,
   },
   cardTitle: {
     fontSize: 24,
@@ -308,16 +309,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: themeVariables.whiteColor,
     letterSpacing: 0.6,
+    marginBottom: 0,
   },
   cardButton: {
-    marginTop: 16,
-    paddingHorizontal: 32,
-    paddingVertical: 10,
+    paddingHorizontal: 26,
+    paddingVertical: 8,
     borderRadius: themeVariables.borderRadiusPill,
     backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
   },
   cardButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: themeVariables.whiteColor,
     letterSpacing: 0.4,
