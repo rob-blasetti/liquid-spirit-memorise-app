@@ -598,13 +598,10 @@ const styles = StyleSheet.create({
   },
   lessonSectionTitle: {
     color: themeVariables.whiteColor,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
+    letterSpacing: 0.5,
     marginBottom: 12,
-    letterSpacing: 0.2,
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   lessonContentInner: {
     width: '100%',

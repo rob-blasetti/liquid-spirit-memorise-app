@@ -232,7 +232,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldTitle}>Set</Text>
             <Text style={styles.fieldDescription}>
-              Choose the memorisation set you want to review.
+              Choose the set you want to review.
             </Text>
             {renderSquareSelector({
               items: setOptions,
@@ -391,7 +391,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldTitle}>Font size</Text>
               <Text style={styles.fieldDescription}>
-                Preview and select the size used for reading passages in the app.
+                Preview and select the size used for reading quotes and prayers in the app.
               </Text>
               <View style={styles.fontSizeRows}>
                 {[0, 1].map((rowIndex) => {

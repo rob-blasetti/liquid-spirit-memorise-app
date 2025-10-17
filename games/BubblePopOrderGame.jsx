@@ -251,15 +251,32 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
       <GameTopBar onBack={onBack} variant="whiteShadow" />
       {/* Heading aligned similarly to Shape Builder */}
       <View style={styles.titleRow}>
-        <View style={styles.titleBubbles}>
-          <View style={[styles.titleBubble, styles.titleBubbleBack]}>
-            <View pointerEvents="none" style={styles.titleBubbleShine} />
+        <View style={styles.alignGroup}>
+          <View style={styles.titleBubbles}>
+            <View style={[styles.titleBubble, styles.titleBubbleBack]}>
+              <View pointerEvents="none" style={styles.titleBubbleShine} />
+            </View>
+            <View style={[styles.titleBubble, styles.titleBubbleFront]}>
+              <View pointerEvents="none" style={styles.titleBubbleShine} />
+            </View>
           </View>
-          <View style={[styles.titleBubble, styles.titleBubbleFront]}>
-            <View pointerEvents="none" style={styles.titleBubbleShine} />
-          </View>
+          <Text style={styles.title}>Bubble Pop</Text>
         </View>
-        <Text style={styles.title}>Bubble Pop</Text>
+      </View>
+      <View style={styles.remainingContainer} pointerEvents="none">
+        <View style={styles.remainingBubble}>
+          <View pointerEvents="none" style={styles.remainingInner} />
+          <View pointerEvents="none" style={styles.remainingShine} />
+          <Text
+            style={[
+              styles.remainingCount,
+              remainingGuesses <= 2 && styles.remainingCountWarning,
+            ]}
+          >
+            {remainingGuesses}
+          </Text>
+        </View>
+        <Text style={styles.remainingLabel}>Taps left</Text>
       </View>
       {/* Slate showing full quote; bubbled words are hidden until popped */}
       <View style={styles.slate}>
@@ -327,11 +344,6 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
           </TouchableWithoutFeedback>
         ),
       )}
-      <View style={styles.remainingContainer}>
-        <View pointerEvents="none" style={styles.remainingInner} />
-        <View pointerEvents="none" style={styles.remainingShine} />
-        <Text style={styles.remainingText}>Taps left: {remainingGuesses}</Text>
-      </View>
       {message !== '' && message !== 'Great job!' && (
         <Text style={styles.message}>{message}</Text>
       )}
@@ -350,15 +362,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingLeft: 64,
-    paddingRight: 60, // balance left-side bubble motif so text centers under island
+    paddingLeft: 24,
+    paddingRight: 24,
     marginTop: 16,
+    position: 'relative',
+  },
+  alignGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   titleBubbles: {
     width: 54,
     height: 40,
-    marginRight: 6,
+    marginRight: 4,
     position: 'relative',
   },
   titleBubble: {
@@ -426,7 +443,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    marginTop: 12,
+    marginTop: 30,
     marginBottom: 10,
     // Ensure internal shimmer/words don't bleed beyond rounded corners
     overflow: 'hidden',
@@ -519,48 +536,62 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 18,
-    color: themeVariables.primaryColor,
+    color: themeVariables.whiteColor,
     marginTop: 12,
   },
   // Removed explicit success styling; success is handled by WinOverlay
   remainingContainer: {
     position: 'absolute',
-    left: 16,
-    bottom: 80,
-    backgroundColor: 'rgba(88,219,51,0.20)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
-    zIndex: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
+    right: 24,
+    top: 16,
+    alignItems: 'center',
+    gap: 4,
   },
-  remainingText: {
+  remainingLabel: {
     color: themeVariables.whiteColor,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
+  },
+  remainingBubble: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(114,228,87,0.22)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.78)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  remainingCount: {
+    color: themeVariables.whiteColor,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  remainingCountWarning: {
+    color: '#ff6b6b',
   },
   remainingInner: {
     position: 'absolute',
     width: '100%',
     height: '100%',
     borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   remainingShine: {
     position: 'absolute',
-    top: '10%',
-    left: '12%',
-    width: '30%',
-    height: '55%',
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    top: '12%',
+    left: '18%',
+    width: '36%',
+    height: '42%',
+    backgroundColor: 'rgba(255,255,255,0.38)',
     borderRadius: 9999,
-    transform: [{ rotate: '-20deg' }],
+    transform: [{ rotate: '-24deg' }],
   },
 });
 

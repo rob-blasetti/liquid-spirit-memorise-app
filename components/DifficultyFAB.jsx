@@ -1,14 +1,22 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useContext } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Animated, Easing, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import { useUser } from '../contexts/UserContext';
 import theme from '../styles/theme';
 import themeVariables from '../styles/theme';
+import { BlurView } from '@react-native-community/blur';
+
+export const FAB_BOTTOM_MARGIN = 12;
 
 const DifficultyFAB = () => {
   const { level, setLevel } = useDifficulty();
   const { completedDifficulties } = useUser();
+  const safeInsets = useContext(SafeAreaInsetsContext);
+  const topInset = Math.max(safeInsets?.top || 0, 0);
+  const bottomInset = Math.max(safeInsets?.bottom || 0, 0);
+  const fabBottomSpacing = bottomInset + FAB_BOTTOM_MARGIN;
   const [open, setOpen] = useState(false);
   const openAnim = useRef(new Animated.Value(0)).current; // 0 closed -> 1 open
 
@@ -99,17 +107,25 @@ const DifficultyFAB = () => {
     <View style={styles.container} pointerEvents="box-none">
       {open && (
         <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-          <View style={styles.scrim} pointerEvents="auto" />
+          <View style={[styles.scrim, { top: -topInset, bottom: -bottomInset }]} pointerEvents="auto" />
         </TouchableWithoutFeedback>
       )}
-      <View style={styles.fabWrap} pointerEvents="box-none">
+      <View style={[styles.fabWrap, { bottom: fabBottomSpacing }]} pointerEvents="box-none">
         <View style={styles.levelContainer} pointerEvents="box-none">
           {levelOrder.map((val, idx) => (
             <LevelButton key={val} value={val} index={idx} />
           ))}
         </View>
-        <TouchableOpacity style={styles.fab} onPress={() => setOpen(!open)}>
-          <Ionicons name="options-outline" size={24} color={theme.whiteColor} />
+        <TouchableOpacity style={styles.fab} onPress={() => setOpen(!open)} activeOpacity={0.85}>
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            blurType="light"
+            blurAmount={18}
+            reducedTransparencyFallbackColor="rgba(255,255,255,0.12)"
+          />
+          <View style={styles.fabContent}>
+            <Ionicons name="options-outline" size={24} color={theme.whiteColor} />
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -127,19 +143,28 @@ const styles = StyleSheet.create({
   fabWrap: {
     position: 'absolute',
     right: 24,
-    bottom: 54,
     alignItems: 'center',
   },
   fab: {
-    backgroundColor: theme.primaryColor,
-    borderColor: themeVariables.whiteColor,
+    backgroundColor: 'rgba(49,39,131,0.18)',
+    borderColor: 'rgba(255,255,255,0.55)',
     borderWidth: 1,
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
     elevation: 4,
+  },
+  fabContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   levelContainer: {
     position: 'absolute',

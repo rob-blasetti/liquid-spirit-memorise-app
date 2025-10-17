@@ -1,6 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useDifficulty } from '../contexts/DifficultyContext';
+import { FAB_BOTTOM_MARGIN } from '../components/DifficultyFAB';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
@@ -10,6 +12,7 @@ const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
 const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const { level } = useDifficulty();
+  const safeInsets = useContext(SafeAreaInsetsContext);
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -192,9 +195,10 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   // compute card size constrained by both width and height so cards always fit within grid width
   const widthBound = Math.max(40, Math.floor((gridLayout.width - cardMargin * 2 * columns) / columns));
   // reserve space at bottom for guesses card; align with FAB bottom (54)
-  const bottomOffset = 54; // align bottom edge with Difficulty FAB
+  const bottomSafeInset = Math.max(safeInsets?.bottom || 0, 0);
+  const bottomOffset = bottomSafeInset + FAB_BOTTOM_MARGIN; // align with Difficulty FAB spacing and safe area
   const guessesCardHeightEst = Math.max(48, Math.min(72, Math.floor((widthBound * 1.35) * 0.8)));
-  const bottomReserve = guessesCardHeightEst + bottomOffset + 8; // ensure space for guesses bubble at bottom
+  const bottomReserve = guessesCardHeightEst + bottomOffset + 8; // preserve space for guesses card, FAB, and safe area
   const usableHeight = Math.max(120, gridLayout.height - bottomReserve);
   const heightBoundPerCard = Math.max(40, Math.floor((usableHeight - cardMargin * 2 * rows) / rows));
   // maintain aspect ratio ~1:1.35 (w:h)
@@ -482,7 +486,7 @@ const styles = StyleSheet.create({
   },
   slate: {
     width: '100%',
-    height: 96,
+    minHeight: 96,
     borderRadius: 16,
     padding: 12,
     // Match Bubble Pop slate for consistency and to prevent bleed-through

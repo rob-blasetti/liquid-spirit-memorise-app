@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import GameTopBar from '../components/GameTopBar';
 import PuzzlePiece from '../components/PuzzlePieceSvg';
@@ -8,6 +9,9 @@ import { buildJigsawPath } from '../components/PuzzlePath';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 import { prepareQuoteForGame } from '../services/quoteSanitizer';
+import { FAB_BOTTOM_MARGIN } from '../components/DifficultyFAB';
+import { BlurView } from '@react-native-community/blur';
+import LinearGradient from 'react-native-linear-gradient';
 
 // Dimensions and sizes
 const { width, height } = Dimensions.get('window');
@@ -15,15 +19,18 @@ const MARGIN = 0;
 
 const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   // Difficulty settings: number of pieces and pre-completed count from global context
+  const safeInsets = useContext(SafeAreaInsetsContext);
+  const fabBottomSpacing = Math.max(safeInsets?.bottom || 0, 0) + FAB_BOTTOM_MARGIN;
   const { level: difficulty } = useDifficulty();
   const pieceCounts = { 1: 8, 2: 16, 3: 24 };
   const prePlacedCounts = { 1: 2, 2: 4, 3: 6 };
   const pieceCount = pieceCounts[difficulty] || 8;
   const prePlaced = prePlacedCounts[difficulty] || 2;
   // Timer based on difficulty
-  const initialTime = difficulty === 1 ? 60 : difficulty === 2 ? 40 : 20;
+  const initialTime = 60;
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timerRef = useRef(null);
+  const isDangerTime = timeLeft <= 10;
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -56,7 +63,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
   const MAX_AREA_H = Math.floor(height * 0.62);
   const sizeByW = Math.floor((width - (cols - 1) * MARGIN - 40) / cols);
   const sizeByH = Math.floor((MAX_AREA_H - (rows - 1) * MARGIN) / rows);
-  const PIECE_SIZE = Math.max(54, Math.floor(Math.min(sizeByW, sizeByH) * 0.92));
+  const PIECE_SIZE = Math.max(48, Math.floor(Math.min(sizeByW, sizeByH) * 0.84));
   const SLOT_SIZE = PIECE_SIZE;
 
   const totalW = cols * SLOT_SIZE + (cols - 1) * MARGIN;
@@ -124,10 +131,11 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
   const initialPositions = useMemo(() => {
     const positions = [];
     const placed = [];
-    const minDist = PIECE_SIZE; // minimum separation between piece origins
+    const baseSeparation = Math.max(PIECE_SIZE * 1.12, 52); // encourage clear spacing between pieces
     const SAFE_TOP = 140; // keep clear of title/description area
     // Avoid bottom nav and leave headroom for FAB and its expanded chips
-    const FAB_W = 56, FAB_H = 56, FAB_RIGHT = 24, FAB_BOTTOM = 54;
+    const FAB_W = 56, FAB_H = 56, FAB_RIGHT = 24;
+    const FAB_BOTTOM = fabBottomSpacing;
     const SAFE_BOTTOM = Math.max(148, FAB_BOTTOM + FAB_H + 28); // ~138 -> round up for safety
     const SAFE_SIDE = 10;
 
@@ -138,7 +146,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
     const puzzleMaxX = puzzleMinX + puzzleWidth;
     const puzzleMaxY = puzzleMinY + puzzleHeight;
 
-    // Define spawn strips: left, right, bottom (avoid top near heading)
+    // Define spawn strips: left, right, bottom, and (optionally) top (avoid top header overlap)
     let strips = [];
     // Left strip
     if (puzzleMinX - SAFE_SIDE - PIECE_SIZE > SAFE_SIDE) {
@@ -147,6 +155,15 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
         y0: SAFE_TOP,
         x1: Math.max(SAFE_SIDE, puzzleMinX - MARGIN),
         y1: Math.min(height - SAFE_BOTTOM, puzzleMaxY),
+      });
+    }
+    // Top strip (only if there is room between header and puzzle)
+    if (SAFE_TOP + PIECE_SIZE < puzzleMinY - MARGIN) {
+      strips.push({
+        x0: SAFE_SIDE,
+        y0: SAFE_TOP,
+        x1: width - SAFE_SIDE,
+        y1: Math.max(SAFE_TOP + PIECE_SIZE, puzzleMinY - MARGIN),
       });
     }
     // Right strip
@@ -180,7 +197,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
 
     // Timer exclusion: bottom-left timer piece area
     const TIMER_LEFT = 16;
-    const TIMER_BOTTOM = 80;
+    const TIMER_BOTTOM = fabBottomSpacing;
     const TIMER_W = Math.max(84, Math.floor(PIECE_SIZE * 1.4));
     const TIMER_H = Math.max(48, Math.floor(PIECE_SIZE * 1.0));
     const TIMER_PAD = Math.max(12, Math.floor(PIECE_SIZE * 0.2));
@@ -236,14 +253,20 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
       }
       return strips[strips.length - 1];
     };
-    const overlaps = (a, b, dist) => Math.abs(a.x - b.x) < dist && Math.abs(a.y - b.y) < dist;
+    const overlaps = (a, b, dist) => {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy) < dist;
+    };
 
     for (let idx = 0; idx < interactiveCount; idx++) {
       let pos = { x: SAFE_SIDE, y: SAFE_TOP };
       let attempts = 0;
-      let sep = minDist;
+      let sep = baseSeparation;
       while (attempts < 300) {
-        const strip = pickStrip();
+        const strip = strips.length
+          ? strips[Math.floor(Math.random() * strips.length)]
+          : pickStrip();
         const xMin = strip.x0;
         const xMax = strip.x1 - PIECE_SIZE;
         const yMin = strip.y0;
@@ -254,15 +277,15 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
         pos = { x, y };
         if (!placed.some(p => overlaps(p, pos, sep))) break;
         attempts++;
-        if (attempts % 60 === 0 && sep > PIECE_SIZE * 0.6) {
-          sep = Math.floor(sep * 0.9); // relax separation gradually
+        if (attempts % 80 === 0 && sep > PIECE_SIZE * 0.86) {
+          sep = Math.floor(sep * 0.92); // relax separation gradually but keep comfortable spacing
         }
       }
       placed.push(pos);
       positions.push(pos);
     }
     return positions;
-  }, [interactiveCount, rows, cols, startX, startY, SLOT_SIZE, PIECE_SIZE]);
+  }, [interactiveCount, rows, cols, startX, startY, SLOT_SIZE, PIECE_SIZE, safeInsets]);
   
   // Randomize which pieces are pre-placed
   const prePlacedIndices = useMemo(() => {
@@ -458,10 +481,51 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
       })}
       {/* Win overlay handled at parent */}
       {/* Countdown timer bottom-left shaped like a puzzle piece */}
-      <View style={styles.timerWrapper} pointerEvents="none">
-         <View style={styles.timerFab}>
-           <Text style={styles.timerText}>{timeLeft}s</Text>
-         </View>
+      <View
+        style={[
+          styles.timerWrapper,
+          {
+            bottom: fabBottomSpacing,
+            borderColor: isDangerTime ? 'rgba(229,47,47,0.55)' : 'rgba(114,228,87,0.45)',
+            backgroundColor: isDangerTime ? 'rgba(229,47,47,0.18)' : 'rgba(88,219,51,0.18)',
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="light"
+          blurAmount={22}
+          reducedTransparencyFallbackColor={
+            isDangerTime ? 'rgba(229,47,47,0.24)' : 'rgba(114,228,87,0.24)'
+          }
+        />
+        <LinearGradient
+          colors={
+            isDangerTime
+              ? ['rgba(229,47,47,0.55)', 'rgba(165,24,24,0.26)']
+              : ['rgba(114,228,87,0.45)', 'rgba(68,182,40,0.22)']
+          }
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.timerContent}>
+          <Text
+            style={[
+              styles.timerText,
+              { color: isDangerTime ? themeVariables.whiteColor : themeVariables.blackColor },
+            ]}
+          >
+            {timeLeft}s
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.timerShine,
+            { backgroundColor: isDangerTime ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.28)' },
+          ]}
+        />
       </View>
     </View>
   );
@@ -582,34 +646,40 @@ const styles = StyleSheet.create({
   timerWrapper: {
     position: 'absolute',
     left: 24,         // mirror of FAB_RIGHT
-    bottom: 54,       // same as FAB_BOTTOM
     width: 56,        // same as FAB diameter
     height: 56,
     zIndex: 3,
-  },
-  timerText: {
-    position: 'absolute',
-    color: themeVariables.blackColor,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    top: 20,
-  },
-  timerFab: {
-    width: 56,
-    height: 56,
     borderRadius: 28,
-    backgroundColor: themeVariables.secondaryColor, // or whiteColor if you want white background
-    borderColor: themeVariables.blackColor,
     borderWidth: 1,
-    borderStyle: 'solid',
+    borderColor: 'rgba(114,228,87,0.45)',
+    backgroundColor: 'rgba(88,219,51,0.18)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  timerContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+  },
+  timerText: {
+    color: themeVariables.blackColor,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  timerShine: {
+    borderRadius: 28,
+    position: 'absolute',
+    top: 6,
+    left: 10,
+    right: 10,
+    height: 12,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    opacity: 0.6,
   },
 });
 
