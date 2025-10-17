@@ -1,5 +1,6 @@
 import { updateAchievementOnServer, fetchUserAchievements, getTotalPoints } from './achievementsService';
 import { achievements as defaultAchievements } from '../data/achievements';
+import { filterEnabledAchievements, isAchievementEnabled } from '../config/achievementsConfig';
 
 const debugGrant = (...args) => {
   const isDev = typeof __DEV__ === 'boolean' ? __DEV__ : process.env.NODE_ENV !== 'production';
@@ -8,6 +9,8 @@ const debugGrant = (...args) => {
     console.log('[AchievementGrantService]', ...args);
   }
 };
+
+const ENABLED_DEFAULT_ACHIEVEMENTS = filterEnabledAchievements(defaultAchievements);
 
 // Prevent re-entrant or repeated awards for the same user/achievement
 const inProgress = new Set();
@@ -23,8 +26,33 @@ const GAME_ACHIEVEMENT_MAP = {
   tapGame: { 1: 'tapPerfect', 2: 'tapPerfect', 3: 'tapPerfect' },
 };
 
+const CHAINED_GAME_SCREENS = new Set(['wordRacerGame']);
+
+const sortNumericKeys = (mapping = {}) =>
+  Object.keys(mapping)
+    .map((key) => Number(key))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => a - b);
+
+export function getAchievementIdsForGame(screen, level) {
+  const mapping = GAME_ACHIEVEMENT_MAP[screen];
+  if (!mapping) return [];
+
+  if (CHAINED_GAME_SCREENS.has(screen)) {
+    const sortedLevels = sortNumericKeys(mapping);
+    return sortedLevels
+      .filter((lvl) => (typeof level === 'number' ? lvl <= level : true))
+      .map((lvl) => mapping[lvl])
+      .filter(Boolean);
+  }
+
+  const id = mapping[level];
+  return id ? [id] : [];
+}
+
 export function getAchievementIdForGame(screen, level) {
-  return GAME_ACHIEVEMENT_MAP[screen]?.[level] || null;
+  const ids = getAchievementIdsForGame(screen, level);
+  return ids.length > 0 ? ids[ids.length - 1] : null;
 }
 
 /**
@@ -48,6 +76,10 @@ export async function grantAchievement({
   setTotalPoints,
 }) {
   if (!profile || !id) return;
+  if (!isAchievementEnabled(id)) {
+    debugGrant('grantAchievement:disabled-achievement', { id });
+    return;
+  }
   const isGuest = Boolean(profile?.type === 'guest' || profile?.guest);
   const previousTotalPoints =
     typeof profile?.totalPoints === 'number'
@@ -90,7 +122,7 @@ export async function grantAchievement({
   let earned = optimisticAchievements.find(a => a.id === id);
   // If the achievement is not present locally, seed it from defaults
   if (!earned) {
-    const def = defaultAchievements.find(a => a.id === id);
+    const def = ENABLED_DEFAULT_ACHIEVEMENTS.find(a => a.id === id);
     const newEntry = {
       id,
       slug: def?.slug || id,
@@ -256,8 +288,27 @@ export async function grantAchievement({
  * based on game screen and difficulty level.
  */
 export async function grantGameAchievement(opts) {
-  const { screen, level } = opts;
-  const id = getAchievementIdForGame(screen, level);
-  if (!id) return;
-  await grantAchievement({ ...opts, id });
+  const { screen, level, ids, setAchievements, achievements } = opts;
+  const targetIds = Array.isArray(ids) && ids.length > 0 ? ids : getAchievementIdsForGame(screen, level);
+  if (!targetIds || targetIds.length === 0) return;
+
+  let latestAchievements = achievements;
+  const setAchievementsWrapper =
+    typeof setAchievements === 'function'
+      ? (next) => {
+          latestAchievements = next;
+          setAchievements(next);
+        }
+      : undefined;
+
+  for (const id of targetIds) {
+    if (!id || !isAchievementEnabled(id)) continue;
+    // eslint-disable-next-line no-await-in-loop
+    await grantAchievement({
+      ...opts,
+      id,
+      achievements: latestAchievements,
+      setAchievements: setAchievementsWrapper || setAchievements,
+    });
+  }
 }

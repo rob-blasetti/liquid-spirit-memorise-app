@@ -5887,7 +5887,7 @@ react-native-timeline-feed@^1.0.1:
   resolved "https://registry.yarnpkg.com/react-native-timeline-feed/-/react-native-timeline-feed-1.0.1.tgz#564b5f68798282e837f5fde61e66e16980cce397"
   integrity sha512-M5027tP7lb48calaWZOZ8E0SAttU5sPaLoDOC4w3bYiWmUqlbh47awrBeGKwyOeE8ggy+j+KXrtCyA65HQzlxA==
 
-react-native-tts@^7.2.0:
+react-native-tts@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/react-native-tts/-/react-native-tts-4.1.1.tgz#a6caa23f3e955e913195d6342608cb4489dd8ed1"
   integrity sha512-VL0TgCwkUWggbbFGIXAPKC3rM1baluAYtgOdgnaTm7UYsWf/y8n5VgmVB0J2Wa8qt1dldZ1cSsdQY9iz3evcAg==

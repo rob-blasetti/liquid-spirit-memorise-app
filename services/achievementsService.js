@@ -3,10 +3,12 @@ import { achievements as defaultAchievements } from '../data/achievements';
 import { saveProfile as persistProfile } from './profileService';
 import { API_URL } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { filterEnabledAchievements, isAchievementEnabled } from '../config/achievementsConfig';
 
-const DEFAULT_BY_ID = new Map(defaultAchievements.map((a) => [a.id, a]));
+const ENABLED_DEFAULT_ACHIEVEMENTS = filterEnabledAchievements(defaultAchievements);
+const DEFAULT_BY_ID = new Map(ENABLED_DEFAULT_ACHIEVEMENTS.map((a) => [a.id, a]));
 const DEFAULT_IDS = new Set(DEFAULT_BY_ID.keys());
-const DEFAULT_BY_TITLE = new Map(defaultAchievements.map((a) => [a.title, a.id]));
+const DEFAULT_BY_TITLE = new Map(ENABLED_DEFAULT_ACHIEVEMENTS.map((a) => [a.title, a.id]));
 const SERVER_ID_HINTS = new Map();
 
 const registerServerIdHints = (list = []) => {
@@ -120,7 +122,7 @@ export function initAchievements(profile) {
         .filter(Boolean)
     : [];  
   const storedMap = toMap(fromProfile);
-  const merged = defaultAchievements.map((def) => {
+  const merged = ENABLED_DEFAULT_ACHIEVEMENTS.map((def) => {
     const stored = storedMap.get(def.id);
     if (stored) {
       storedMap.delete(def.id);
@@ -144,13 +146,15 @@ export function initAchievements(profile) {
     };
   });
 
-  const extras = Array.from(storedMap.values()).map((item) => ({
-    ...item,
-    slug: item.slug || item.id,
-    serverId: item.serverId || null,
-    earned: Boolean(item.earned),
-    dateEarned: item.dateEarned || null,
-  }));
+  const extras = Array.from(storedMap.values())
+    .filter((item) => isAchievementEnabled(item?.id))
+    .map((item) => ({
+      ...item,
+      slug: item.slug || item.id,
+      serverId: item.serverId || null,
+      earned: Boolean(item.earned),
+      dateEarned: item.dateEarned || null,
+    }));
 
   if (extras.length) {
     debugAchievements(
@@ -159,7 +163,7 @@ export function initAchievements(profile) {
     );
   }
 
-  const combined = [...merged, ...extras];
+  const combined = filterEnabledAchievements([...merged, ...extras]);
   registerServerIdHints(combined);
   return combined;
 }
@@ -274,7 +278,7 @@ export async function fetchUserAchievements(userId) {
         }
         // Shape C: legacy string id list (earned-only)
         if (typeof a === 'string') {
-          const def = defaultAchievements.find((d) => d.id === a);
+          const def = ENABLED_DEFAULT_ACHIEVEMENTS.find((d) => d.id === a);
           return {
             id: a,
             title: def?.title || a,
@@ -286,10 +290,11 @@ export async function fetchUserAchievements(userId) {
         }
         return null;
       })
-      .filter(Boolean);    
+      .filter(Boolean);
 
-    const normalizedMap = toMap(normalizedEarned);
-    const merged = defaultAchievements.map((def) => {
+    const filteredEarned = filterEnabledAchievements(normalizedEarned);
+    const normalizedMap = toMap(filteredEarned);
+    const merged = ENABLED_DEFAULT_ACHIEVEMENTS.map((def) => {
       const earned = normalizedMap.get(def.id);
       if (earned) {
         normalizedMap.delete(def.id);
@@ -309,26 +314,31 @@ export async function fetchUserAchievements(userId) {
       };
     });
 
-    const extras = Array.from(normalizedMap.values()).map((item) => ({
-      id: item.slug || item.id,
-      slug: item.slug || item.id,
-      serverId: item.serverId || null,
-      title: item.title || item.id,
-      description: item.description || '',
-      points: item.points || 0,
-      earned: Boolean(item.earned),
-      dateEarned: item.dateEarned || null,
-    }));    
+    const extras = Array.from(normalizedMap.values())
+      .filter((item) => isAchievementEnabled(item?.id))
+      .map((item) => ({
+        id: item.slug || item.id,
+        slug: item.slug || item.id,
+        serverId: item.serverId || null,
+        title: item.title || item.id,
+        description: item.description || '',
+        points: item.points || 0,
+        earned: Boolean(item.earned),
+        dateEarned: item.dateEarned || null,
+      }));
 
-    const achievements = [...merged, ...extras];
+    const achievements = filterEnabledAchievements([...merged, ...extras]);
     const computedTotal = getTotalPoints(achievements);
     registerServerIdHints(achievements);
-    
+
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);
     }
-    const resolvedTotal = typeof totalPoints === 'number' ? totalPoints : computedTotal;
+    const resolvedTotal =
+      typeof totalPoints === 'number'
+        ? Math.min(totalPoints, computedTotal)
+        : computedTotal;
     return { achievements, totalPoints: resolvedTotal };
   } catch (err) {
     console.error('fetchUserAchievements error:', err);
@@ -417,20 +427,37 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
  * Does not persist; leave persistence to caller.
  */
 export function awardAchievementData(achievementsList, id) {
+  const filteredList = filterEnabledAchievements(achievementsList);
+  if (!isAchievementEnabled(id)) {
+    return {
+      achievementsList: filteredList,
+      notification: null,
+      totalPoints: getTotalPoints(filteredList),
+    };
+  }
   const idx = achievementsList.findIndex(a => a.id === id);
   if (idx === -1) {
-    return { achievementsList, notification: null, totalPoints: getTotalPoints(achievementsList) };
+    return {
+      achievementsList: filteredList,
+      notification: null,
+      totalPoints: getTotalPoints(filteredList),
+    };
   }
   const target = achievementsList[idx];
   if (target.earned) {
-    return { achievementsList, notification: null, totalPoints: getTotalPoints(achievementsList) };
+    return {
+      achievementsList: filteredList,
+      notification: null,
+      totalPoints: getTotalPoints(filteredList),
+    };
   }
   const updated = achievementsList.map(a =>
     a.id === id ? { ...a, earned: true } : a
   );
-  const totalPoints = getTotalPoints(updated);
+  const enabledUpdated = filterEnabledAchievements(updated);
+  const totalPoints = getTotalPoints(enabledUpdated);
   const notification = { id: target.id, title: target.title };
-  return { achievementsList: updated, notification, totalPoints };
+  return { achievementsList: enabledUpdated, notification, totalPoints };
 }
 
 /**
@@ -443,6 +470,9 @@ export function awardAchievementData(achievementsList, id) {
 export async function awardAchievement(profile, id) {
   if (!profile) {
     throw new Error('Profile is required to award achievement');
+  }
+  if (!isAchievementEnabled(id)) {
+    return { profile, notification: null };
   }
 
   // 1. Local optimistic update

@@ -3,7 +3,7 @@ import { initAchievements, fetchUserAchievements } from '../services/achievement
 import {
   grantAchievement,
   grantGameAchievement,
-  getAchievementIdForGame,
+  getAchievementIdsForGame,
 } from '../services/achievementGrantService';
 import { getTotalPoints } from '../services/achievementsService';
 import {
@@ -13,8 +13,32 @@ import {
   ensureFlag,
 } from '../services/achievementProgressService';
 import { grade1Lessons } from '../data/grade1';
+import { ACHIEVEMENTS_ENABLED, isAchievementEnabled } from '../config/achievementsConfig';
 
 export default function useAchievements(profile, saveProfile) {
+  if (!ACHIEVEMENTS_ENABLED) {
+    const baseline = [];
+    const total = 0;
+    const noop = async () => undefined;
+    return {
+      achievements: baseline,
+      totalPoints: total,
+      computedPoints: total,
+      isPointsSynced: true,
+      isGuest: Boolean(profile?.type === 'guest' || profile?.guest),
+      isLoading: false,
+      notification: null,
+      setNotification: () => {},
+      awardAchievement: noop,
+      awardGameAchievement: noop,
+      setAchievements: noop,
+      refreshFromServer: noop,
+      recordGamePlay: noop,
+      recordLessonCompletion: noop,
+      recordDailyChallenge: noop,
+      recordProfileSetup: noop,
+    };
+  }
   if (__DEV__) {
     // eslint-disable-next-line no-console
     console.debug('useAchievements profile:', profile);
@@ -109,6 +133,9 @@ export default function useAchievements(profile, saveProfile) {
   // Award an achievement by ID via service
   const awardAchievement = useCallback(
     async id => {
+      if (!isAchievementEnabled(id)) {
+        return;
+      }
       await grantAchievement({
         id,
         profile,
@@ -130,42 +157,39 @@ export default function useAchievements(profile, saveProfile) {
   );
 
   // Award achievement for a game win based on screen and level
-  const awardGameAchievement = useCallback(
-    async (screen, level) => {
-      // Pre-check: if user already has this achievement locally, skip
-      const id = getAchievementIdForGame(screen, level);
-      if (id) {
-        const already = achievements.some(a => a.id === id && a.earned);
-        if (already) {
-          if (__DEV__)
-            console.debug('awardGameAchievement: already earned, skipping', {
-              screen,
-              level,
-              id,
-            });
-          return;
-        }
-      }
-      await grantGameAchievement({
-        screen,
-        level,
-        profile,
-        achievements,
-        setAchievements,
-        setNotification,
-        saveProfile,
-        setTotalPoints,
-      });
-    },
-    [
+  const awardGameAchievement = useCallback(async (screen, level) => {
+    const candidateIds = getAchievementIdsForGame(screen, level).filter(Boolean);
+    if (!candidateIds.length) return;
+
+    const enabledIds = candidateIds.filter((id) => isAchievementEnabled(id));
+    if (!enabledIds.length) return;
+
+    const pendingIds = enabledIds.filter(
+      (id) => !achievements.some((achievement) => achievement.id === id && achievement.earned),
+    );
+
+    if (!pendingIds.length) {
+      if (__DEV__)
+        console.debug('awardGameAchievement: already earned, skipping chain', {
+          screen,
+          level,
+          ids: enabledIds,
+        });
+      return;
+    }
+
+    await grantGameAchievement({
+      screen,
+      level,
+      ids: pendingIds,
       profile,
       achievements,
       setAchievements,
       setNotification,
       saveProfile,
       setTotalPoints,
-    ],
-  );
+    });
+  }, [achievements, profile, setAchievements, setNotification, saveProfile, setTotalPoints]);
 
   // Reinitialize achievements state when the active profile changes (e.g., switch guest/registered)
   useEffect(() => {

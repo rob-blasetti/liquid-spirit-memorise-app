@@ -4,7 +4,11 @@ jest.mock('../services/achievementsService', () => ({
   getTotalPoints: (list = []) => list.reduce((sum, a) => sum + (a.earned && a.points ? a.points : 0), 0),
 }));
 
-const { grantAchievement } = require('../services/achievementGrantService');
+const {
+  grantAchievement,
+  grantGameAchievement,
+  getAchievementIdsForGame,
+} = require('../services/achievementGrantService');
 const {
   updateAchievementOnServer,
   fetchUserAchievements,
@@ -47,5 +51,38 @@ describe('achievementGrantService', () => {
         ]),
       }),
     );
+  });
+
+  it('lists cumulative Word Racer achievements up to requested difficulty', () => {
+    expect(getAchievementIdsForGame('wordRacerGame', 1)).toEqual(['wordRacer1']);
+    expect(getAchievementIdsForGame('wordRacerGame', 2)).toEqual(['wordRacer1', 'wordRacer2']);
+    expect(getAchievementIdsForGame('wordRacerGame', 3)).toEqual(['wordRacer1', 'wordRacer2', 'wordRacer3']);
+  });
+
+  it('awards all pending Word Racer achievements up to the beaten difficulty', async () => {
+    const profile = { id: 'guest-1', guest: true };
+    const baseAchievements = [A('wordRacer1', 5), A('wordRacer2', 10), A('wordRacer3', 15)];
+    let latestAchievements = baseAchievements;
+    const setAchievements = jest.fn((next) => {
+      latestAchievements = next;
+    });
+    const setNotification = jest.fn();
+    const saveProfile = jest.fn();
+    const setTotalPoints = jest.fn();
+
+    await grantGameAchievement({
+      screen: 'wordRacerGame',
+      level: 3,
+      profile,
+      achievements: baseAchievements,
+      setAchievements,
+      setNotification,
+      saveProfile,
+      setTotalPoints,
+    });
+
+    expect(setAchievements).toHaveBeenCalledTimes(3);
+    const earnedIds = latestAchievements.filter((a) => a.earned).map((a) => a.id);
+    expect(earnedIds).toEqual(['wordRacer1', 'wordRacer2', 'wordRacer3']);
   });
 });
