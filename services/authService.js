@@ -103,3 +103,48 @@ export const requestLiquidSpiritPasswordReset = async email => {
     throw e;
   }
 };
+
+export const deleteNuriUser = async ({ token, userId } = {}) => {
+  if (!token) {
+    throw new Error('Missing authentication token.');
+  }
+
+  try {
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+    const body = userId ? JSON.stringify({ userId }) : undefined;
+    if (body) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(`${API_URL}/api/nuri/user`, {
+      method: 'DELETE',
+      headers,
+      body,
+    });
+
+    if (response.status === 204) {
+      return null;
+    }
+
+    const responseText = await response.text();
+    if (!response.ok) {
+      const message = responseText || 'Failed to delete account.';
+      throw new Error(message);
+    }
+
+    if (!responseText) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      return responseText;
+    }
+  } catch (e) {
+    console.error('Nuri account deletion failed:', e);
+    throw e;
+  }
+};

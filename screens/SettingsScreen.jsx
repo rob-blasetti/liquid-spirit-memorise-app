@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Modal,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
 import Slider from '@react-native-community/slider';
 import themeVariables from '../styles/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -21,7 +31,16 @@ const coerceFontSize = (value) => {
   return DEFAULT_READING_FONT;
 };
 
-const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOverride, onBack, onReset, onSaveProfile }) => {
+const SettingsScreen = ({
+  profile,
+  currentProgress,
+  overrideProgress,
+  onSaveOverride,
+  onBack,
+  onReset,
+  onSaveProfile,
+  onDeleteAccount,
+}) => {
   const [selectedSet, setSelectedSet] = useState(
     overrideProgress?.setNumber ?? currentProgress.setNumber
   );
@@ -49,6 +68,50 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
   // For grade-1 slider bubble positioning
   const [sliderWidth, setSliderWidth] = useState(0);
   const [bubbleLayout, setBubbleLayout] = useState({ width: 0, height: 0 });
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const canDeleteAccount = Boolean(!profile?.guest && typeof onDeleteAccount === 'function');
+
+  useEffect(() => {
+    if (!canDeleteAccount && deleteModalVisible) {
+      setDeleteModalVisible(false);
+      setDeleteError('');
+      setIsDeletingAccount(false);
+    }
+  }, [canDeleteAccount, deleteModalVisible]);
+
+  useEffect(() => {
+    if (!deleteModalVisible) {
+      setDeleteError('');
+    }
+  }, [deleteModalVisible]);
+
+  const openDeleteModal = () => {
+    if (!canDeleteAccount) return;
+    setDeleteError('');
+    setDeleteModalVisible(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeletingAccount) return;
+    setDeleteModalVisible(false);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!onDeleteAccount) return;
+    setDeleteError('');
+    setIsDeletingAccount(true);
+    try {
+      await onDeleteAccount();
+      setDeleteModalVisible(false);
+    } catch (error) {
+      const message = error?.message || 'Failed to delete account.';
+      setDeleteError(message);
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     if (String(profile?.grade) === '2') {
@@ -483,20 +546,105 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Account</Text>
-          <TouchableOpacity style={styles.accountButton} onPress={onReset}>
-            <View style={styles.accountLeft}>
-              <Ionicons
-                name="log-out-outline"
-                size={20}
-                color={themeVariables.whiteColor}
-                style={styles.accountIcon}
-              />
-              <Text style={styles.accountText}>Logout</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={themeVariables.whiteColor} />
-          </TouchableOpacity>
+          <View style={styles.accountActions}>
+            <TouchableOpacity
+              style={styles.accountButton}
+              onPress={onReset}
+              accessibilityRole="button"
+              accessibilityLabel="Log out"
+              accessibilityHint="Sign out of your current profile"
+            >
+              <View style={styles.accountLeft}>
+                <Ionicons
+                  name="log-out-outline"
+                  size={20}
+                  color={themeVariables.whiteColor}
+                  style={styles.accountIcon}
+                />
+                <Text style={styles.accountText}>Logout</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={themeVariables.whiteColor} />
+            </TouchableOpacity>
+
+            {canDeleteAccount && (
+              <TouchableOpacity
+                style={[styles.accountButton, styles.deleteAccountButton]}
+                onPress={openDeleteModal}
+                accessibilityRole="button"
+                accessibilityLabel="Delete Nuri account"
+                accessibilityHint="Permanently remove your Nuri account and saved progress"
+              >
+                <View style={styles.accountLeft}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={themeVariables.redColor}
+                    style={[styles.accountIcon, styles.deleteAccountIcon]}
+                  />
+                  <Text style={[styles.accountText, styles.deleteAccountText]}>Delete account</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={themeVariables.redColor} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </ScrollView>
+      {canDeleteAccount && (
+        <Modal visible={deleteModalVisible} transparent animationType="fade">
+          <View style={styles.deleteModalOverlay}>
+            <Pressable
+              style={styles.deleteModalBackdrop}
+              onPress={closeDeleteModal}
+              disabled={isDeletingAccount}
+            />
+            <View style={styles.deleteModalCard}>
+              <Text style={styles.deleteModalTitle}>Delete account?</Text>
+              <Text style={styles.deleteModalMessage}>
+                This will permanently remove your Nuri account, linked progress, and achievements.
+              </Text>
+              {!!deleteError && <Text style={styles.deleteModalError}>{deleteError}</Text>}
+              <View style={styles.deleteModalActions}>
+                <TouchableOpacity
+                  style={[
+                    styles.deleteModalButton,
+                    styles.deleteModalCancelButton,
+                    isDeletingAccount && styles.deleteModalButtonDisabled,
+                  ]}
+                  onPress={closeDeleteModal}
+                  disabled={isDeletingAccount}
+                >
+                  <Text style={[styles.deleteModalButtonLabel, styles.deleteModalCancelText]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.deleteModalButton,
+                    styles.deleteModalDeleteButton,
+                    isDeletingAccount && styles.deleteModalButtonDisabled,
+                  ]}
+                  onPress={confirmDeleteAccount}
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={themeVariables.whiteColor}
+                      style={styles.deleteModalButtonSpinner}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={themeVariables.whiteColor}
+                      style={styles.deleteModalButtonIcon}
+                    />
+                  )}
+                  <Text style={styles.deleteModalButtonLabel}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
@@ -755,6 +903,9 @@ const styles = StyleSheet.create({
     borderColor: themeVariables.whiteColor,
     backgroundColor: 'transparent',
   },
+  accountActions: {
+    marginTop: 16,
+  },
   accountLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -766,5 +917,97 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
     fontSize: 16,
     fontWeight: '600',
+  },
+  deleteAccountButton: {
+    borderColor: themeVariables.redColor,
+    backgroundColor: 'rgba(229,47,47,0.12)',
+    marginTop: 12,
+  },
+  deleteAccountText: {
+    color: themeVariables.redColor,
+  },
+  deleteAccountIcon: {
+    marginRight: 12,
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  deleteModalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  deleteModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: 'rgba(20,18,54,0.95)',
+    borderRadius: themeVariables.borderRadiusJumbo,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  deleteModalTitle: {
+    color: themeVariables.whiteColor,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  deleteModalMessage: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  deleteModalError: {
+    color: themeVariables.redColor,
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteModalActions: {
+    marginTop: 28,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  deleteModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: themeVariables.borderRadiusPill,
+    marginLeft: 12,
+  },
+  deleteModalButtonIcon: {
+    marginRight: 8,
+  },
+  deleteModalButtonSpinner: {
+    marginRight: 8,
+  },
+  deleteModalButtonLabel: {
+    color: themeVariables.whiteColor,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  deleteModalCancelButton: {
+    marginLeft: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  deleteModalCancelText: {
+    color: themeVariables.whiteColor,
+  },
+  deleteModalDeleteButton: {
+    backgroundColor: themeVariables.redColor,
+  },
+  deleteModalButtonDisabled: {
+    opacity: 0.65,
   },
 });
