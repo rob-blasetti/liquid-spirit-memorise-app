@@ -94,6 +94,7 @@ export const renderLazy = (node) => {
 const ScreenRenderer = ({
   navState,
   profile,
+  user,
   achievements,
   childrenProfiles = [],
   level,
@@ -139,6 +140,9 @@ const ScreenRenderer = ({
 
   const { deleteGuestAccount, wipeProfile, saveProfile, deleteRegisteredAccount } = accountActions;
   const { setProfileModalVisible, setComingSoonGrade } = modalHandlers;
+
+  const isGuestProfile = Boolean(profile?.guest || profile?.type === 'guest');
+  const isGuestUser = Boolean(user?.type === 'guest' || user?.guest);
 
   const currentNav = navState;
   const buildQuotePayload = (incomingQuote, extra = {}) => {
@@ -367,19 +371,20 @@ const ScreenRenderer = ({
       return renderLazy(
         <SettingsScreen
           profile={profile}
+          user={user}
           currentProgress={getCurrentProgress()}
           overrideProgress={overrideProgress}
           onSaveOverride={setOverrideProgress}
           onBack={goHome}
           onReset={() => {
-            if (profile?.guest) {
+            if (isGuestProfile) {
               deleteGuestAccount();
             } else {
               wipeProfile();
             }
           }}
           onSaveProfile={saveProfile}
-          onDeleteAccount={profile?.guest ? undefined : deleteRegisteredAccount}
+          onDeleteAccount={!isGuestUser && user ? deleteRegisteredAccount : undefined}
         />,
       );
     case 'class':

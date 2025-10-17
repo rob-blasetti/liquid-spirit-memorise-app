@@ -27,6 +27,7 @@ import useLessonProgress from '../hooks/useLessonProgress';
 import { AchievementsProvider } from '../contexts/AchievementsContext';
 import { createNavigationActions } from '../services/navigationService';
 import { createAppActions } from '../services/appFlowService';
+import { createAvatarActions } from '../services/avatarService';
 import ScreenTransition from './ScreenTransition';
 import { prefetchGames } from '../games/lazyGameRoutes';
 import { gameIds } from '../games';
@@ -66,6 +67,7 @@ const Main = () => {
     profile,
     registeredProfile,
     guestProfile,
+    setProfile,
     saveProfile,
     deleteGuestAccount,
     wipeProfile,
@@ -112,6 +114,11 @@ const Main = () => {
     const hasGuestOption = Boolean(guestProfile) && !profile?.guest;
     return hasRegisteredOption || hasSiblingOption || hasGuestOption;
   }, [profile, registeredProfile, guestProfile, children]);
+
+  const avatarActions = useMemo(() => {
+    if (!profile) return null;
+    return createAvatarActions({ profile, setProfile, saveProfile });
+  }, [profile, setProfile, saveProfile]);
 
   const navigationActions = useMemo(
     () =>
@@ -252,7 +259,7 @@ const Main = () => {
       console.warn('Failed to clear saved credentials after account deletion', credentialError);
     }
 
-    await wipeProfile();
+    await wipeProfile({ clearRegistered: true });
     await clearUserData();
   }, [profile, token, wipeProfile, clearUserData]);
 
@@ -337,6 +344,7 @@ const Main = () => {
       <ScreenRenderer
         navState={navState || displayNav}
         profile={profile}
+        user={user}
         achievements={achievements}
         childrenProfiles={children}
         level={level}
@@ -384,6 +392,7 @@ const Main = () => {
           }
         }}
         switcherAvailable={profileSwitchEligible}
+        onAvatarPress={avatarActions?.pickNewAvatar}
       />
       <ProfileSwitcherModal
         visible={profileSwitcherVisible}

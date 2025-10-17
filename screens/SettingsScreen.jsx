@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ScrollView,
   View,
@@ -9,6 +9,7 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import themeVariables from '../styles/theme';
@@ -33,6 +34,7 @@ const coerceFontSize = (value) => {
 
 const SettingsScreen = ({
   profile,
+  user,
   currentProgress,
   overrideProgress,
   onSaveOverride,
@@ -71,35 +73,59 @@ const SettingsScreen = ({
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  const canDeleteAccount = Boolean(!profile?.guest && typeof onDeleteAccount === 'function');
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const canDeleteAccount = Boolean(
+    user && user.type !== 'guest' && !user.guest && typeof onDeleteAccount === 'function'
+  );
+  const deleteConfirmationPhrase = useMemo(() => {
+    const base =
+      profile?.firstName ||
+      profile?.displayName ||
+      profile?.username ||
+      profile?.name ||
+      '';
+    const trimmed = typeof base === 'string' ? base.trim() : '';
+    const sanitized = trimmed.replace(/\s+/g, '').toLowerCase();
+    return sanitized ? `${sanitized}_delete` : 'nuri_delete';
+  }, [profile]);
+  const deletePhraseMatches =
+    deleteConfirmationText.trim().toLowerCase() === deleteConfirmationPhrase.toLowerCase();
 
   useEffect(() => {
     if (!canDeleteAccount && deleteModalVisible) {
       setDeleteModalVisible(false);
       setDeleteError('');
       setIsDeletingAccount(false);
+      setDeleteConfirmationText('');
     }
   }, [canDeleteAccount, deleteModalVisible]);
 
   useEffect(() => {
     if (!deleteModalVisible) {
       setDeleteError('');
+      setDeleteConfirmationText('');
     }
   }, [deleteModalVisible]);
 
   const openDeleteModal = () => {
     if (!canDeleteAccount) return;
     setDeleteError('');
+    setDeleteConfirmationText('');
     setDeleteModalVisible(true);
   };
 
   const closeDeleteModal = () => {
     if (isDeletingAccount) return;
     setDeleteModalVisible(false);
+    setDeleteConfirmationText('');
   };
 
   const confirmDeleteAccount = async () => {
     if (!onDeleteAccount) return;
+    if (!deletePhraseMatches) {
+      setDeleteError(`Type "${deleteConfirmationPhrase}" to confirm deletion.`);
+      return;
+    }
     setDeleteError('');
     setIsDeletingAccount(true);
     try {
@@ -602,6 +628,22 @@ const SettingsScreen = ({
               <Text style={styles.deleteModalMessage}>
                 This will permanently remove your Nuri account, linked progress, and achievements.
               </Text>
+              <View style={styles.deleteConfirmBox}>
+                <Text style={styles.deleteConfirmLabel}>
+                  To confirm, type "{deleteConfirmationPhrase}" below.
+                </Text>
+                <TextInput
+                  value={deleteConfirmationText}
+                  onChangeText={setDeleteConfirmationText}
+                  placeholder={deleteConfirmationPhrase}
+                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isDeletingAccount}
+                  style={styles.deleteConfirmInput}
+                  accessibilityLabel="Type confirmation phrase to delete account"
+                />
+              </View>
               {!!deleteError && <Text style={styles.deleteModalError}>{deleteError}</Text>}
               <View style={styles.deleteModalActions}>
                 <TouchableOpacity
@@ -619,10 +661,10 @@ const SettingsScreen = ({
                   style={[
                     styles.deleteModalButton,
                     styles.deleteModalDeleteButton,
-                    isDeletingAccount && styles.deleteModalButtonDisabled,
+                    (isDeletingAccount || !deletePhraseMatches) && styles.deleteModalButtonDisabled,
                   ]}
                   onPress={confirmDeleteAccount}
-                  disabled={isDeletingAccount}
+                  disabled={isDeletingAccount || !deletePhraseMatches}
                 >
                   {isDeletingAccount ? (
                     <ActivityIndicator
@@ -963,6 +1005,25 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     fontSize: 15,
     lineHeight: 22,
+    marginBottom: 16,
+  },
+  deleteConfirmBox: {
+    marginBottom: 16,
+  },
+  deleteConfirmLabel: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  deleteConfirmInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    color: themeVariables.whiteColor,
+    fontSize: 15,
+    backgroundColor: 'rgba(11,9,30,0.6)',
   },
   deleteModalError: {
     color: themeVariables.redColor,

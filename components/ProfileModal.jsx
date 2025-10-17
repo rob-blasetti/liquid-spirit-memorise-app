@@ -15,6 +15,7 @@ const ProfileModal = ({
   onClose,
   onOpenSwitcher,
   switcherAvailable,
+  onAvatarPress,
 }) => {
   const { displayName, avatarUri } = useMemo(() => {
     if (!profile || typeof profile !== 'object') {
@@ -35,6 +36,8 @@ const ProfileModal = ({
     };
   }, [profile]);
 
+  const canChangeAvatar = typeof onAvatarPress === 'function';
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -53,7 +56,15 @@ const ProfileModal = ({
             <Ionicons name="close" size={22} color={themeVariables.whiteColor} />
           </TouchableOpacity>
           <View style={styles.modalInner}>
-            <View style={styles.avatarWrapper}>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={onAvatarPress}
+              disabled={!canChangeAvatar}
+              activeOpacity={0.7}
+              accessibilityRole={canChangeAvatar ? 'button' : undefined}
+              accessibilityLabel={canChangeAvatar ? 'Change profile picture' : undefined}
+              accessibilityState={canChangeAvatar ? undefined : { disabled: true }}
+            >
               {avatarUri ? (
                 <FastImage
                   source={{
@@ -67,7 +78,7 @@ const ProfileModal = ({
               ) : (
                 <Avatar size={AVATAR_SIZE} name={displayName} variant="beam" />
               )}
-            </View>
+            </TouchableOpacity>
             <Text style={styles.nameText} numberOfLines={1}>
               {displayName}
             </Text>

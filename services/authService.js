@@ -130,8 +130,28 @@ export const deleteNuriUser = async ({ token, userId } = {}) => {
 
     const responseText = await response.text();
     if (!response.ok) {
-      const message = responseText || 'Failed to delete account.';
-      throw new Error(message);
+      let parsed;
+      let message = 'Failed to delete account.';
+      if (responseText) {
+        message = responseText;
+        try {
+          parsed = JSON.parse(responseText);
+          if (parsed && typeof parsed.message === 'string') {
+            message = parsed.message;
+          }
+        } catch {
+          // responseText was not JSON; fall back to raw string
+        }
+      }
+
+      if (/linked nuri users/i.test(message)) {
+        message = 'This account is linked to other Nuri profiles and cannot be deleted from the app. Please go to settings in your Liquid Spirit profile to delete this account or associated accounts.';
+      }
+
+      const error = new Error(message);
+      error.status = response.status;
+      error.payload = parsed;
+      throw error;
     }
 
     if (!responseText) {
@@ -144,7 +164,7 @@ export const deleteNuriUser = async ({ token, userId } = {}) => {
       return responseText;
     }
   } catch (e) {
-    console.error('Nuri account deletion failed:', e);
+    console.error('Nuri account deletion failed:', e?.message || e);
     throw e;
   }
 };

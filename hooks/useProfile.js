@@ -118,8 +118,11 @@ export default function useProfile() {
     }
   };
 
-  const wipeProfile = async () => {
+  const wipeProfile = async ({ clearRegistered = false } = {}) => {
     await clearProfile();
+    if (clearRegistered) {
+      setRegisteredProfile(null);
+    }
     dispatch({ type: 'setProfile', payload: null });
   };
 
