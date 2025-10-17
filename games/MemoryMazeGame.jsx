@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -8,28 +8,39 @@ const path = ['R', 'D', 'D', 'R'];
 
 // During the preview, highlight the path across a grid of words from the quote.
 // The player then moves along the grid from memory using the arrow buttons.
-const MemoryMazeGame = ({ quote, onBack }) => {
+const MemoryMazeGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const words = text.split(/\s+/).slice(0, size * size);
   const [preview, setPreview] = useState(true);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [step, setStep] = useState(0);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   useEffect(() => {
     setPreview(true);
     setPos({ x: 0, y: 0 });
     setStep(0);
     setMessage('');
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
     const timer = setTimeout(() => setPreview(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
   const move = (dir) => {
-    if (preview || message) return;
+    if (preview || hasWonRef.current) return;
+    if (message === 'Try again') return;
     const expected = path[step];
     if (dir !== expected) {
       setMessage('Try again');
+      mistakesRef.current += 1;
+      setTimeout(() => {
+        setMessage('');
+        setPos({ x: 0, y: 0 });
+        setStep(0);
+      }, 500);
       return;
     }
     const next = { ...pos };
@@ -41,6 +52,10 @@ const MemoryMazeGame = ({ quote, onBack }) => {
     const newStep = step + 1;
     if (newStep === path.length) {
       setMessage('Great job!');
+      if (!hasWonRef.current) {
+        hasWonRef.current = true;
+        onWin?.({ perfect: mistakesRef.current === 0 });
+      }
     } else {
       setStep(newStep);
     }

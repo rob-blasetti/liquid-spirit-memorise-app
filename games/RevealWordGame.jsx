@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
-const RevealWordGame = ({ quote, onBack }) => {
+const RevealWordGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const words = text.split(/\s+/);
   const [index, setIndex] = useState(0);
+  const hasWonRef = useRef(false);
+
+  useEffect(() => {
+    setIndex(0);
+    hasWonRef.current = false;
+  }, [quote]);
 
   const revealNext = () => {
     if (index < words.length) {
       const nextIndex = Math.min(index + 2, words.length);
       setIndex(nextIndex);
+      if (nextIndex === words.length && !hasWonRef.current) {
+        hasWonRef.current = true;
+        onWin?.({ perfect: true });
+      }
     }
   };
 

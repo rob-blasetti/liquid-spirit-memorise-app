@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -20,7 +20,7 @@ const scrambleWord = (word) => {
   return first + shuffle(letters).join('');
 };
 
-const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -34,6 +34,8 @@ const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   const [scrambled, setScrambled] = useState('');
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
   const canonicalize = (value) =>
     sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
@@ -48,6 +50,8 @@ const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
       setScrambled('');
       setOptions([]);
     }
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
   }, [quote]);
 
   const next = () => {
@@ -72,7 +76,7 @@ const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   };
 
   const handleSelect = (choice) => {
-    if (index >= entries.length) return;
+    if (index >= entries.length || hasWonRef.current) return;
     const current = entries[index];
     const expected = canonicalize(current.original || current.clean || '');
     if (canonicalize(choice) === expected) {
@@ -80,12 +84,17 @@ const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
         setIndex(index + 1);
         setMessage('Great job!');
         setOptions([]);
+        if (!hasWonRef.current) {
+          hasWonRef.current = true;
+          onWin?.({ perfect: mistakesRef.current === 0 });
+        }
       } else {
         setMessage('');
         next();
       }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

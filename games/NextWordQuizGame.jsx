@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
@@ -6,12 +6,14 @@ import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const NextWordQuizGame = ({ quote, onBack }) => {
+const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [words, setWords] = useState([]);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   useEffect(() => {
     const w = text.split(/\s+/);
@@ -19,6 +21,8 @@ const NextWordQuizGame = ({ quote, onBack }) => {
     setIndex(0);
     setMessage('');
     generateOptions(w, 0);
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
   }, [quote]);
 
   const generateOptions = (w, idx) => {
@@ -36,18 +40,24 @@ const NextWordQuizGame = ({ quote, onBack }) => {
   };
 
   const handleSelect = (word) => {
+    if (hasWonRef.current) return;
     if (word === words[index]) {
       const next = index + 1;
       setIndex(next);
       if (next === words.length) {
         setMessage('Great job!');
         setOptions([]);
+        if (!hasWonRef.current) {
+          hasWonRef.current = true;
+          onWin?.({ perfect: mistakesRef.current === 0 });
+        }
       } else {
         setMessage('');
         generateOptions(words, next);
       }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

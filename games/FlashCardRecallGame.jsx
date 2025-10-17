@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const FlashCardRecallGame = ({ quote, onBack }) => {
+const FlashCardRecallGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const [showQuote, setShowQuote] = useState(true);
   const [words, setWords] = useState([]);
   const [scrambled, setScrambled] = useState([]);
   const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -21,22 +23,30 @@ const FlashCardRecallGame = ({ quote, onBack }) => {
     setScrambled(shuffle(w));
     setIndex(0);
     setMessage('');
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
     const timer = setTimeout(() => setShowQuote(false), 6000);
     return () => clearTimeout(timer);
   }, [quote]);
 
   const handlePress = (word, idx) => {
+    if (hasWonRef.current) return;
     if (word === words[index]) {
       setScrambled((prev) => prev.filter((_, i) => i !== idx));
       const next = index + 1;
       setIndex(next);
       if (next === words.length) {
         setMessage('Great job!');
+        if (!hasWonRef.current) {
+          hasWonRef.current = true;
+          onWin?.({ perfect: mistakesRef.current === 0 });
+        }
       } else {
         setMessage('');
       }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

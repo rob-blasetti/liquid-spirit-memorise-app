@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -6,7 +6,7 @@ import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../serv
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -20,6 +20,8 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const outcomeResolvedRef = useRef(false);
+  const mistakesRef = useRef(0);
   const canonicalize = (value) =>
     sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
@@ -29,6 +31,8 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     setMessage('');
     setTime(30);
     generateOptions(entries, 0);
+    outcomeResolvedRef.current = false;
+    mistakesRef.current = 0;
     const timer = setInterval(() => {
       setTime((t) => t - 1);
     }, 1000);
@@ -40,8 +44,12 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     if (time === 0 && message === '') {
       setMessage("Time's up!");
       setOptions([]);
+      if (!outcomeResolvedRef.current) {
+        outcomeResolvedRef.current = true;
+        onLose?.();
+      }
     }
-  }, [time]);
+  }, [time, message, onLose]);
 
   const generateOptions = (entryList, idx) => {
     if (idx >= entryList.length) {
@@ -57,7 +65,7 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   };
 
   const handleSelect = (word) => {
-    if (time === 0) return;
+    if (time === 0 || outcomeResolvedRef.current) return;
     const current = entries[index];
     if (!current) return;
     const expectedCanonical = canonicalize(current.original || current.clean || '');
@@ -67,12 +75,17 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
       if (next === entries.length) {
         setMessage('Great job!');
         setOptions([]);
+        if (!outcomeResolvedRef.current) {
+          outcomeResolvedRef.current = true;
+          onWin?.({ perfect: mistakesRef.current === 0 });
+        }
       } else {
         setMessage('');
         generateOptions(entries, next);
       }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

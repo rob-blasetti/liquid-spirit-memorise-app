@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -11,15 +11,19 @@ const palette = [
 ];
 
 // Display a line of words; one word changes colour.
-const SceneChangeGame = ({ quote, onBack }) => {
+const SceneChangeGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const words = text.split(/\s+/).slice(0, 4);
   const [colors, setColors] = useState([]);
   const [changed, setChanged] = useState(0);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   useEffect(() => {
     startRound();
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
   }, []);
 
   const startRound = () => {
@@ -37,10 +41,16 @@ const SceneChangeGame = ({ quote, onBack }) => {
   };
 
   const handlePress = (i) => {
+    if (hasWonRef.current) return;
     if (i === changed) {
       setMessage('Great job!');
+      if (!hasWonRef.current) {
+        hasWonRef.current = true;
+        onWin?.({ perfect: mistakesRef.current === 0 });
+      }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

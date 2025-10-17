@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 
-const WordSwapGame = ({ quote, onBack }) => {
+const WordSwapGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const words = text.split(/\s+/).slice(0, 8);
   const [showOriginal, setShowOriginal] = useState(true);
   const [changedIndex, setChangedIndex] = useState(0);
   const [modified, setModified] = useState([]);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   useEffect(() => {
     const idx = Math.floor(Math.random() * words.length);
@@ -17,8 +19,10 @@ const WordSwapGame = ({ quote, onBack }) => {
     const copy = [...words];
     copy[idx] = '____';
     setModified(copy);
-    setShowOriginal(true);
-    setMessage('');
+   setShowOriginal(true);
+   setMessage('');
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
     const timer = setTimeout(() => {
       const mod = [...words];
       mod[idx] = '???';
@@ -29,11 +33,16 @@ const WordSwapGame = ({ quote, onBack }) => {
   }, [quote]);
 
   const handlePress = (i) => {
-    if (showOriginal) return;
+    if (showOriginal || hasWonRef.current) return;
     if (i === changedIndex) {
       setMessage('Great job!');
+      if (!hasWonRef.current) {
+        hasWonRef.current = true;
+        onWin?.({ perfect: mistakesRef.current === 0 });
+      }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

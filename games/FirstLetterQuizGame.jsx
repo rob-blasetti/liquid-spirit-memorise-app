@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -6,7 +6,7 @@ import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../serv
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -19,6 +19,8 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   const canonicalize = (value) =>
     sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
@@ -30,6 +32,8 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     setIndex(0);
     setMessage('');
     generateOptions(0);
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
   }, [quote]);
 
   const generateOptions = (idx) => {
@@ -46,6 +50,7 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   };
 
   const handleSelect = (word) => {
+    if (hasWonRef.current) return;
     const current = entries[index];
     if (!current) return;
     const expectedCanonical = canonicalize(current.original || current.clean || '');
@@ -55,12 +60,17 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
       if (next === entries.length) {
         setMessage('Great job!');
         setOptions([]);
+        if (!hasWonRef.current) {
+          hasWonRef.current = true;
+          onWin?.({ perfect: mistakesRef.current === 0 });
+        }
       } else {
         setMessage('');
         generateOptions(next);
       }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

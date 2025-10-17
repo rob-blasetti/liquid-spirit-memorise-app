@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -13,7 +13,7 @@ const palette = [
   '#4d96ff',
 ];
 
-const ColorSwitchGame = ({ quote, onBack }) => {
+const ColorSwitchGame = ({ quote, onBack, onWin, onLose }) => {
   const { level } = useDifficulty();
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const delay = level === 1 ? 2000 : level === 2 ? 1500 : 1000;
@@ -21,9 +21,14 @@ const ColorSwitchGame = ({ quote, onBack }) => {
   const [colors, setColors] = useState([]);
   const [changedIndex, setChangedIndex] = useState(0);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   useEffect(() => {
     startRound();
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
+    setMessage('');
   }, [level]);
 
   const startRound = () => {
@@ -41,10 +46,16 @@ const ColorSwitchGame = ({ quote, onBack }) => {
   };
 
   const handlePress = (idx) => {
+    if (hasWonRef.current) return;
     if (idx === changedIndex) {
       setMessage('Great job!');
+      if (!hasWonRef.current) {
+        hasWonRef.current = true;
+        onWin?.({ perfect: mistakesRef.current === 0 });
+      }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
     }
   };
 

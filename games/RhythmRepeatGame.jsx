@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -6,7 +6,7 @@ import themeVariables from '../styles/theme';
 // Use the first three words of the quote as the rhythm elements.
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const RhythmRepeatGame = ({ quote, onBack }) => {
+const RhythmRepeatGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const words = text.split(/\s+/).slice(0, 3);
   const [sequence, setSequence] = useState([]); // playback order
@@ -14,9 +14,13 @@ const RhythmRepeatGame = ({ quote, onBack }) => {
   const [userIndex, setUserIndex] = useState(0);
   const [highlight, setHighlight] = useState(null);
   const [message, setMessage] = useState('');
+  const hasWonRef = useRef(false);
+  const mistakesRef = useRef(0);
 
   useEffect(() => {
     startRound();
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
   }, []);
 
   const startRound = () => {
@@ -42,15 +46,20 @@ const RhythmRepeatGame = ({ quote, onBack }) => {
   }, [playIndex, sequence]);
 
   const handlePress = (idx) => {
-    if (playIndex < sequence.length) return; // wait for playback
+    if (playIndex < sequence.length || hasWonRef.current) return; // wait for playback
     if (sequence[userIndex] === idx) {
       const next = userIndex + 1;
       setUserIndex(next);
       if (next === sequence.length) {
         setMessage('Great job!');
+        if (!hasWonRef.current) {
+          hasWonRef.current = true;
+          onWin?.({ perfect: mistakesRef.current === 0 });
+        }
       }
     } else {
       setMessage('Try again');
+      mistakesRef.current += 1;
       startRound();
     }
   };
