@@ -479,7 +479,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
           />
         );
       })}
-      {/* Win overlay handled at parent */}
+      {/* Victory flow handled by parent GameRenderer */}
       {/* Countdown timer bottom-left shaped like a puzzle piece */}
       <View
         style={[

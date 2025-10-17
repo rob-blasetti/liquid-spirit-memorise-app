@@ -1,13 +1,10 @@
 import React, { useState, Suspense, useMemo, useRef, useEffect } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
-import themeVariables from '../styles/theme';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 // NotificationBanner display is handled at the root (Main)
 import { lazyGameScreens } from '../games/lazyGameRoutes';
 import DifficultyFAB from './DifficultyFAB';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import { useUser } from '../contexts/UserContext';
-import ThemedButton from './ThemedButton';
-import WinOverlay from './WinOverlay';
 import LostOverlay from './LostOverlay';
 import { sanitizeQuoteText } from '../services/quoteSanitizer';
 
@@ -17,14 +14,13 @@ const GameRenderer = ({
   rawQuote: rawQuoteProp,
   sanitizedQuote: sanitizedQuoteProp,
   onBack,
-  level,
   awardGameAchievement,
   recordGamePlay,
+  onVictory,
 }) => {
   const GameComponent = lazyGameScreens[screen];
-  const { level: currLevel, setLevel } = useDifficulty();
+  const { level: currLevel } = useDifficulty();
   const { markDifficultyComplete } = useUser();
-  const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const suppressWinsRef = useRef(false);
@@ -43,8 +39,13 @@ const GameRenderer = ({
     }
     return sanitizeQuoteText(resolvedRawQuote);
   }, [sanitizedQuoteProp, resolvedRawQuote]);
+  const difficultyLabel = useMemo(() => {
+    const map = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+    return map[currLevel] || `Level ${currLevel}`;
+  }, [currLevel]);
+
   const gameProps = { quote, onBack, rawQuote: resolvedRawQuote, sanitizedQuote: resolvedSanitizedQuote };
-  // Handle game win: award achievement and show next-level overlay
+  // Handle game win: award achievement then navigate to celebration screen
   gameProps.onWin = (details = {}) => {
     if (suppressWinsRef.current) {
       // eslint-disable-next-line no-console
@@ -69,14 +70,19 @@ const GameRenderer = ({
     }
     // Show win overlay; ensure lose overlay is hidden
     setGameLost(false);
-    setGameWon(true);
     setTimeout(() => awardGameAchievement(screen, currLevel), 120);
+    onVictory?.({
+      screenId: screen,
+      gameTitle: screenTitle,
+      level: currLevel,
+      difficultyLabel,
+      perfect: Boolean(details?.perfect),
+    });
   };
   // Handle game loss
   gameProps.onLose = () => {
     // eslint-disable-next-line no-console
     console.log('[GameRenderer:onLose]', { screen, level: currLevel });
-    setGameWon(false);
     setGameLost(true);
     if (typeof recordGamePlay === 'function') {
       Promise.resolve(
@@ -132,10 +138,7 @@ const GameRenderer = ({
       <LostOverlay
         visible={gameLost}
         gameTitle={screenTitle}
-        difficultyLabel={(() => {
-          const map = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
-          return map[currLevel] || `Level ${currLevel}`;
-        })()}
+        difficultyLabel={difficultyLabel}
         onRetry={() => {
           suppressWinsRef.current = false;
           setGameLost(false);
@@ -145,30 +148,6 @@ const GameRenderer = ({
         onHome={() => {
           suppressWinsRef.current = false;
           setGameLost(false);
-          onBack();
-        }}
-      />
-      <WinOverlay
-        visible={gameWon}
-        gameTitle={screenTitle}
-        difficultyLabel={(() => {
-          const map = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
-          return map[currLevel] || `Level ${currLevel}`;
-        })()}
-        onNextLevel={() => {
-          const next = Math.min(currLevel + 1, 3);
-          // Hide the overlay first to avoid it persisting across re-renders
-          setGameWon(false);
-          // eslint-disable-next-line no-console
-          console.log('[GameRenderer:nextLevel]', { from: currLevel, to: next, screen });
-          // Suppress wins while transitioning to the next level to avoid immediate re-trigger
-          suppressWinsRef.current = true;
-          // Remount game at new level on next tick to reset internal timers/state
-          setTimeout(() => setLevel(next), 0);
-        }}
-        onHome={() => {
-          suppressWinsRef.current = false;
-          setGameWon(false);
           onBack();
         }}
       />

@@ -157,7 +157,7 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
         </>
       )}
       {/* Loss overlay handled at parent; no inline loss message */}
-      {/* Win overlay handled at parent */}
+      {/* Victory flow handled by parent GameRenderer */}
     </View>
   );
 };
