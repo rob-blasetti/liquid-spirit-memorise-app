@@ -130,18 +130,16 @@ const AUDIO_COLUMN_WIDTH = 80;
 
 const styles = StyleSheet.create({
   container: {
-    width: '130%',
+    width: '100%',
     height: '90%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     position: 'relative',
     paddingTop: 8,
     alignSelf: 'stretch',
-    paddingRight: 0,
   },
   textColumn: {
     flex: 1,
-    paddingRight: 12,
     minHeight: 0,
   },
   textScroll: {

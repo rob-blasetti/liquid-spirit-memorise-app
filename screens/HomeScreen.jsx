@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -17,10 +17,7 @@ import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import HomeTopBar from '../components/HomeTopBar';
 
-const TIMELINE_WIDTH = 56;
 const CONTENT_MAX_WIDTH = 336;
-const CONTENT_COLUMN_WIDTH = CONTENT_MAX_WIDTH - TIMELINE_WIDTH;
-const BOTTOM_BUTTON_HEIGHT = 108;
 const BOTTOM_BUTTON_MARGIN_TOP = 24;
 
 const HomeScreen = ({
@@ -120,67 +117,6 @@ const HomeScreen = ({
 
   const isAnimatingRef = useRef(false);
   const activeTabLayout = activeContent ? tabLayouts[activeContent] : null;
-
-  const lessonTimeline = useMemo(() => {
-    if (!Number.isFinite(currentLessonNumber)) {
-      return [];
-    }
-
-    const resolveStatus = lessonNumber => {
-      if (!Number.isFinite(currentLessonNumber)) {
-        return 'upcoming';
-      }
-      if (lessonNumber < currentLessonNumber) {
-        return 'completed';
-      }
-      if (lessonNumber === currentLessonNumber) {
-        return 'active';
-      }
-      return 'upcoming';
-    };
-
-    if (profile.grade === 1) {
-      const lessonIndex = grade1Lessons.findIndex(
-        l => l.lesson === currentLessonNumber
-      );
-      const groupStart =
-        lessonIndex >= 0 ? Math.max(0, Math.floor(lessonIndex / 3) * 3) : 0;
-      const group = grade1Lessons.slice(groupStart, groupStart + 3);
-      return group
-        .map(lesson => ({
-          id: `g1-${lesson.lesson}`,
-          lessonNumber: lesson.lesson,
-          title: `Lesson ${lesson.lesson}`,
-          subtitle: lesson.virtue,
-          status: resolveStatus(lesson.lesson),
-        }))
-        .reverse();
-    }
-
-    if ((profile.grade === 2 || profile.grade === '2b') && Number.isFinite(currentSetNumber)) {
-      const sourceMap = profile.grade === 2 ? quoteMap : quoteMap2b;
-      const lessonsInSet = Object.keys(sourceMap)
-        .filter(key => key.startsWith(`${currentSetNumber}-`))
-        .map(key => Number(key.split('-')[1]))
-        .filter(num => Number.isFinite(num));
-      const uniqueLessons = Array.from(new Set(lessonsInSet)).sort(
-        (a, b) => b - a
-      );
-      return uniqueLessons.map(lessonNum => {
-        const key = `${currentSetNumber}-${lessonNum}`;
-        const data = sourceMap[key] || {};
-        return {
-          id: `g${profile.grade}-${key}`,
-          lessonNumber: lessonNum,
-          title: `Lesson ${lessonNum}`,
-          subtitle: data.virtue || data.topic || null,
-          status: resolveStatus(lessonNum),
-        };
-      });
-    }
-
-    return [];
-  }, [profile.grade, currentLessonNumber, currentSetNumber]);
 
   const handleTabLayout = type => event => {
     const layout = event.nativeEvent.layout;
@@ -401,63 +337,6 @@ const HomeScreen = ({
               </View>
             </View>
           </View>
-          <View style={styles.timelineColumn}>
-            {lessonTimeline.length > 0 ? (
-              <View style={styles.lessonTimelineContainer}>
-                {lessonTimeline.map((item, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === lessonTimeline.length - 1;
-                  const prevStatus = index > 0 ? lessonTimeline[index - 1].status : null;
-                  const topSegmentStyles = [
-                    styles.lessonTimelineLineSegment,
-                    isFirst && styles.lessonTimelineLineSegmentHidden,
-                  ];
-                  if (!isFirst && prevStatus === 'completed') {
-                    topSegmentStyles.push(styles.lessonTimelineLineSegmentCompleted);
-                  }
-                  const bottomSegmentStyles = [
-                    styles.lessonTimelineLineSegment,
-                    isLast && styles.lessonTimelineLineSegmentHidden,
-                  ];
-                  if (!isLast && item.status === 'completed') {
-                    bottomSegmentStyles.push(styles.lessonTimelineLineSegmentCompleted);
-                  }
-                  if (!isLast && item.status === 'active') {
-                    bottomSegmentStyles.push(styles.lessonTimelineLineSegmentActive);
-                  }
-                  const circleStyles = [styles.lessonTimelineCircle];
-                  if (item.status === 'completed') {
-                    circleStyles.push(styles.lessonTimelineCircleCompleted);
-                  } else if (item.status === 'active') {
-                    circleStyles.push(styles.lessonTimelineCircleActive);
-                  }
-                  const itemStyles = [styles.lessonTimelineItem];
-                  if (isLast) {
-                    itemStyles.push(styles.lessonTimelineItemLast);
-                  }
-                  return (
-                    <View key={item.id} style={itemStyles}>
-                      <View style={styles.lessonTimelineIndicator}>
-                        <View style={topSegmentStyles} />
-                        <View style={circleStyles}>
-                          <Text
-                            style={[
-                              styles.lessonTimelineCircleText,
-                              item.status === 'completed' && styles.lessonTimelineCircleTextCompleted,
-                              item.status === 'active' && styles.lessonTimelineCircleTextActive,
-                            ]}
-                          >
-                            {item.lessonNumber}
-                          </Text>
-                        </View>
-                        <View style={bottomSegmentStyles} />
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            ) : null}
-          </View>
         </View>
         {hasBottomButtons ? (
           <View style={styles.bottomButtonContainer}>
@@ -559,8 +438,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexGrow: 1,
     flexShrink: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'stretch',
     paddingHorizontal: 0,
     marginBottom: BOTTOM_BUTTON_MARGIN_TOP,
@@ -568,12 +445,11 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   lessonColumn: {
-    width: CONTENT_COLUMN_WIDTH,
+    width: '100%',
     flexGrow: 1,
     flexShrink: 1,
     flexDirection: 'column',
     alignItems: 'stretch',
-    paddingRight: 8,
   },
   lessonContent: {
     flexGrow: 1,
@@ -713,76 +589,6 @@ const styles = StyleSheet.create({
   },
   actionButtonTextDisabled: {
     color: 'rgba(255, 255, 255, 0.75)',
-  },
-  timelineColumn: {
-    width: TIMELINE_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingLeft: 10,
-  },
-  lessonTimelineContainer: {
-    width: TIMELINE_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  lessonTimelineItem: {
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  lessonTimelineItemLast: {
-    marginBottom: 0,
-  },
-  lessonTimelineIndicator: {
-    width: 32,
-    alignItems: 'center',
-    alignSelf: 'stretch',
-  },
-  lessonTimelineLineSegment: {
-    flex: 1,
-    width: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  lessonTimelineLineSegmentHidden: {
-    backgroundColor: 'transparent',
-  },
-  lessonTimelineLineSegmentCompleted: {
-    backgroundColor: themeVariables.secondaryColor,
-  },
-  lessonTimelineLineSegmentActive: {
-    backgroundColor: themeVariables.primaryColor,
-  },
-  lessonTimelineCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: themeVariables.primaryColor,
-    backgroundColor: themeVariables.whiteColor,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lessonTimelineCircleCompleted: {
-    borderColor: themeVariables.primaryColor,
-    backgroundColor: themeVariables.whiteColor,
-  },
-  lessonTimelineCircleActive: {
-    borderColor: themeVariables.primaryColor,
-    backgroundColor: themeVariables.primaryColor,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  lessonTimelineCircleText: {
-    color: themeVariables.primaryColor,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  lessonTimelineCircleTextCompleted: {
-    color: themeVariables.primaryColor,
-  },
-  lessonTimelineCircleTextActive: {
-    color: themeVariables.whiteColor,
-    fontSize: 16,
   },
 });
 

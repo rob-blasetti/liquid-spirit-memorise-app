@@ -268,7 +268,7 @@ const AUDIO_COLUMN_WIDTH = 80;
 
 const styles = StyleSheet.create({
   container: {
-    width: '130%',    
+    width: '100%',
     height: '90%',
     flexDirection: 'row',
     alignItems: 'flex-start',
