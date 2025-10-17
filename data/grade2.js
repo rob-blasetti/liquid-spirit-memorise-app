@@ -165,7 +165,7 @@ export const quoteMap = {
       { word: 'Attain', 
         examples: [
           'Ming’s family had to take a train for three days and then a bus for two more in order to reach their ancestral village. Only after several days of travel by train and by bus did they attain their destination.', 
-          'The farmers decided that a fence was needed to stop their cattle from going onto the road. They worked together in building the fence and, through diligence and coop- eration, attained their goal.'
+          'The farmers decided that a fence was needed to stop their cattle from going onto the road. They worked together in building the fence and, through diligence and cooperation, attained their goal.'
         ] 
       },
       { word: 'Presence', 
@@ -188,7 +188,7 @@ export const quoteMap = {
       { word: 'Understanding',
         examples: [
           'Amelia read the lesson twice. However, only after her sister explained the lesson to her did she gain the necessary understanding.',
-          'Arnold’s mother always spoke to him about the importance of unity, but his under- standing grew as he made friends with children of many different backgrounds and experienced unity firsthand.'
+          'Arnold’s mother always spoke to him about the importance of unity, but his understanding grew as he made friends with children of many different backgrounds and experienced unity firsthand.'
         ]
       },
       { word: 'Strain every nerve',

@@ -70,6 +70,7 @@ const HomeScreen = ({
     hasQuote ? 'quote' : hasPrayer ? 'prayer' : null
   );
   const hasLibraryButton = typeof onOpenLibrary === 'function';
+  const libraryButtonDisabled = true;
   const hasGamesButton = typeof onOpenGames === 'function';
   const hasClassButton = typeof onOpenClass === 'function';
   const classButtonDisabled = !isLinkedAccount;
@@ -461,14 +462,34 @@ const HomeScreen = ({
         {hasBottomButtons ? (
           <View style={styles.bottomButtonContainer}>
             {hasLibraryButton ? (
-              <TouchableOpacity style={styles.actionButton} onPress={onOpenLibrary}>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  libraryButtonDisabled && styles.actionButtonDisabled,
+                ]}
+                onPress={onOpenLibrary}
+                disabled={libraryButtonDisabled}
+                activeOpacity={libraryButtonDisabled ? 1 : 0.75}
+                accessibilityState={libraryButtonDisabled ? { disabled: true } : undefined}
+              >
                 <Ionicons
                   name="library-outline"
                   size={28}
-                  color={themeVariables.whiteColor}
+                  color={
+                    libraryButtonDisabled
+                      ? 'rgba(255,255,255,0.6)'
+                      : themeVariables.whiteColor
+                  }
                   style={styles.actionButtonIcon}
                 />
-                <Text style={styles.actionButtonText}>Go To Library</Text>
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    libraryButtonDisabled && styles.actionButtonTextDisabled,
+                  ]}
+                >
+                  Go To Library
+                </Text>
               </TouchableOpacity>
             ) : null}
             {hasGamesButton ? (

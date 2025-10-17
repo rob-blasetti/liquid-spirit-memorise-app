@@ -146,7 +146,7 @@ export const quoteMap = {
             word: 'Consort',
             examples: [
                 'All the cousins are looking forward to seeing one another at their grandparents’ home. They are happy to spend the weekend together and to consort with one another in joy.',
-                'Even though Elijah often feels shy, he consorts with everyone in his class with friendli- ness.'
+                'Even though Elijah often feels shy, he consorts with everyone in his class with friendliness.'
             ],
         },
         {
@@ -174,7 +174,7 @@ export const quoteMap = {
   },
   '6-1': {
     prayer: 'O Lord! Unto Thee I repair for refuge, and toward all Thy signs I set my heart. O Lord! Whether traveling or at home, and in my occupation or in my work, I place my whole trust in Thee. Grant me then Thy sufficing help so as to make me independent of all things, O Thou Who art unsurpassed in Thy mercy! Bestow upon me my portion, O Lord, as Thou pleasest, and cause me to be satisfied with whatsoever Thou hast ordained for me. Thine is the absolute authority to command.',
-    text: 'Incline your hearts, O people of God, unto the counsels of your true, your incom- parable Friend.',
+    text: 'Incline your hearts, O people of God, unto the counsels of your true, your incomparable Friend.',
     references: [
         {
             word: 'Incline',
@@ -345,7 +345,7 @@ export const quoteMap = {
         {
             word: 'Worship',
             examples: [
-                'Once a week, Miguel’s parents invite their neighbors to their home to pray for the well- being of their village and their families and to offer gratitude to God. They gather together to worship and praise God.',
+                'Once a week, Miguel’s parents invite their neighbors to their home to pray for the well-being of their village and their families and to offer gratitude to God. They gather together to worship and praise God.',
                 'In every part of the world, one finds special places where people gather to give praise and thanks to God. People go to these places to worship God together.'
             ],
         }

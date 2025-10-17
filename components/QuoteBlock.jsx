@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { BlurView } from '@react-native-community/blur';
 import speechService from '../services/speechService';
 import themeVariables from '../styles/theme';
 
@@ -28,7 +29,8 @@ const QuoteBlock = ({
   references = [],
 }) => {
   const readingFontSize = clampReadingFont(profile?.readingFontSize);
-  const [activeRef, setActiveRef] = useState(null);
+  const [definitionExamples, setDefinitionExamples] = useState(null);
+  const [isDefinitionVisible, setDefinitionVisible] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [scrollMetrics, setScrollMetrics] = useState({
     containerHeight: 0,
@@ -143,6 +145,22 @@ const QuoteBlock = ({
 
   const isScrollable = scrollMetrics.contentHeight > scrollMetrics.containerHeight + 1;
 
+  const handleReferencePress = useCallback(examples => {
+    if (!Array.isArray(examples) || examples.length === 0) {
+      return;
+    }
+    setDefinitionExamples(examples);
+    setDefinitionVisible(true);
+  }, []);
+
+  const handleCloseDefinitions = useCallback(() => {
+    setDefinitionVisible(false);
+  }, []);
+
+  const handleDefinitionsDismiss = useCallback(() => {
+    setDefinitionExamples(null);
+  }, []);
+
   return (
     <>
       <View style={styles.container}>
@@ -163,7 +181,7 @@ const QuoteBlock = ({
                     <Text
                       key={part.key}
                       style={styles.underline}
-                      onPress={() => setActiveRef(part.examples)}
+                      onPress={() => handleReferencePress(part.examples)}
                     >
                       {part.text}
                     </Text>
@@ -203,27 +221,41 @@ const QuoteBlock = ({
       </View>
 
       <Modal
-        visible={!!activeRef}
+        visible={isDefinitionVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setActiveRef(null)}
+        onRequestClose={handleCloseDefinitions}
+        onDismiss={handleDefinitionsDismiss}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <ScrollView>
-              {activeRef &&
-                activeRef.map((ex, i) => (
-                  <Text key={i} style={styles.exampleText}>
-                    • {ex}
-                  </Text>
-                ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setActiveRef(null)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
+            <BlurView
+              style={styles.modalBlur}
+              blurType="light"
+              blurAmount={24}
+              reducedTransparencyFallbackColor="rgba(20, 18, 46, 0.92)"
+            />
+            <View style={styles.modalInner}>
+              <ScrollView
+                style={styles.modalScroll}
+                contentContainerStyle={styles.modalScrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {definitionExamples &&
+                  definitionExamples.map((ex, i) => (
+                    <Text key={i} style={styles.exampleText}>
+                      • {ex}
+                    </Text>
+                  ))}
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleCloseDefinitions}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -286,26 +318,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 8,
-    width: '80%',
-    maxHeight: '80%',
+    position: 'relative',
+    width: '84%',
+    maxWidth: 380,
+    maxHeight: '78%',
+    borderRadius: themeVariables.borderRadiusPill,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: 'rgba(20, 18, 46, 0.92)',
+    overflow: 'hidden',
+  },
+  modalBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalInner: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  modalScroll: {
+    maxHeight: '100%',
+  },
+  modalScrollContent: {
+    paddingBottom: 8,
   },
   exampleText: {
     fontSize: 16,
-    marginBottom: 8,
+    lineHeight: 22,
+    marginBottom: 12,
+    color: themeVariables.whiteColor,
+    textAlign: 'left',
   },
   closeButton: {
-    marginTop: 16,
+    marginTop: 20,
     alignSelf: 'center',
-    backgroundColor: themeVariables.primaryColor,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    paddingVertical: 10,
+    paddingHorizontal: 28,
     borderRadius: themeVariables.borderRadiusPill,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   closeButtonText: {
     color: themeVariables.whiteColor,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   audioButton: {
     width: AUDIO_BUTTON_SIZE,
