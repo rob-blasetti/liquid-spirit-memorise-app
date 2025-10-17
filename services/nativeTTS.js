@@ -8,6 +8,8 @@ const DEFAULT_IOS_RATE = 0.45;
 
 let subscriptions = [];
 let finishCallback = null;
+let configuredIosAudio = false;
+
 const nativeModule =
   NativeModules?.TextToSpeech ||
   NativeModules?.RNTts ||
@@ -40,6 +42,14 @@ const ensureInitialized = async () => {
   }
   try {
     await Tts.getInitStatus();
+    if (!configuredIosAudio && Platform.OS === 'ios') {
+      configuredIosAudio = true;
+      try {
+        await Tts.setIgnoreSilentSwitch?.('ignore');
+      } catch (switchErr) {
+        console.warn('nativeTTS: failed to ignore silent switch', switchErr);
+      }
+    }
   } catch (error) {
     // iOS may throw until just-in-time initialization finishes; retry after init
     if (error?.code === 'not_found_language') {

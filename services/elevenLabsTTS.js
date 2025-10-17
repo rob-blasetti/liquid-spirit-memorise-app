@@ -18,6 +18,19 @@ const AUDIO_DIR = `${RNFS.DocumentDirectoryPath}/tts_cache`;
 let CACHE_MAX_BYTES = Math.max(16, Number(TTS_CACHE_MAX_MB) || 64) * 1024 * 1024;
 const inflight = new Map(); // key -> Promise<string>
 
+const configureIosPlaybackCategory = () => {
+  if (Platform.OS !== 'ios') return;
+  try {
+    Sound.setCategory?.('Playback', true);
+    Sound.enableInSilenceMode?.(true);
+    Sound.setActive?.(true);
+  } catch (error) {
+    console.warn('elevenLabsTTS: failed to configure audio session', error);
+  }
+};
+
+configureIosPlaybackCategory();
+
 async function ensureDir() {
   try {
     const exists = await RNFS.exists(AUDIO_DIR);
