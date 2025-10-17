@@ -336,8 +336,8 @@ export async function fetchUserAchievements(userId) {
       console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);
     }
     const resolvedTotal =
-      typeof totalPoints === 'number'
-        ? Math.min(totalPoints, computedTotal)
+      Number.isFinite(totalPoints) && totalPoints >= 0
+        ? totalPoints
         : computedTotal;
     return { achievements, totalPoints: resolvedTotal };
   } catch (err) {
