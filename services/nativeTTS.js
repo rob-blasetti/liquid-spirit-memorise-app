@@ -7,8 +7,19 @@ const DEFAULT_IOS_RATE = 0.45;
 
 let subscriptions = [];
 let finishCallback = null;
-const nativeModule = NativeModules?.RNTextToSpeech;
+const nativeModule =
+  NativeModules?.TextToSpeech ||
+  NativeModules?.RNTts ||
+  NativeModules?.RNTextToSpeech;
 const isAvailable = Boolean(nativeModule);
+
+const stopTts = async () => {
+  if (Platform.OS === 'ios') {
+    await Tts.stop(false);
+  } else {
+    await Tts.stop();
+  }
+};
 
 const cleanText = value =>
   String(value || '')
@@ -47,7 +58,7 @@ export const speak = async (text, voiceId, cancelRef) => {
       finishCallback?.();
       return;
     }
-    await Tts.stop();
+    await stopTts();
     if (cancelRef?.current) {
       return;
     }
@@ -89,7 +100,7 @@ export const stop = async () => {
     if (!ready) {
       return;
     }
-    await Tts.stop();
+    await stopTts();
   } catch (error) {
     console.warn('nativeTTS: stop failed', error);
   }
@@ -107,7 +118,6 @@ export const setupListeners = onFinish => {
     subscriptions = [
       Tts.addEventListener('tts-finish', () => finishCallback?.()),
       Tts.addEventListener('tts-cancel', () => finishCallback?.()),
-      Tts.addEventListener('tts-error', () => finishCallback?.()),
     ];
   } catch (error) {
     console.warn('nativeTTS: failed to register listeners', error);

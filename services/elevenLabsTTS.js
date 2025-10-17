@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
-import Sound from 'react-native-sound';
+import Sound from '../vendor/react-native-sound';
 import {
   ELEVENLABS_API_KEY,
   ELEVENLABS_VOICE_ID,

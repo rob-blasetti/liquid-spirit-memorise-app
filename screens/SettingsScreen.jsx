@@ -90,7 +90,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
   // Pre-cache ElevenLabs audio for the selected lesson only (minimize API calls)
   useEffect(() => {
-    const looksLikeUuid = typeof profile?.ttsVoice === 'string' && /^[a-f0-9-]{10,}$/i.test(profile.ttsVoice);
+    const looksLikeUuid = typeof profile?.ttsVoice === 'string' && /^[a-z0-9-]{10,}$/i.test(profile.ttsVoice);
     const voiceId = looksLikeUuid ? profile.ttsVoice : undefined;
 
     const cacheTexts = async (texts) => {

@@ -15,7 +15,7 @@ export const stopTTS = async () => {
 };
 
 const looksLikeUuid = value =>
-  typeof value === 'string' && /^[a-f0-9-]{10,}$/i.test(value);
+  typeof value === 'string' && /^[a-z0-9-]{10,}$/i.test(value);
 
 const canUseElevenLabs = voiceHint =>
   USE_ELEVENLABS &&
