@@ -75,7 +75,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
     const initialGuesses = selectedEntries.length * 2;
     const pairs = shuffle(
       selectedEntries.flatMap((entry) => {
-        const displayWord = deriveDisplayWord(entry);
+        const displayWord = getEntryDisplayWord(entry);
         const matchKey = entry.canonical || displayWord.toLocaleLowerCase();
         return [
           {

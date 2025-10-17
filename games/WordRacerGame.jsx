@@ -57,6 +57,7 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose 
     () => new Set(uniquePlayableEntries.map((entry) => entry.index)),
     [uniquePlayableEntries],
   );
+  const [collectedKeys, setCollectedKeys] = useState([]);
   const collectedKeySet = useMemo(() => new Set(collectedKeys), [collectedKeys]);
   const quoteProgress = useMemo(() => {
     if (!quoteData.entries || quoteData.entries.length === 0) return '';
@@ -92,7 +93,6 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose 
     return { x: initialX, y: initialY };
   });
   const [words, setWords] = useState([]);
-  const [collectedKeys, setCollectedKeys] = useState([]);
   const [nextIndex, setNextIndex] = useState(0);
   const [lives, setLives] = useState(initialLives);
   const [message, setMessage] = useState('');
