@@ -137,7 +137,7 @@ const ScreenRenderer = ({
     completedLessons,
   } = lessonState;
 
-  const { deleteGuestAccount, wipeProfile, saveProfile } = accountActions;
+  const { deleteGuestAccount, wipeProfile, saveProfile, deleteRegisteredAccount } = accountActions;
   const { setProfileModalVisible, setComingSoonGrade } = modalHandlers;
 
   const currentNav = navState;
@@ -379,6 +379,7 @@ const ScreenRenderer = ({
             }
           }}
           onSaveProfile={saveProfile}
+          onDeleteAccount={profile?.guest ? undefined : deleteRegisteredAccount}
         />,
       );
     case 'class':
