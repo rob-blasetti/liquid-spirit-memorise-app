@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
     marginTop: 12,
   },
-  // Removed explicit success styling; success is handled by WinOverlay
+  // Removed explicit success styling; success navigation handled by GameRenderer
   remainingContainer: {
     position: 'absolute',
     right: 24,

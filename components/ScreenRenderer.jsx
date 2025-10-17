@@ -58,6 +58,10 @@ const StoryModeScreen = ensureLazy(
   () => import('../screens/StoryModeScreen'),
   require('../screens/StoryModeScreen').default,
 );
+const GameVictoryScreen = ensureLazy(
+  () => import('../screens/GameVictoryScreen'),
+  require('../screens/GameVictoryScreen').default,
+);
 
 export const SplashScreen = ensureLazy(
   () => import('../screens/Splash'),
@@ -161,6 +165,7 @@ const ScreenRenderer = ({
       }
       return goBackToLesson;
     })();
+    const { screen: _screen, ...navSnapshot } = currentNav;
     return (
       <GameRenderer
         screen={currentNav.screen}
@@ -168,14 +173,50 @@ const ScreenRenderer = ({
         rawQuote={currentNav.rawQuote}
         sanitizedQuote={currentNav.sanitizedQuote}
         onBack={backHandler}
-        level={level}
         awardGameAchievement={awardGameAchievement}
         recordGamePlay={recordGamePlay}
+        onVictory={(details = {}) => {
+          const resolvedLevel =
+            typeof details.level === 'number' ? details.level : level ?? 1;
+          goTo('gameVictory', {
+            ...navSnapshot,
+            gameId: currentNav.screen,
+            gameTitle: details.gameTitle,
+            difficultyLabel: details.difficultyLabel,
+            level: resolvedLevel,
+            perfect: Boolean(details.perfect),
+          });
+        }}
       />
     );
   }
 
   switch (currentNav.screen) {
+    case 'gameVictory':
+      return renderLazy(
+        <GameVictoryScreen
+          gameTitle={currentNav.gameTitle}
+          difficultyLabel={currentNav.difficultyLabel}
+          level={currentNav.level}
+          perfect={currentNav.perfect}
+          maxLevel={3}
+          onNextLevel={() => {
+            const nextPayload = {
+              quote: currentNav.quote,
+              rawQuote: currentNav.rawQuote,
+              sanitizedQuote: currentNav.sanitizedQuote,
+              setNumber: currentNav.setNumber,
+              lessonNumber: currentNav.lessonNumber,
+              fromGames: currentNav.fromGames,
+              fromStoryMode: currentNav.fromStoryMode,
+              lessonScreen: currentNav.lessonScreen,
+            };
+            goTo(currentNav.gameId, nextPayload);
+          }}
+          onGoHome={() => goTo('home')}
+          onGoGames={currentNav.fromGames ? () => goTo('games') : undefined}
+        />,
+      );
     case 'grade1':
       return renderLazy(
         <Grade1SetScreen

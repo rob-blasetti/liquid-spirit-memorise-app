@@ -30,7 +30,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   const [cards, setCards] = useState([]);
   const [selected, setSelected] = useState([]);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  // Win banner handled by GameRenderer overlay via onWin
+  // Victory screen navigation handled by GameRenderer via onWin
   const [guessesLeft, setGuessesLeft] = useState(0);
   const [pairEntryIndices, setPairEntryIndices] = useState([]);
   const [revealedEntryIndices, setRevealedEntryIndices] = useState(new Set());
@@ -227,7 +227,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   const previewTop = Math.max(0, topArea.y + Math.floor((topArea.height - previewH) / 2));
   return (
     <View style={styles.container}>
-      {/* Win overlay handled at parent */}
+      {/* Victory flow handled by parent GameRenderer */}
       <GameTopBar onBack={onBack} variant="whiteShadow" />
       <View onLayout={(e) => setTopArea({ y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height })}>
         <View style={styles.titleRow}>

@@ -42,7 +42,7 @@ const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
   const [wrong, setWrong] = useState(0);
   const [letterChoices, setLetterChoices] = useState([]);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  // Win banner handled by GameRenderer overlay via onWin
+  // Victory screen navigation handled by GameRenderer via onWin
 
   // Reset game state when difficulty level (or text) changes
   useEffect(() => {
@@ -169,7 +169,7 @@ const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
           </View>
         </View>
       )}
-      {/* Win overlay handled at parent */}
+      {/* Victory flow handled by parent GameRenderer */}
     </View>
   );
 };
