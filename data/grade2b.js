@@ -263,7 +263,7 @@ export const quoteMap = {
     text: 'That one indeed is a man who, today, dedicateth himself to the service of the entire human race.',
     references: [
         {
-            word: 'Dedicate',
+            word: 'Dedicateth',
             examples: [
                 'Dervi always pays close attention during art class and spends many hours preparing herself for each class. Dervi dedicates much of her time to the arts.',
                 'Hung Wei’s father has a vegetable garden. Every day Hung Wei helps his father weed and water the garden. Hung Wei is dedicated to helping his father.'

@@ -2,7 +2,12 @@ jest.mock('../services/contentSelector', () => ({
   getContentFor: jest.fn(() => 'mock-quote'),
 }));
 
+jest.mock('../services/quoteSanitizer', () => ({
+  sanitizeQuoteText: jest.fn((text) => `sanitized-${text}`),
+}));
+
 const { getContentFor } = require('../services/contentSelector');
+const { sanitizeQuoteText } = require('../services/quoteSanitizer');
 const { createAppActions } = require('../services/appFlowService');
 
 describe('createAppActions', () => {
@@ -18,6 +23,7 @@ describe('createAppActions', () => {
     awardAchievement = jest.fn();
     recordDailyChallenge = jest.fn();
     getContentFor.mockClear();
+    sanitizeQuoteText.mockClear();
   });
 
   it('handles daily challenge by awarding achievement and navigating to practice', () => {
@@ -30,8 +36,11 @@ describe('createAppActions', () => {
     expect(recordDailyChallenge).toHaveBeenCalledTimes(1);
     expect(getCurrentProgress).toHaveBeenCalledTimes(1);
     expect(getContentFor).toHaveBeenCalledWith(profile, 2, 3, { type: 'prayer' });
+    expect(sanitizeQuoteText).toHaveBeenCalledWith('daily-prayer');
     expect(goTo).toHaveBeenCalledWith('practice', {
-      quote: 'daily-prayer',
+      quote: 'sanitized-daily-prayer',
+      rawQuote: 'daily-prayer',
+      sanitizedQuote: 'sanitized-daily-prayer',
       setNumber: 2,
       lessonNumber: 3,
     });
@@ -47,8 +56,11 @@ describe('createAppActions', () => {
 
     expect(getCurrentProgress).toHaveBeenCalledTimes(1);
     expect(getContentFor).toHaveBeenCalledWith(profile, 1, 4, { type: 'quote' });
+    expect(sanitizeQuoteText).toHaveBeenCalledWith('game-quote');
     expect(goTo).toHaveBeenCalledWith('tapGame', {
-      quote: 'game-quote',
+      quote: 'sanitized-game-quote',
+      rawQuote: 'game-quote',
+      sanitizedQuote: 'sanitized-game-quote',
       setNumber: 1,
       lessonNumber: 4,
       fromGames: true,

@@ -8,6 +8,7 @@ import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import { Button } from 'liquid-spirit-styleguide';
 import elevenLabs from '../services/elevenLabsTTS';
+import { DEFAULT_TTS_SPEED, MIN_TTS_SPEED, MAX_TTS_SPEED } from '../services/ttsDefaults';
 import TopNav from '../components/TopNav';
 
 const FONT_SIZE_OPTIONS = [16, 18, 20, 22, 24];
@@ -28,18 +29,19 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     overrideProgress?.lessonNumber ?? currentProgress.lessonNumber
   );
   // ElevenLabs uses voice id from profile or env; no device voice list
-  const [speed, setSpeed] = useState(profile?.ttsSpeed ?? 1.0);
+  const [speed, setSpeed] = useState(profile?.ttsSpeed ?? DEFAULT_TTS_SPEED);
   const [fontSize, setFontSize] = useState(() => coerceFontSize(profile?.readingFontSize));
   // Slider width for rendering tick marks
   const [speedSliderWidth, setSpeedSliderWidth] = useState(0);
-  const allowedSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+  const allowedSpeeds = [MIN_TTS_SPEED, 0.75, 1.0, DEFAULT_TTS_SPEED, 1.5, 1.75, MAX_TTS_SPEED];
   const fmtSpeed = (v) => `${Number(v).toFixed(2)}x`;
   const snapToAllowed = (val) => {
-    const v = Math.max(0.5, Math.min(2.0, Number(val) || 1));
+    const numeric = Number(val);
+    const clampedBase = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED));
     let closest = allowedSpeeds[0];
-    let diff = Math.abs(v - closest);
+    let diff = Math.abs(clampedBase - closest);
     for (let i = 1; i < allowedSpeeds.length; i++) {
-      const d = Math.abs(v - allowedSpeeds[i]);
+      const d = Math.abs(clampedBase - allowedSpeeds[i]);
       if (d < diff) { diff = d; closest = allowedSpeeds[i]; }
     }
     return closest;
@@ -71,7 +73,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
   // Persist and apply playback speed
   useEffect(() => {
-    const v = Math.max(0.5, Math.min(2.0, Number(speed) || 1));
+    const numeric = Number(speed);
+    const v = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED));
     elevenLabs.setSpeed(v);
     onSaveProfile?.({ ...profile, ttsSpeed: v });
   }, [speed]);
@@ -440,8 +443,7 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
               >
                 <View style={styles.tickContainer} pointerEvents="none">
                   {allowedSpeeds.map((sp, i) => {
-                    const min = 0.5, max = 2.0;
-                    const ratio = (sp - min) / (max - min);
+                    const ratio = (sp - MIN_TTS_SPEED) / (MAX_TTS_SPEED - MIN_TTS_SPEED);
                     const tickW = 2;
                     const trackW = Math.max(0, speedSliderWidth);
                     const unclamped = ratio * trackW - tickW / 2;
@@ -459,8 +461,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
                 <View style={styles.sliderRow}>
                   <Slider
                     style={styles.sliderFlex}
-                    minimumValue={0.5}
-                    maximumValue={2.0}
+                    minimumValue={MIN_TTS_SPEED}
+                    maximumValue={MAX_TTS_SPEED}
                     step={0.01}
                     value={speed}
                     minimumTrackTintColor={themeVariables.tertiaryColor}
@@ -471,8 +473,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
                 </View>
 
                 <View style={styles.sliderBottomLabels}>
-                  <Text style={styles.sliderBottomLabel}>{fmtSpeed(0.5)}</Text>
-                  <Text style={styles.sliderBottomLabel}>{fmtSpeed(2.0)}</Text>
+                  <Text style={styles.sliderBottomLabel}>{fmtSpeed(MIN_TTS_SPEED)}</Text>
+                  <Text style={styles.sliderBottomLabel}>{fmtSpeed(MAX_TTS_SPEED)}</Text>
                 </View>
               </View>
             </View>

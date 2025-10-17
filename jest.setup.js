@@ -141,7 +141,7 @@ jest.mock('react-native-sound', () => {
   return Sound;
 });
 
-jest.mock('../vendor/react-native-sound', () => require('react-native-sound'));
+jest.mock('../vendor/react-native-sound', () => require('react-native-sound'), { virtual: true });
 
 // Mock RNFS to support cache ops in tests
 jest.mock('react-native-fs', () => {

@@ -1,13 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import speechService from '../services/speechService';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import themeVariables from '../styles/theme';
 
 const DEFAULT_READING_FONT = 18;
@@ -21,43 +13,10 @@ const clampReadingFont = (value) => {
 const PrayerBlock = ({
   prayer,
   profile,
+  maxHeight,
 }) => {
   const readingFontSize = clampReadingFont(profile?.readingFontSize);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [scrollMetrics, setScrollMetrics] = useState({
-    containerHeight: 0,
-    contentHeight: 0,
-  });
-  const cancelRef = useRef(false);
-
-  const handleAudioPress = async () => {
-    if (!prayer || !prayer.trim()) return;
-    try {
-      if (isSpeaking) {
-        cancelRef.current = true;
-        await speechService.hardStop();
-        setIsSpeaking(false);
-      } else {
-        cancelRef.current = false;
-        setIsSpeaking(true);
-        speechService.readQuote(prayer, profile?.ttsVoice, cancelRef);
-      }
-    } catch (err) {
-      console.warn('TTS failed:', err);
-      setIsSpeaking(false);
-    }
-  };
-
-  useEffect(() => {
-    const onTTSFinish = () => setIsSpeaking(false);
-    speechService.setupTTSListeners(onTTSFinish);
-
-    return () => {
-      cancelRef.current = true;
-      speechService.hardStop();
-      speechService.cleanupTTSListeners();
-    };
-  }, []);
+  const [scrollMetrics, setScrollMetrics] = useState({ containerHeight: 0, contentHeight: 0 });
 
   const handleScrollLayout = useCallback(({ nativeEvent }) => {
     const { height } = nativeEvent.layout;
@@ -79,63 +38,38 @@ const PrayerBlock = ({
   const isScrollable = scrollMetrics.contentHeight > scrollMetrics.containerHeight + 1;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.textColumn}>
-        <ScrollView
-          style={styles.textScroll}
-          contentContainerStyle={styles.textScrollContent}
-          onLayout={handleScrollLayout}
-          onContentSizeChange={handleContentSizeChange}
-          scrollEnabled={isScrollable}
-          showsVerticalScrollIndicator={isScrollable}
-          nestedScrollEnabled
-        >
-          <View style={styles.textContent}>
-            <Text style={[styles.prayerText, { fontSize: readingFontSize }]}>{prayer}</Text>
-          </View>
-        </ScrollView>
-      </View>
-      <View style={styles.audioColumn}>
-        {prayer && prayer.trim() ? (
-          <TouchableOpacity
+    <View style={[styles.card, maxHeight ? { maxHeight } : null]}>
+      <View style={styles.container}>
+        <View style={styles.textColumn}>
+          <ScrollView
             style={[
-              styles.audioButton,
-              isSpeaking && styles.audioButtonActive,
+              styles.textScroll,
+              maxHeight ? { maxHeight: Math.max(80, maxHeight - 40) } : null,
             ]}
-            onPress={handleAudioPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel={
-              isSpeaking ? 'Stop reading prayer' : 'Read prayer aloud'
-            }
-            accessibilityHint={
-              isSpeaking
-                ? 'Double tap to stop the speech'
-                : 'Double tap to hear this prayer'
-            }
+            contentContainerStyle={styles.textScrollContent}
+            onLayout={handleScrollLayout}
+            onContentSizeChange={handleContentSizeChange}
+            scrollEnabled={isScrollable}
+            showsVerticalScrollIndicator={isScrollable}
+            nestedScrollEnabled
           >
-            <Ionicons
-              name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
-              size={28}
-              color={isSpeaking ? themeVariables.whiteColor : themeVariables.blackColor}
-            />
-          </TouchableOpacity>
-        ) : null}
+            <View style={styles.textContent}>
+              <Text style={[styles.prayerText, { fontSize: readingFontSize }]}>{prayer}</Text>
+            </View>
+          </ScrollView>
+        </View>
       </View>
     </View>
   );
 };
 
-const AUDIO_BUTTON_SIZE = 40;
-const AUDIO_COLUMN_WIDTH = 80;
-
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    height: '90%',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    position: 'relative',
-    paddingTop: 8,
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     alignSelf: 'stretch',
   },
   textColumn: {
@@ -143,10 +77,18 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   textScroll: {
-    maxHeight: '100%',
+    flexGrow: 0,
+    flexShrink: 1,
   },
   textScrollContent: {
     paddingRight: 2,
+  },
+  container: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingTop: 8,
+    alignSelf: 'stretch',
   },
   textContent: {
     borderLeftWidth: 4,
@@ -161,30 +103,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.45)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  audioColumn: {
-    width: AUDIO_COLUMN_WIDTH,
-    alignItems: 'center',
-    paddingTop: 4,
-  },
-  audioButton: {
-    width: AUDIO_BUTTON_SIZE,
-    height: AUDIO_BUTTON_SIZE,
-    borderRadius: AUDIO_BUTTON_SIZE / 2,
-    borderWidth: 2,
-    borderColor: themeVariables.primaryColor,
-    backgroundColor: themeVariables.whiteColor,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 3,
-  },
-  audioButtonActive: {
-    backgroundColor: themeVariables.primaryColor,
-    borderColor: themeVariables.primaryColor,
   },
 });
 

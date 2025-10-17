@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { BlurView } from '@react-native-community/blur';
+import LinearGradient from 'react-native-linear-gradient';
 import themeVariables from '../styles/theme';
 import PrayerBlock from '../components/PrayerBlock';
 import QuoteBlock from '../components/QuoteBlock';
@@ -16,9 +17,11 @@ import { grade1Lessons } from '../data/grade1';
 import { quoteMap } from '../data/grade2';
 import { quoteMap as quoteMap2b } from '../data/grade2b';
 import HomeTopBar from '../components/HomeTopBar';
+import speechService from '../services/speechService';
 
 const CONTENT_MAX_WIDTH = 336;
 const BOTTOM_BUTTON_MARGIN_TOP = 24;
+const AUDIO_CONTROL_SIZE = 44;
 
 const HomeScreen = ({
   profile,
@@ -81,6 +84,8 @@ const HomeScreen = ({
     quote: null,
     prayer: null,
   });
+  const [lessonContentHeight, setLessonContentHeight] = useState(null);
+  const [lessonHeaderHeight, setLessonHeaderHeight] = useState(0);
   const lessonIdentifier = Number.isFinite(currentLessonNumber)
     ? Number.isFinite(currentSetNumber)
       ? `${currentSetNumber}.${currentLessonNumber}`
@@ -90,6 +95,16 @@ const HomeScreen = ({
   const indicatorWidth = useRef(new Animated.Value(0)).current;
   const contentOpacity = useRef(new Animated.Value(1)).current;
   const contentTranslate = useRef(new Animated.Value(0)).current;
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const cancelRef = useRef(false);
+  const currentDisplayText =
+    activeContent === 'quote'
+      ? quoteToShow
+      : activeContent === 'prayer'
+        ? prayerToShow
+        : '';
+  const hasPlayableContent =
+    typeof currentDisplayText === 'string' && currentDisplayText.trim().length > 0;
 
   useEffect(() => {
     if (hasPrayer && hasQuote) {
@@ -224,6 +239,96 @@ const HomeScreen = ({
     indicatorWidth,
   ]);
 
+  useEffect(() => {
+    const onFinish = () => setIsSpeaking(false);
+    speechService.setupTTSListeners(onFinish);
+    return () => {
+      cancelRef.current = true;
+      speechService.hardStop();
+      speechService.cleanupTTSListeners();
+    };
+  }, []);
+
+  const playbackKey = `${activeContent || 'none'}|${currentDisplayText || ''}`;
+  useEffect(() => {
+    if (!isSpeaking) return;
+    cancelRef.current = true;
+    speechService.hardStop();
+    setIsSpeaking(false);
+  }, [playbackKey]);
+
+  const handleAudioPress = async () => {
+    if (!hasPlayableContent) return;
+    try {
+      if (isSpeaking) {
+        cancelRef.current = true;
+        await speechService.hardStop();
+        setIsSpeaking(false);
+        return;
+      }
+      cancelRef.current = false;
+      setIsSpeaking(true);
+      speechService.readQuote(currentDisplayText, profile, cancelRef);
+    } catch (error) {
+      console.warn('TTS failed:', error);
+      setIsSpeaking(false);
+    }
+  };
+
+  const renderAudioControl = () => {
+    if (!hasPlayableContent) {
+      return null;
+    }
+    const gradientColors = isSpeaking
+      ? ['rgba(109,87,255,0.65)', 'rgba(109,87,255,0.35)', 'rgba(255,255,255,0.25)']
+      : ['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.22)', 'rgba(255,255,255,0.12)'];
+    const sheenColors = ['rgba(255,255,255,0.85)', 'rgba(255,255,255,0.0)'];
+    return (
+      <TouchableOpacity
+        style={[
+          styles.audioControlButton,
+          isSpeaking && styles.audioControlButtonActive,
+        ]}
+        onPress={handleAudioPress}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        activeOpacity={0.92}
+        accessibilityLabel={isSpeaking ? 'Stop audio playback' : 'Play current passage'}
+        accessibilityHint={
+          isSpeaking
+            ? 'Stops the audio narration.'
+            : 'Plays the currently selected quote or prayer.'
+        }
+      >
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.audioControlGradient}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={sheenColors}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={styles.audioControlSheen}
+          pointerEvents="none"
+        />
+        <Ionicons
+          name={isSpeaking ? 'stop-circle-outline' : 'play-circle-outline'}
+          size={26}
+          color={isSpeaking ? themeVariables.whiteColor : themeVariables.blackColor}
+          style={styles.audioControlIcon}
+        />
+      </TouchableOpacity>
+    );
+  };
+
+  const audioControl = renderAudioControl();
+  const computedContentHeight =
+    lessonContentHeight != null
+      ? Math.max(180, lessonContentHeight - lessonHeaderHeight - 24)
+      : undefined;
+
   return (
     <View style={styles.container}>
       <HomeTopBar
@@ -237,71 +342,96 @@ const HomeScreen = ({
       <View style={styles.mainContent}>
         <View style={styles.contentContainer}>
           <View style={styles.lessonColumn}>
-            <View style={styles.lessonContent}>
+            <View
+              style={styles.lessonContent}
+              onLayout={(event) => {
+                const { height } = event.nativeEvent.layout;
+                setLessonContentHeight((prev) =>
+                  Math.abs((prev ?? 0) - height) < 0.5 ? prev : height
+                );
+              }}
+            >
               <View style={styles.lessonInner}>
-                <Text style={styles.lessonSectionTitle}>
-                  {`Current Lesson${lessonIdentifier ? ` ${lessonIdentifier}` : ''}`}
-                </Text>
-                {hasPrayer && hasQuote ? (
-                  <View style={styles.lessonTabsWrapper}>
-                    <BlurView
-                      style={styles.lessonTabsBlur}
-                      blurType="light"
-                      blurAmount={20}
-                      reducedTransparencyFallbackColor="rgba(255, 255, 255, 0.3)"
-                    />
-                    <View style={styles.lessonTabs}>
-                      {activeTabLayout ? (
-                        <Animated.View
-                          pointerEvents="none"
-                          style={[
-                            styles.lessonTabIndicator,
-                            {
-                              width: indicatorWidth,
-                              transform: [{ translateX: indicatorTranslate }],
-                            },
-                          ]}
+                <View
+                  style={styles.lessonHeader}
+                  onLayout={(event) => {
+                    const { height } = event.nativeEvent.layout;
+                    setLessonHeaderHeight((prev) =>
+                      Math.abs(prev - height) < 0.5 ? prev : height
+                    );
+                  }}
+                >
+                  <Text style={styles.lessonSectionTitle}>
+                    {`Current Lesson${lessonIdentifier ? ` ${lessonIdentifier}` : ''}`}
+                  </Text>
+                  {hasPrayer && hasQuote ? (
+                    <View style={styles.lessonTabsRow}>
+                      <View style={styles.lessonTabsWrapper}>
+                        <BlurView
+                          style={styles.lessonTabsBlur}
+                          blurType="light"
+                          blurAmount={20}
+                          reducedTransparencyFallbackColor="rgba(255, 255, 255, 0.3)"
                         />
-                      ) : null}
-                      <TouchableOpacity
-                        style={[
-                          styles.lessonTab,
-                          activeContent === 'quote' && styles.lessonTabActive,
-                        ]}
-                        onPress={() => handleTabPress('quote')}
-                        onLayout={handleTabLayout('quote')}
-                        activeOpacity={0.9}
-                      >
-                        <Text
-                          style={[
-                            styles.lessonTabLabel,
-                            activeContent === 'quote' && styles.lessonTabLabelActive,
-                          ]}
-                        >
-                          Quote
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.lessonTab,
-                          activeContent === 'prayer' && styles.lessonTabActive,
-                        ]}
-                        onPress={() => handleTabPress('prayer')}
-                        onLayout={handleTabLayout('prayer')}
-                        activeOpacity={0.9}
-                      >
-                        <Text
-                          style={[
-                            styles.lessonTabLabel,
-                            activeContent === 'prayer' && styles.lessonTabLabelActive,
-                          ]}
-                        >
-                          Prayer
-                        </Text>
-                      </TouchableOpacity>
+                        <View style={styles.lessonTabs}>
+                          {activeTabLayout ? (
+                            <Animated.View
+                              pointerEvents="none"
+                              style={[
+                                styles.lessonTabIndicator,
+                                {
+                                  width: indicatorWidth,
+                                  transform: [{ translateX: indicatorTranslate }],
+                                },
+                              ]}
+                            />
+                          ) : null}
+                          <TouchableOpacity
+                            style={[
+                              styles.lessonTab,
+                              activeContent === 'quote' && styles.lessonTabActive,
+                            ]}
+                            onPress={() => handleTabPress('quote')}
+                            onLayout={handleTabLayout('quote')}
+                            activeOpacity={0.9}
+                          >
+                            <Text
+                              style={[
+                                styles.lessonTabLabel,
+                                activeContent === 'quote' && styles.lessonTabLabelActive,
+                              ]}
+                            >
+                              Quote
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.lessonTab,
+                              activeContent === 'prayer' && styles.lessonTabActive,
+                            ]}
+                            onPress={() => handleTabPress('prayer')}
+                            onLayout={handleTabLayout('prayer')}
+                            activeOpacity={0.9}
+                          >
+                            <Text
+                              style={[
+                                styles.lessonTabLabel,
+                                activeContent === 'prayer' && styles.lessonTabLabelActive,
+                              ]}
+                            >
+                              Prayer
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      {audioControl}
                     </View>
-                  </View>
-                ) : null}
+                  ) : (
+                    audioControl ? (
+                      <View style={styles.audioControlSolo}>{audioControl}</View>
+                    ) : null
+                  )}
+                </View>
                 {(activeContent === 'quote' && hasQuote) || (activeContent === 'prayer' && hasPrayer) ? (
                   <Animated.View
                     style={[
@@ -317,12 +447,14 @@ const HomeScreen = ({
                         quote={quoteToShow}
                         profile={profile}
                         references={references}
+                        maxHeight={computedContentHeight}
                       />
                     ) : null}
                     {activeContent === 'prayer' && hasPrayer ? (
                       <PrayerBlock
                         prayer={prayerToShow}
                         profile={profile}
+                        maxHeight={computedContentHeight}
                       />
                     ) : null}
                   </Animated.View>
@@ -478,11 +610,27 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'stretch',
     gap: 12,
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+  },
+  lessonHeader: {
+    width: '100%',
+    alignSelf: 'stretch',
+    marginBottom: 16,
+  },
+  lessonTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    alignSelf: 'stretch',
+    marginTop: 12,
   },
   lessonTabsWrapper: {
     position: 'relative',
+    flex: 1,
     alignSelf: 'stretch',
-    marginBottom: 16,
     borderRadius: themeVariables.borderRadiusPill + 6,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.35)',
@@ -543,6 +691,47 @@ const styles = StyleSheet.create({
   lessonTabLabelActive: {
     color: themeVariables.primaryColor,
     textShadowRadius: 0,
+  },
+  audioControlSolo: {
+    alignSelf: 'flex-end',
+    marginTop: 12,
+  },
+  audioControlButton: {
+    width: AUDIO_CONTROL_SIZE,
+    height: AUDIO_CONTROL_SIZE,
+    borderRadius: AUDIO_CONTROL_SIZE / 2,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: 'rgba(109,87,255,0.55)',
+    shadowOpacity: 0.32,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  audioControlButtonActive: {
+    borderColor: 'rgba(109,87,255,0.65)',
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+  },
+  audioControlGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  audioControlSheen: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    right: 2,
+    height: AUDIO_CONTROL_SIZE / 2,
+    borderTopLeftRadius: AUDIO_CONTROL_SIZE / 2,
+    borderTopRightRadius: AUDIO_CONTROL_SIZE / 2,
+    opacity: 0.9,
+  },
+  audioControlIcon: {
+    zIndex: 1,
   },
   emptyLessonText: {
     color: themeVariables.primaryColor,

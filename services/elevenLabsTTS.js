@@ -9,9 +9,10 @@ import {
   ELEVENLABS_OPTIMIZE_STREAMING,
   TTS_CACHE_MAX_MB,
 } from '../config';
+import { DEFAULT_TTS_SPEED, MIN_TTS_SPEED, MAX_TTS_SPEED } from './ttsDefaults';
 
 let currentSound = null;
-let currentSpeed = 1;
+let currentSpeed = DEFAULT_TTS_SPEED;
 
 const AUDIO_DIR = `${RNFS.DocumentDirectoryPath}/tts_cache`;
 let CACHE_MAX_BYTES = Math.max(16, Number(TTS_CACHE_MAX_MB) || 64) * 1024 * 1024;
@@ -182,7 +183,9 @@ export async function stop() {
 }
 
 export function setSpeed(value) {
-  const v = Math.max(0.5, Math.min(2.0, Number(value) || 1));
+  const numeric = Number(value);
+  const fallback = Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED;
+  const v = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, fallback));
   currentSpeed = v;
   try {
     if (currentSound && typeof currentSound.setSpeed === 'function') {
