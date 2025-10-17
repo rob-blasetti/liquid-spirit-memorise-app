@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
 import { useDifficulty } from '../contexts/DifficultyContext';
+import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CAR_SIZE = 40;
@@ -25,8 +26,64 @@ const clampWordCenterY = (value, radius) =>
 const computeWordRadius = (text) =>
   Math.min(MAX_WORD_RADIUS, Math.max(MIN_WORD_RADIUS, text.length * 2.5 + 14));
 
-const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
-  const sentence = typeof quote === 'string' ? quote : quote?.text || '';
+const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const uniquePlayableEntries = useMemo(() => {
+    const seen = new Set();
+    const ordered = [];
+    quoteData.playableEntries.forEach((entry) => {
+      const key = entry.canonical || entry.clean || entry.original;
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      ordered.push(entry);
+    });
+    return ordered;
+  }, [quoteData.playableEntries]);
+  const playableWords = useMemo(
+    () => uniquePlayableEntries.map((entry) => getEntryDisplayWord(entry)),
+    [uniquePlayableEntries],
+  );
+  const matchKeys = useMemo(
+    () =>
+      uniquePlayableEntries.map(
+        (entry) => entry.canonical || entry.clean || entry.original || getEntryDisplayWord(entry),
+      ),
+    [uniquePlayableEntries],
+  );
+  const playableIndexSet = useMemo(
+    () => new Set(uniquePlayableEntries.map((entry) => entry.index)),
+    [uniquePlayableEntries],
+  );
+  const collectedKeySet = useMemo(() => new Set(collectedKeys), [collectedKeys]);
+  const quoteProgress = useMemo(() => {
+    if (!quoteData.entries || quoteData.entries.length === 0) return '';
+    return quoteData.entries
+      .map((entry) => {
+        const original = entry.original ?? entry.clean ?? '';
+        const displayWord = getEntryDisplayWord(entry);
+        const key = entry.canonical || entry.clean || entry.original || displayWord;
+        if (!playableIndexSet.has(entry.index)) {
+          return original;
+        }
+        if (collectedKeySet.has(key)) {
+          return original;
+        }
+        const trailingMatch = original.match(/[^A-Za-z0-9]+$/);
+        const trailing = trailingMatch ? trailingMatch[0] : '';
+        const effectiveBaseLength =
+          displayWord.length || Math.max(original.length - trailing.length, 1);
+        const length = Math.max(effectiveBaseLength, 2);
+        const placeholder = '_'.repeat(Math.min(length, 18));
+        return `${placeholder}${trailing}`;
+      })
+      .join(' ');
+  }, [quoteData.entries, playableIndexSet, collectedKeySet]);
+  const instructionsOpacity = useRef(new Animated.Value(1)).current;
+  const instructionsTimerRef = useRef(null);
+  const [instructionsDismissed, setInstructionsDismissed] = useState(false);
   const { level } = useDifficulty() || { level: 1 };
   const initialLives = level === 1 ? 6 : level === 2 ? 4 : 2;
   const [car, setCar] = useState(() => {
@@ -35,17 +92,151 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
     return { x: initialX, y: initialY };
   });
   const [words, setWords] = useState([]);
-  const [collected, setCollected] = useState([]);
+  const [collectedKeys, setCollectedKeys] = useState([]);
   const [nextIndex, setNextIndex] = useState(0);
   const [lives, setLives] = useState(initialLives);
   const [message, setMessage] = useState('');
   const initializedRef = useRef(false);
   const pendingLoseRef = useRef(false);
+  const [showGestureCue, setShowGestureCue] = useState(false);
+  const gestureOpacity = useRef(new Animated.Value(0)).current;
+  const gesturePosition = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const gestureTimeoutRef = useRef(null);
+  const gestureLoopRef = useRef(null);
+  const gestureActiveRef = useRef(false);
+  const showGestureRef = useRef(false);
+  const gestureAnchorRef = useRef({ x: 0, y: 0 });
+  const matchKeyRef = useRef([]);
+
+  const dismissInstructions = useCallback(() => {
+    if (instructionsDismissed) return;
+    if (instructionsTimerRef.current) {
+      clearTimeout(instructionsTimerRef.current);
+      instructionsTimerRef.current = null;
+    }
+    Animated.timing(instructionsOpacity, {
+      toValue: 0,
+      duration: 420,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setInstructionsDismissed(true);
+      }
+    });
+  }, [instructionsDismissed, instructionsOpacity]);
+  const dismissInstructionsRef = useRef(dismissInstructions);
+  useEffect(() => {
+    dismissInstructionsRef.current = dismissInstructions;
+  }, [dismissInstructions]);
 
   useEffect(() => {
-    const tokens = sentence.split(/\s+/).filter(Boolean);
+    showGestureRef.current = showGestureCue;
+  }, [showGestureCue]);
+
+  const hideGestureCue = useCallback(
+    (skipFade = false) => {
+      if (gestureTimeoutRef.current) {
+        clearTimeout(gestureTimeoutRef.current);
+        gestureTimeoutRef.current = null;
+      }
+      gestureLoopRef.current?.stop?.();
+      gestureLoopRef.current = null;
+
+      if (skipFade) {
+        gestureActiveRef.current = false;
+        gestureOpacity.stopAnimation();
+        gesturePosition.stopAnimation();
+        showGestureRef.current = false;
+        setShowGestureCue(false);
+        return;
+      }
+
+      if (!gestureActiveRef.current && !showGestureRef.current) {
+        return;
+      }
+
+      gestureActiveRef.current = false;
+      showGestureRef.current = false;
+      Animated.timing(gestureOpacity, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          showGestureRef.current = false;
+          setShowGestureCue(false);
+        }
+      });
+    },
+    [gestureOpacity, gesturePosition],
+  );
+
+  const startGestureCue = useCallback(() => {
+    gestureLoopRef.current?.stop?.();
+    if (gestureTimeoutRef.current) {
+      clearTimeout(gestureTimeoutRef.current);
+      gestureTimeoutRef.current = null;
+    }
+    gestureOpacity.setValue(0);
+    gesturePosition.setValue({ x: 0, y: 0 });
+    showGestureRef.current = true;
+    setShowGestureCue(true);
+    gestureActiveRef.current = true;
+
+    Animated.timing(gestureOpacity, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+
+    const gesturePath = Animated.sequence([
+      Animated.timing(gesturePosition, {
+        toValue: { x: 34, y: -24 },
+        duration: 650,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(gesturePosition, {
+        toValue: { x: -26, y: 36 },
+        duration: 650,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(gesturePosition, {
+        toValue: { x: 0, y: 0 },
+        duration: 520,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]);
+
+    const loop = Animated.loop(gesturePath, { iterations: 2 });
+    gestureLoopRef.current = loop;
+    loop.start();
+
+    gestureTimeoutRef.current = setTimeout(() => {
+      hideGestureCue();
+    }, 4200);
+  }, [gestureOpacity, gesturePosition, hideGestureCue]);
+
+  useEffect(() => {
+    const tokens = uniquePlayableEntries;
+    instructionsOpacity.setValue(1);
+    setInstructionsDismissed(false);
+    if (instructionsTimerRef.current) {
+      clearTimeout(instructionsTimerRef.current);
+    }
+    instructionsTimerRef.current = setTimeout(() => {
+      if (dismissInstructionsRef.current) {
+        dismissInstructionsRef.current();
+      }
+    }, 2400);
+    matchKeyRef.current = matchKeys;
+    hideGestureCue(true);
     const startX = clampCarX(SCREEN_WIDTH / 2 - CAR_SIZE / 2);
     const startY = clampCarY((PLAY_AREA_TOP + CAR_BOTTOM_BOUND) / 2);
+    gestureAnchorRef.current = { x: startX, y: startY };
     const carCenterX = startX + CAR_SIZE / 2;
     const carCenterY = startY + CAR_SIZE / 2;
     const isClearOfCar = (cx, cy, radius) => {
@@ -62,14 +253,16 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
         const dist = Math.sqrt(dx * dx + dy * dy);
         return dist < p.radius + radius + WORD_OVERLAP_BUFFER;
       });
-    const tryPlaceWord = (text, idx) => {
-      const id = `${text}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
+    const tryPlaceWord = (entry, idx) => {
+      const displayWord = getEntryDisplayWord(entry);
+      const matchKey = entry.canonical || entry.clean || entry.original || displayWord;
+      const id = `${matchKey}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
       const tryCandidate = (rawCx, rawCy, radius) => {
         const cx = clampWordCenterX(rawCx, radius);
         const cy = clampWordCenterY(rawCy, radius);
         if (!isClearOfCar(cx, cy, radius)) return null;
         if (overlapsPlaced(cx, cy, radius)) return null;
-        return { text, id, cx, cy, radius };
+        return { text: displayWord, matchKey, id, cx, cy, radius };
       };
       const attemptRandom = (radius) => {
         const minX = WORD_MARGIN + radius;
@@ -128,7 +321,7 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
       const tryDenseRadius = (radius) =>
         attemptGrid(radius, 1.1) || attemptGrid(radius, 1);
 
-      let desiredRadius = computeWordRadius(text);
+      let desiredRadius = computeWordRadius(displayWord);
       let placement = tryRadius(desiredRadius);
       let currentRadius = desiredRadius;
       const shrinkStep = 4;
@@ -219,7 +412,8 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
       }
       return (
         placement ?? {
-          text,
+          text: displayWord,
+          matchKey,
           id,
           cx: clampWordCenterX(SCREEN_WIDTH / 2, 8),
           cy: clampWordCenterY((PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2, 8),
@@ -227,20 +421,23 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
         }
       );
     };
-    const generated = tokens.map((text, idx) => {
-      const placement = tryPlaceWord(text, idx);
+    const generated = tokens.map((entry, idx) => {
+      const placement = tryPlaceWord(entry, idx);
       placed.push(placement);
       return placement;
     });
     setWords(generated);
-    setCollected([]);
+    setCollectedKeys([]);
     setNextIndex(0);
     setLives(initialLives);
     setMessage('');
     setCar({ x: startX, y: startY });
     pendingLoseRef.current = false;
     initializedRef.current = true;
-  }, [quote, sentence, level]);
+    if (tokens.length > 0) {
+      startGestureCue();
+    }
+  }, [quote, uniquePlayableEntries, matchKeys, level, hideGestureCue, startGestureCue, instructionsOpacity]);
 
   const checkCollision = (x, y) => {
     const carCenterX = x + CAR_SIZE / 2;
@@ -263,10 +460,13 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
 
       if (!collided) return prev;
 
-      const expected = sentence.split(/\s+/).filter(Boolean)[nextIndex];
-      if (collided.text === expected) {
+      const expectedKey = matchKeyRef.current[nextIndex];
+      if (!expectedKey) {
+        return prev;
+      }
+      if (collided.matchKey === expectedKey) {
         // Correct word: collect in order
-        setCollected((c) => [...c, collided.text]);
+        setCollectedKeys((keys) => [...keys, expectedKey]);
         setNextIndex((i) => i + 1);
         const copy = [...prev];
         copy.splice(collidedIdx, 1);
@@ -291,10 +491,11 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
   useEffect(() => {
     // Guard initial mount where words starts empty
     if (!initializedRef.current) return;
-    if (words.length === 0 && sentence && collected.length > 0) {
+    const totalWords = matchKeyRef.current.length;
+    if (words.length === 0 && totalWords > 0 && collectedKeys.length >= totalWords) {
       onWin?.();
     }
-  }, [words, sentence, onWin, collected.length]);
+  }, [words, onWin, collectedKeys.length]);
 
   useEffect(() => {
     if (pendingLoseRef.current && lives === 0) {
@@ -303,15 +504,30 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
     }
   }, [lives, onLose]);
 
+  useEffect(
+    () => () => {
+      hideGestureCue(true);
+      if (instructionsTimerRef.current) {
+        clearTimeout(instructionsTimerRef.current);
+        instructionsTimerRef.current = null;
+      }
+    },
+    [hideGestureCue],
+  );
+
   const onTouchAt = (x, y) => {
     // Center the car under the finger and clamp to bounds
     const targetX = Math.max(0, Math.min(SCREEN_WIDTH - CAR_SIZE, x - CAR_SIZE / 2));
     const targetY = Math.max(0, Math.min(SCREEN_HEIGHT - CAR_SIZE, y - CAR_SIZE / 2));
     const clampedX = clampCarX(targetX);
     const clampedY = clampCarY(targetY);
+    hideGestureCue();
+    dismissInstructions();
     setCar({ x: clampedX, y: clampedY });
     checkCollision(clampedX, clampedY);
   };
+
+  const { x: gestureAnchorX, y: gestureAnchorY } = gestureAnchorRef.current;
 
   return (
     <View style={styles.container}>
@@ -331,10 +547,18 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
       >
         <View pointerEvents="box-none" style={styles.topOverlay}>
           <View pointerEvents="none" style={styles.tray}>
-            <Text style={styles.trayLabel}>Collected Words</Text>
-            <Text style={styles.trayText}>
-              {collected.length > 0 ? collected.join(' ') : 'Glide to grab each word in order'}
-            </Text>
+            {!instructionsDismissed && (
+              <Animated.View style={[styles.instructionsWrap, { opacity: instructionsOpacity }]}> 
+                <Text style={styles.trayLabel}>How to Play</Text>
+                <Text style={styles.trayText}>Drag the car to collect each highlighted word in order.</Text>
+              </Animated.View>
+            )}
+            {instructionsDismissed && (
+              <>
+                <Text style={styles.trayLabel}>Quote Progress</Text>
+                <Text style={styles.trayQuote}>{quoteProgress}</Text>
+              </>
+            )}
           </View>
         </View>
         <View style={[styles.car, { left: car.x, top: car.y }]}>
@@ -364,6 +588,38 @@ const WordRacerGame = ({ quote, onBack, onWin, onLose }) => {
             </Text>
           </View>
         ))}
+        {showGestureCue && (
+          <View pointerEvents="none" style={styles.gestureContainer}>
+            <Animated.View
+              style={[
+                styles.gesturePointer,
+                {
+                  left: gestureAnchorX + CAR_SIZE / 2 - 28,
+                  top: gestureAnchorY + CAR_SIZE / 2 - 28,
+                  opacity: gestureOpacity,
+                  transform: [
+                    { translateX: gesturePosition.x },
+                    { translateY: gesturePosition.y },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.gesturePointerText}>👆</Text>
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.gestureTooltip,
+                {
+                  left: gestureAnchorX + CAR_SIZE / 2 - 92,
+                  top: gestureAnchorY + CAR_SIZE / 2 + 54,
+                  opacity: gestureOpacity,
+                },
+              ]}
+            >
+              <Text style={styles.gestureHint}>Tap & drag to steer</Text>
+            </Animated.View>
+          </View>
+        )}
         <View style={styles.livesFooter}>
           <View style={styles.livesBadge}>
             <Text style={styles.livesText}>Lives {lives}</Text>
@@ -415,6 +671,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.16)',
     paddingHorizontal: 18,
     paddingVertical: 14,
+    alignSelf: 'stretch',
   },
   trayLabel: {
     fontSize: 12,
@@ -428,6 +685,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: themeVariables.whiteColor,
     fontWeight: '500',
+  },
+  instructionsWrap: {
+    alignSelf: 'stretch',
+    marginBottom: 2,
+  },
+  trayQuote: {
+    fontSize: 18,
+    color: themeVariables.whiteColor,
+    fontWeight: '500',
+    lineHeight: 24,
+    marginTop: 2,
+    textAlign: 'left',
   },
   car: {
     position: 'absolute',
@@ -453,6 +722,42 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 4,
+  },
+  gestureContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+  },
+  gesturePointer: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gesturePointerText: {
+    fontSize: 28,
+  },
+  gestureTooltip: {
+    position: 'absolute',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    maxWidth: 200,
+  },
+  gestureHint: {
+    color: themeVariables.whiteColor,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   livesFooter: {
     position: 'absolute',

@@ -1,4 +1,5 @@
 import { getContentFor } from './contentSelector';
+import { sanitizeQuoteText } from './quoteSanitizer';
 
 export const createAppActions = ({
   profile,
@@ -17,16 +18,20 @@ export const createAppActions = ({
     }
     const progress = getCurrentProgress();
     const { setNumber, lessonNumber } = progress;
-    const quote = getContentFor(profile, setNumber, lessonNumber, { type: 'prayer' });
-    goTo('practice', { quote, setNumber, lessonNumber });
+    const rawQuote = getContentFor(profile, setNumber, lessonNumber, { type: 'prayer' });
+    const sanitizedQuote = sanitizeQuoteText(rawQuote);
+    goTo('practice', { quote: sanitizedQuote, rawQuote, sanitizedQuote, setNumber, lessonNumber });
   };
 
   const playSelectedGame = (gameId) => {
     const progress = getCurrentProgress();
     const { setNumber, lessonNumber } = progress;
-    const quote = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
+    const rawQuote = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
+    const sanitizedQuote = sanitizeQuoteText(rawQuote);
     goTo(gameId, {
-      quote,
+      quote: sanitizedQuote,
+      rawQuote,
+      sanitizedQuote,
       setNumber,
       lessonNumber,
       fromGames: true,
@@ -37,9 +42,12 @@ export const createAppActions = ({
   const launchStoryModeGame = () => {
     const progress = getCurrentProgress();
     const { setNumber, lessonNumber } = progress;
-    const quote = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
+    const rawQuote = getContentFor(profile, setNumber, lessonNumber, { type: 'quote' });
+    const sanitizedQuote = sanitizeQuoteText(rawQuote);
     goTo('tapGame', {
-      quote,
+      quote: sanitizedQuote,
+      rawQuote,
+      sanitizedQuote,
       setNumber,
       lessonNumber,
       fromStoryMode: true,

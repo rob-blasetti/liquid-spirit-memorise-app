@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const FirstLetterQuizGame = ({ quote, onBack }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/);
+const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const words = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+
+  const canonicalize = (value) =>
+    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
   // prepare options on mount and when quote changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -22,27 +33,26 @@ const FirstLetterQuizGame = ({ quote, onBack }) => {
   }, [quote]);
 
   const generateOptions = (idx) => {
-    if (idx >= words.length) {
+    if (idx >= entries.length) {
       setOptions([]);
       return;
     }
-    const remaining = words.filter((_, i) => i !== idx);
-    const distractors = [];
-    while (distractors.length < 3 && remaining.length > 0) {
-      const cand = remaining[Math.floor(Math.random() * remaining.length)];
-      if (!distractors.includes(cand)) distractors.push(cand);
-    }
-    while (distractors.length < 3) {
-      distractors.push(words[Math.floor(Math.random() * words.length)]);
-    }
-    setOptions(shuffle([words[idx], ...distractors]));
+    const entry = entries[idx];
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
+    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
   };
 
   const handleSelect = (word) => {
-    if (word === words[index]) {
+    const current = entries[index];
+    if (!current) return;
+    const expectedCanonical = canonicalize(current.original || current.clean || '');
+    if (canonicalize(word) === expectedCanonical) {
       const next = index + 1;
       setIndex(next);
-      if (next === words.length) {
+      if (next === entries.length) {
         setMessage('Great job!');
         setOptions([]);
       } else {
@@ -64,7 +74,7 @@ const FirstLetterQuizGame = ({ quote, onBack }) => {
       <Text style={styles.title}>First Letter Quiz</Text>
       <Text style={styles.description}>Guess each word using the first letters.</Text>
       <Text style={styles.quote}>{display}</Text>
-      {index < words.length ? (
+      {index < entries.length ? (
         <View style={styles.options}>
           {options.map((o, i) => (
             <TouchableOpacity key={`${o}-${i}`} style={styles.optionButton} onPress={() => handleSelect(o)}>

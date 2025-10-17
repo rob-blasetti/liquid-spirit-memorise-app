@@ -1,26 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const FastTypeGame = ({ quote, onBack }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const words = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
   const [time, setTime] = useState(30);
-  const [words, setWords] = useState([]);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const canonicalize = (value) =>
+    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const w = text.split(/\s+/);
-    setWords(w);
     setIndex(0);
     setMessage('');
     setTime(30);
-    generateOptions(w, 0);
+    generateOptions(entries, 0);
     const timer = setInterval(() => {
       setTime((t) => t - 1);
     }, 1000);
@@ -35,34 +43,33 @@ const FastTypeGame = ({ quote, onBack }) => {
     }
   }, [time]);
 
-  const generateOptions = (w, idx) => {
-    if (idx >= w.length) {
+  const generateOptions = (entryList, idx) => {
+    if (idx >= entryList.length) {
       setOptions([]);
       return;
     }
-    const remaining = w.filter((_, i) => i !== idx);
-    const distractors = [];
-    while (distractors.length < 3 && remaining.length > 0) {
-      const cand = remaining[Math.floor(Math.random() * remaining.length)];
-      if (!distractors.includes(cand)) distractors.push(cand);
-    }
-    while (distractors.length < 3) {
-      distractors.push(w[Math.floor(Math.random() * w.length)]);
-    }
-    setOptions(shuffle([w[idx], ...distractors]));
+    const entry = entryList[idx];
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
+    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
   };
 
   const handleSelect = (word) => {
     if (time === 0) return;
-    if (word === words[index]) {
+    const current = entries[index];
+    if (!current) return;
+    const expectedCanonical = canonicalize(current.original || current.clean || '');
+    if (canonicalize(word) === expectedCanonical) {
       const next = index + 1;
       setIndex(next);
-      if (next === words.length) {
+      if (next === entries.length) {
         setMessage('Great job!');
         setOptions([]);
       } else {
         setMessage('');
-        generateOptions(words, next);
+        generateOptions(entries, next);
       }
     } else {
       setMessage('Try again');

@@ -2,41 +2,61 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableWithoutFeedback, Animated, Easing, StyleSheet, Dimensions } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BubblePopOrderGame = ({ quote, onBack, onWin, onLose, level }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  // Tokenize once per incoming quote so indices stay stable per round
-  const allWords = useMemo(() => text.trim().split(/\s+/), [text]);
+const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose, level }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const playableEntries = quoteData.playableEntries;
+  const displayWords = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
   const maxBubbles = level === 1 ? 8 : level === 2 ? 16 : 32;
-  // Only allow words that contain at least one alphanumeric character to be bubbled (skip punctuation like ...)
-  const eligibleIndices = useMemo(() => {
-    const res = [];
-    for (let i = 0; i < allWords.length; i += 1) {
-      const w = allWords[i];
-      if (/[A-Za-z0-9]/.test(w)) res.push(i);
-    }
-    return res;
-  }, [text]);
-  const bubbleCount = Math.min(maxBubbles, eligibleIndices.length);
+  const uniquePlayableIndices = useMemo(() => {
+    const seen = new Set();
+    const indices = [];
+    playableEntries.forEach((entry) => {
+      const key = entry.canonical || entry.clean;
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      indices.push(entry.index);
+    });
+    return indices;
+  }, [playableEntries]);
+  const bubbleEligibleIndices = uniquePlayableIndices;
+  const bubbleCount = Math.min(maxBubbles, bubbleEligibleIndices.length);
   const bubbleIndices = useMemo(() => {
-    if (!eligibleIndices.length || bubbleCount === 0) return [];
+    if (!bubbleEligibleIndices.length || bubbleCount === 0) return [];
     // pick unique random eligible indices across the quote, preserve reading order
     const indices = new Set();
-    while (indices.size < bubbleCount && indices.size < eligibleIndices.length) {
-      const pick = Math.floor(Math.random() * eligibleIndices.length);
-      indices.add(eligibleIndices[pick]);
+    const pool = [...bubbleEligibleIndices];
+    while (indices.size < bubbleCount && pool.length > 0) {
+      const pick = Math.floor(Math.random() * pool.length);
+      const [value] = pool.splice(pick, 1);
+      indices.add(value);
     }
     return Array.from(indices).sort((a, b) => a - b);
-  }, [text, level]);
+  }, [bubbleEligibleIndices, bubbleCount, level]);
   const bubbleOrderMap = useMemo(() => {
     const m = new Map();
     bubbleIndices.forEach((idx, order) => m.set(idx, order));
     return m;
   }, [bubbleIndices]);
   const bubbledSet = useMemo(() => new Set(bubbleIndices), [bubbleIndices]);
-  const bubbleWords = useMemo(() => bubbleIndices.map(i => allWords[i]), [bubbleIndices, allWords]);
+  const bubbleEntries = useMemo(
+    () => bubbleIndices.map((i) => entries[i]).filter(Boolean),
+    [bubbleIndices, entries],
+  );
+  const bubbleWords = useMemo(
+    () => bubbleEntries.map((entry) => getEntryDisplayWord(entry)),
+    [bubbleEntries],
+  );
   const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [bubbles, setBubbles] = useState([]);
@@ -138,8 +158,8 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, onLose, level }) => {
     setMessage('');
     setWrongCount(0);
     // initialize per-word shimmer animators
-    shimmerValuesRef.current = allWords.map(() => new Animated.Value(0));
-  }, [text, level, bubbleIndices]);
+    shimmerValuesRef.current = displayWords.map(() => new Animated.Value(0));
+  }, [bubbleWords, level, bubbleIndices, displayWords]);
 
   // no title animation per request
 
@@ -244,7 +264,7 @@ const BubblePopOrderGame = ({ quote, onBack, onWin, onLose, level }) => {
       {/* Slate showing full quote; bubbled words are hidden until popped */}
       <View style={styles.slate}>
         <View style={styles.slateInner}>
-          {allWords.map((w, i) => {
+          {displayWords.map((w, i) => {
             const isBubbled = bubbledSet.has(i);
             const orderIndex = bubbleOrderMap.get(i);
             const isVisible = !isBubbled || (orderIndex !== undefined && orderIndex < index);

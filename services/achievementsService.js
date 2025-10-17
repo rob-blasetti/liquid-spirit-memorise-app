@@ -4,14 +4,6 @@ import { saveProfile as persistProfile } from './profileService';
 import { API_URL } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const debugAchievements = (...args) => {
-  const isDev = typeof __DEV__ === 'boolean' ? __DEV__ : process.env.NODE_ENV !== 'production';
-  if (isDev) {
-    // eslint-disable-next-line no-console
-    console.log('[AchievementsService]', ...args);
-  }
-};
-
 const DEFAULT_BY_ID = new Map(defaultAchievements.map((a) => [a.id, a]));
 const DEFAULT_IDS = new Set(DEFAULT_BY_ID.keys());
 const DEFAULT_BY_TITLE = new Map(defaultAchievements.map((a) => [a.title, a.id]));
@@ -75,13 +67,6 @@ const coerceIdToDefault = (entry = {}) => {
     if (hint) resolved = hint;
   }
 
-  debugAchievements('coerceIdToDefault', {
-    candidateIds,
-    serverIds,
-    title: entry.title || entry.achievement?.title,
-    resolved,
-  });
-
   const chosen = resolved || candidateIds[0] || null;
   if (chosen) {
     serverIds.forEach((sid) => {
@@ -97,12 +82,6 @@ const normalizeStoredAchievement = (entry) => {
   if (!id) return null;
   const template = DEFAULT_BY_ID.get(id) || {};
   const achievementSource = entry.achievement || {};
-  if (entry.achievement && entry.achievement._id && entry.achievement._id !== id) {
-    debugAchievements('normalizeStoredAchievement: resolved server _id to id', {
-      original: entry.achievement._id,
-      resolved: id,
-    });
-  }
   const normalized = {
     ...template,
     ...achievementSource,
@@ -139,13 +118,7 @@ export function initAchievements(profile) {
     ? profile.achievements
         .map(normalizeStoredAchievement)
         .filter(Boolean)
-    : [];
-  if (fromProfile.length) {
-    debugAchievements(
-      'initAchievements: normalized stored summary',
-      fromProfile.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
-    );
-  }
+    : [];  
   const storedMap = toMap(fromProfile);
   const merged = defaultAchievements.map((def) => {
     const stored = storedMap.get(def.id);
@@ -219,10 +192,6 @@ export async function fetchUserAchievements(userId) {
     }
     const raw = await res.json();
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
-    debugAchievements('fetchUserAchievements: raw payload summary', {
-      totalPoints,
-      count: Array.isArray(serverAchievements) ? serverAchievements.length : 0,
-    });
     // Normalize server achievements; preserve earned and description
     const normalizedEarned = (serverAchievements || [])
       .map((a) => {
@@ -317,11 +286,7 @@ export async function fetchUserAchievements(userId) {
         }
         return null;
       })
-      .filter(Boolean);
-    debugAchievements(
-      'fetchUserAchievements: normalized summary',
-      normalizedEarned.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
-    );
+      .filter(Boolean);    
 
     const normalizedMap = toMap(normalizedEarned);
     const merged = defaultAchievements.map((def) => {
@@ -353,22 +318,12 @@ export async function fetchUserAchievements(userId) {
       points: item.points || 0,
       earned: Boolean(item.earned),
       dateEarned: item.dateEarned || null,
-    }));
-    if (extras.length) {
-      debugAchievements(
-        'fetchUserAchievements: extras not in defaults',
-        extras.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
-      );
-    }
+    }));    
 
     const achievements = [...merged, ...extras];
     const computedTotal = getTotalPoints(achievements);
     registerServerIdHints(achievements);
-    debugAchievements(
-      'fetchUserAchievements: merged summary',
-      achievements.map((a) => `${a.id}:${a.earned ? 'earned' : 'open'}`),
-    );
-
+    
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);

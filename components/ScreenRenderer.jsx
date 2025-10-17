@@ -9,6 +9,7 @@ import {
 } from './GradeLayouts';
 import GameRenderer from './GameRenderer';
 import { GRADE_SCREEN_CONFIG } from '../data/gradesConfig';
+import { sanitizeQuoteText } from '../services/quoteSanitizer';
 
 const ensureLazy = (loader, fallbackModule) => {
   if (typeof React.lazy === 'function') {
@@ -136,6 +137,19 @@ const ScreenRenderer = ({
   const { setProfileModalVisible, setComingSoonGrade } = modalHandlers;
 
   const currentNav = navState;
+  const buildQuotePayload = (incomingQuote, extra = {}) => {
+    const rawText =
+      typeof incomingQuote === 'string'
+        ? incomingQuote
+        : (incomingQuote && typeof incomingQuote.text === 'string' && incomingQuote.text) || '';
+    const sanitizedText = sanitizeQuoteText(rawText);
+    return {
+      quote: sanitizedText,
+      rawQuote: rawText,
+      sanitizedQuote: sanitizedText,
+      ...extra,
+    };
+  };
 
   if (isGameScreen(currentNav.screen)) {
     const backHandler = (() => {
@@ -151,6 +165,8 @@ const ScreenRenderer = ({
       <GameRenderer
         screen={currentNav.screen}
         quote={currentNav.quote}
+        rawQuote={currentNav.rawQuote}
+        sanitizedQuote={currentNav.sanitizedQuote}
         onBack={backHandler}
         level={level}
         awardGameAchievement={awardGameAchievement}
@@ -191,8 +207,8 @@ const ScreenRenderer = ({
           fallbackQuote={config.fallbackQuote}
           onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
           onComplete={completeLesson}
-          onPractice={(quote) => goTo('practice', { quote })}
-          onPlayGame={(quote) => goTo('tapGame', { quote })}
+          onPractice={(quote) => goTo('practice', buildQuotePayload(quote))}
+          onPlayGame={(quote) => goTo('tapGame', buildQuotePayload(quote))}
         />
       );
     }
@@ -209,8 +225,8 @@ const ScreenRenderer = ({
           fallbackQuote={config.fallbackQuote}
           onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
           onComplete={completeLesson}
-          onPractice={(quote) => goTo('practice', { quote })}
-          onPlayGame={(quote) => goTo('tapGame', { quote })}
+          onPractice={(quote) => goTo('practice', buildQuotePayload(quote))}
+          onPlayGame={(quote) => goTo('tapGame', buildQuotePayload(quote))}
         />
       );
     }

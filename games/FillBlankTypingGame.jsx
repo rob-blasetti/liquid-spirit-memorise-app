@@ -1,33 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const FillBlankTypingGame = ({ quote, onBack }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const [words, setWords] = useState([]);
+const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const words = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
+  const playableEntries = quoteData.playableEntries;
+  const playableMap = useMemo(() => {
+    const map = new Map();
+    playableEntries.forEach((entry) => map.set(entry.index, entry));
+    return map;
+  }, [playableEntries]);
   const [missing, setMissing] = useState([]);
   const [current, setCurrent] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const canonicalize = (value) =>
+    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const arr = text.split(' ');
-    const num = Math.min(3, Math.max(1, Math.floor(arr.length / 8)));
+    const totalEntries = entries.length;
+    const num = Math.min(3, Math.max(1, Math.floor(totalEntries / 8)));
+    const playableIndices = playableEntries.map((entry) => entry.index);
     const indices = [];
-    while (indices.length < num) {
-      const idx = Math.floor(Math.random() * arr.length);
-      if (!indices.includes(idx)) indices.push(idx);
+    while (indices.length < num && playableIndices.length > 0) {
+      const pickIdx = Math.floor(Math.random() * playableIndices.length);
+      const value = playableIndices.splice(pickIdx, 1)[0];
+      if (!indices.includes(value)) indices.push(value);
     }
-    setWords(arr);
     const sorted = indices.sort((a, b) => a - b);
     setMissing(sorted);
     setCurrent(0);
     setMessage('');
-    generateOptions(arr, sorted, 0);
+    generateOptions(words, sorted, 0);
   }, [quote]);
 
   const generateOptions = (arr, indices, idx) => {
@@ -36,21 +53,24 @@ const FillBlankTypingGame = ({ quote, onBack }) => {
       return;
     }
     const word = arr[indices[idx]];
-    const remaining = arr.filter((w, i) => !indices.includes(i) && w !== word);
-    const distractors = [];
-    while (distractors.length < 3 && remaining.length > 0) {
-      const cand = remaining[Math.floor(Math.random() * remaining.length)];
-      if (!distractors.includes(cand)) distractors.push(cand);
+    const entry = playableMap.get(indices[idx]);
+    if (!entry) {
+      setOptions([]);
+      return;
     }
-    while (distractors.length < 3) {
-      distractors.push(arr[Math.floor(Math.random() * arr.length)]);
-    }
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
     setOptions(shuffle([word, ...distractors]));
   };
 
   const handleSelect = (word) => {
     const idx = missing[current];
-    if (word === words[idx]) {
+    const entry = playableMap.get(idx);
+    if (!entry) return;
+    const expectedCanonical = canonicalize(entry.original || entry.clean || '');
+    if (canonicalize(word) === expectedCanonical) {
       const next = current + 1;
       setCurrent(next);
       if (next === missing.length) {

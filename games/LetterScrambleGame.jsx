@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
 const shuffle = (arr) => {
   const copy = [...arr];
@@ -19,47 +20,63 @@ const scrambleWord = (word) => {
   return first + shuffle(letters).join('');
 };
 
-const LetterScrambleGame = ({ quote, onBack }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/);
+const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const words = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
   const [index, setIndex] = useState(0);
   const [scrambled, setScrambled] = useState('');
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
+  const canonicalize = (value) =>
+    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setIndex(0);
     setMessage('');
-    setScrambled(scrambleWord(words[0]));
-    generateOptions(words[0]);
+    if (entries.length > 0) {
+      setScrambled(scrambleWord(words[0]));
+      generateOptions(entries[0]);
+    } else {
+      setScrambled('');
+      setOptions([]);
+    }
   }, [quote]);
 
   const next = () => {
     const nextIndex = index + 1;
-    if (nextIndex < words.length) {
+    if (nextIndex < entries.length) {
       setScrambled(scrambleWord(words[nextIndex]));
     }
     setIndex(nextIndex);
-    generateOptions(words[nextIndex]);
+    generateOptions(entries[nextIndex]);
   };
 
-  const generateOptions = (word) => {
-    const remaining = words.filter(w => w !== word);
-    const distractors = [];
-    while (distractors.length < 3 && remaining.length > 0) {
-      const cand = remaining[Math.floor(Math.random() * remaining.length)];
-      if (!distractors.includes(cand)) distractors.push(cand);
+  const generateOptions = (entry) => {
+    if (!entry) {
+      setOptions([]);
+      return;
     }
-    while (distractors.length < 3) {
-      distractors.push(words[Math.floor(Math.random() * words.length)]);
-    }
-    setOptions(shuffle([word, ...distractors]));
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
+    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
   };
 
   const handleSelect = (choice) => {
-    if (choice.toLowerCase() === words[index].toLowerCase()) {
-      if (index + 1 === words.length) {
+    if (index >= entries.length) return;
+    const current = entries[index];
+    const expected = canonicalize(current.original || current.clean || '');
+    if (canonicalize(choice) === expected) {
+      if (index + 1 === entries.length) {
         setIndex(index + 1);
         setMessage('Great job!');
         setOptions([]);
@@ -77,7 +94,7 @@ const LetterScrambleGame = ({ quote, onBack }) => {
       <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Unscramble Letters</Text>
       <Text style={styles.description}>Unscramble each word. The first letter stays in place.</Text>
-      {index < words.length ? (
+      {index < entries.length ? (
         <>
           <Text style={styles.quote}>{scrambled}</Text>
           <View style={styles.options}>

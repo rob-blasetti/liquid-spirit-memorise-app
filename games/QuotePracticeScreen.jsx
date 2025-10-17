@@ -1,31 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import {
+  prepareQuoteForGame,
+  pickUniqueWords,
+  sanitizeQuoteText,
+} from '../services/quoteSanitizer';
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const QuotePracticeScreen = ({ quote, onBack, onWin }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/);
+const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const words = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
 
-  const cleanWord = (w) => w.replace(/[.,!?;:]/g, '').toLowerCase();
+  const canonicalize = (value) =>
+    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
   const generateOptions = (idx) => {
-    const correct = words[idx];
-    const remaining = words.filter((_, i) => i !== idx);
-    const distractors = [];
-    while (distractors.length < 3 && remaining.length > 0) {
-      const cand = remaining[Math.floor(Math.random() * remaining.length)];
-      if (!distractors.includes(cand)) distractors.push(cand);
+    const entry = entries[idx];
+    if (!entry) {
+      setOptions([]);
+      return;
     }
-    while (distractors.length < 3) {
-      distractors.push(words[Math.floor(Math.random() * words.length)]);
-    }
-    setOptions(shuffle([correct, ...distractors]));
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
+    const correctDisplay = entry.original || entry.clean || '';
+    setOptions(shuffle([correctDisplay, ...distractors]));
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,13 +49,16 @@ const QuotePracticeScreen = ({ quote, onBack, onWin }) => {
   }, [quote]);
 
   const handleSelect = (word) => {
-    if (cleanWord(word) === cleanWord(words[index])) {
+    const current = entries[index];
+    if (!current) return;
+    const expectedCanonical = canonicalize(current.original || current.clean || '');
+    if (canonicalize(word) === expectedCanonical) {
       const nextIndex = index + 1;
       setIndex(nextIndex);
-      if (nextIndex === words.length) {
+      if (nextIndex === entries.length) {
         setMessage('Great job!');
         setOptions([]);
-        onWin?.({ practice: true, wordsLearned: words.length });
+        onWin?.({ practice: true, wordsLearned: entries.length });
       } else {
         setMessage('');
         generateOptions(nextIndex);
@@ -74,7 +90,7 @@ const QuotePracticeScreen = ({ quote, onBack, onWin }) => {
     })
     .join(' ');
   // Provide a static snippet of the beginning of the quote as a hint
-  const snippetWordCount = Math.min(3, words.length);
+  const snippetWordCount = Math.min(3, entries.length);
   const snippet = words.slice(0, snippetWordCount).join(' ');
 
   return (

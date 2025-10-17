@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import GameTopBar from '../components/GameTopBar';
 import PuzzlePiece from '../components/PuzzlePieceSvg';
 import PuzzleSlotSvg from '../components/PuzzleSlotSvg';
 import { buildJigsawPath } from '../components/PuzzlePath';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame } from '../services/quoteSanitizer';
 
 // Dimensions and sizes
 const { width, height } = Dimensions.get('window');
 const MARGIN = 0;
 
-const ShapeBuilderGame = ({ quote, onBack, onWin, onLose }) => {
+const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   // Difficulty settings: number of pieces and pre-completed count from global context
   const { level: difficulty } = useDifficulty();
   const pieceCounts = { 1: 8, 2: 16, 3: 24 };
@@ -24,9 +24,19 @@ const ShapeBuilderGame = ({ quote, onBack, onWin, onLose }) => {
   const initialTime = difficulty === 1 ? 60 : difficulty === 2 ? 40 : 20;
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timerRef = useRef(null);
-  // Prepare words and split into interactive and pre-placed sets
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const allWords = useMemo(() => text.split(/\s+/).filter(w => w.length > 0), [text]);
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  // Prepare words and split into interactive and pre-placed sets, skipping punctuation-only tokens
+  const playableEntries = useMemo(
+    () => quoteData.entries.filter((entry) => entry.playable),
+    [quoteData.entries],
+  );
+  const allWords = useMemo(
+    () => playableEntries.map((entry) => entry.original).filter((word) => word && word.length > 0),
+    [playableEntries],
+  );
   const WORD_COUNT = allWords.length;
   const interactiveCount = Math.min(pieceCount, WORD_COUNT);
   // Use a square grid (rows == cols). If not enough words, pad with blanks
@@ -109,7 +119,7 @@ const ShapeBuilderGame = ({ quote, onBack, onWin, onLose }) => {
         timerRef.current = null;
       }
     };
-  }, [initialTime, quote]);
+  }, [initialTime, quoteData.raw]);
   // Compute initial positions of pieces scattered around puzzle perimeter (memoized)
   const initialPositions = useMemo(() => {
     const positions = [];

@@ -9,8 +9,18 @@ import { useUser } from '../contexts/UserContext';
 import ThemedButton from './ThemedButton';
 import WinOverlay from './WinOverlay';
 import LostOverlay from './LostOverlay';
+import { sanitizeQuoteText } from '../services/quoteSanitizer';
 
-const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement, recordGamePlay }) => {
+const GameRenderer = ({
+  screen,
+  quote,
+  rawQuote: rawQuoteProp,
+  sanitizedQuote: sanitizedQuoteProp,
+  onBack,
+  level,
+  awardGameAchievement,
+  recordGamePlay,
+}) => {
   const GameComponent = lazyGameScreens[screen];
   const { level: currLevel, setLevel } = useDifficulty();
   const { markDifficultyComplete } = useUser();
@@ -21,7 +31,19 @@ const GameRenderer = ({ screen, quote, onBack, level, awardGameAchievement, reco
   // Clear suppression when level OR screen changes (e.g., switching games)
   useEffect(() => { suppressWinsRef.current = false; }, [currLevel, screen]);
   if (!GameComponent) return null;
-  const gameProps = { quote, onBack };
+  const resolvedRawQuote = useMemo(() => {
+    if (typeof rawQuoteProp === 'string') return rawQuoteProp;
+    if (typeof quote === 'string') return quote;
+    if (quote && typeof quote.text === 'string') return quote.text;
+    return '';
+  }, [rawQuoteProp, quote]);
+  const resolvedSanitizedQuote = useMemo(() => {
+    if (typeof sanitizedQuoteProp === 'string' && sanitizedQuoteProp.length > 0) {
+      return sanitizedQuoteProp;
+    }
+    return sanitizeQuoteText(resolvedRawQuote);
+  }, [sanitizedQuoteProp, resolvedRawQuote]);
+  const gameProps = { quote, onBack, rawQuote: resolvedRawQuote, sanitizedQuote: resolvedSanitizedQuote };
   // Handle game win: award achievement and show next-level overlay
   gameProps.onWin = (details = {}) => {
     if (suppressWinsRef.current) {

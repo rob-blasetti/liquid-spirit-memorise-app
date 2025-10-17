@@ -1,12 +1,26 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, pickUniqueWords } from '../services/quoteSanitizer';
 
 // Accept onWin callback to award achievements after reward banner
-const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const rawWords = useMemo(() => quoteData.entries.map((entry) => entry.original), [quoteData.entries]);
+  const playableEntries = useMemo(
+    () => quoteData.playableEntries,
+    [quoteData.playableEntries],
+  );
+  const playableMap = useMemo(() => {
+    const map = new Map();
+    playableEntries.forEach((entry) => map.set(entry.index, entry));
+    return map;
+  }, [playableEntries]);
   const [displayWords, setDisplayWords] = useState([]);
   const [missingWords, setMissingWords] = useState([]);
   const [missingIndices, setMissingIndices] = useState([]);
@@ -36,27 +50,40 @@ const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
   const starAnimsRef = useRef([]);
 
   useEffect(() => {
-    const words = text.split(' ');
-    const numBlanks = Math.min(3, Math.max(1, Math.floor(words.length / 8)));
+    const totalPlayable = playableEntries.length;
+    if (totalPlayable === 0) {
+      setDisplayWords(rawWords);
+      setMissingWords([]);
+      setMissingIndices([]);
+      setWordBank([]);
+      setCurrentIndex(0);
+      setMessage('');
+      setGuessesLeft(3);
+      setStatus('playing');
+      setMistakes(0);
+      return;
+    }
+    const numBlanks = Math.min(3, Math.max(1, Math.floor(totalPlayable / 8)));
     const indices = [];
-    while (indices.length < numBlanks) {
-      const idx = Math.floor(Math.random() * words.length);
-      if (!indices.includes(idx)) {
-        indices.push(idx);
-      }
+    const eligible = playableEntries.map((entry) => entry.index);
+    while (indices.length < numBlanks && eligible.length > 0) {
+      const pick = Math.floor(Math.random() * eligible.length);
+      const idx = eligible.splice(pick, 1)[0];
+      indices.push(idx);
     }
     indices.sort((a, b) => a - b);
-    const missing = indices.map(i => words[i]);
-    const display = words.map((w, i) => (indices.includes(i) ? '____' : w));
+    const missingEntries = indices
+      .map((i) => playableMap.get(i))
+      .filter((entry) => entry && entry.clean);
+    const missing = missingEntries.map((entry) => entry.clean);
+    const display = rawWords.map((w, i) => (indices.includes(i) ? '____' : w));
     // prepare word bank with four choices (missing words + distractors)
-    const allWords = words.filter((_, i) => !indices.includes(i));
+    const excludeCanonicals = new Set(missingEntries.map((entry) => entry.canonical || entry.clean));
+    const uniquePool = quoteData.uniquePlayableWords;
     const distractCount = Math.max(0, 4 - missing.length);
-    const distractors = [];
-    const pool = [...allWords];
-    while (distractors.length < distractCount && pool.length > 0) {
-      const r = Math.floor(Math.random() * pool.length);
-      distractors.push(pool.splice(r, 1)[0]);
-    }
+    const distractors = pickUniqueWords(uniquePool, distractCount, excludeCanonicals).map(
+      ({ word }) => word,
+    );
     const bank = [...missing, ...distractors].sort(() => Math.random() - 0.5);
     // initialize star animations
     starAnimsRef.current = [new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)];
@@ -70,7 +97,7 @@ const TapMissingWordsGame = ({ quote, onBack, onWin, onLose }) => {
     setGuessesLeft(3);
     setStatus('playing');
     setMistakes(0);
-  }, [quote, level]);
+  }, [rawWords, playableEntries, playableMap, quoteData.uniquePlayableWords, quoteData.raw]);
 
   const handleWordPress = word => {
     if (status !== 'playing') return;

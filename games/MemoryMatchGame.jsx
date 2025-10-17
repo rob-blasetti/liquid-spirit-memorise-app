@@ -1,22 +1,36 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
+import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
 // Lost overlay handled by parent GameRenderer
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
+const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const { level } = useDifficulty();
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const quoteData = useMemo(
+    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
+    [quote, rawQuote, sanitizedQuote],
+  );
+  const entries = quoteData.entries;
+  const playableEntries = quoteData.playableEntries;
+  const uniquePlayableEntries = useMemo(
+    () => quoteData.uniquePlayableWords.map(({ entry }) => entry),
+    [quoteData.uniquePlayableWords],
+  );
+  const displayWords = useMemo(
+    () => entries.map((entry) => entry.original || entry.clean || ''),
+    [entries],
+  );
   const [cards, setCards] = useState([]);
   const [selected, setSelected] = useState([]);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
   // Win banner handled by GameRenderer overlay via onWin
   const [guessesLeft, setGuessesLeft] = useState(0);
-  const [pairWords, setPairWords] = useState([]);
-  const [revealedWords, setRevealedWords] = useState(new Set());
+  const [pairEntryIndices, setPairEntryIndices] = useState([]);
+  const [revealedEntryIndices, setRevealedEntryIndices] = useState(new Set());
   const [preview, setPreview] = useState(null); // { word: string, revealed: boolean }
   const previewFlip = useRef(new Animated.Value(0)).current; // 0 => 90deg, 1 => 0deg
   const previewTimer = useRef(null);
@@ -39,27 +53,55 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
   }, [status]);
 
   const initGame = useCallback(() => {
-    const words = text.split(/\s+/);
-    const uniqueWords = Array.from(new Set(words));
     const dimension = level + 3; // base difficulty factor
     const totalTiles = dimension * dimension; // used only to scale difficulty
-    const numPairs = Math.floor(totalTiles / 2);
-    const selectedWords = uniqueWords.slice(0, numPairs);
-    const initialGuesses = numPairs * 2;
-    let pairs = shuffle(
-      selectedWords.flatMap((w) => [
-        { id: `${w}-1`, word: w, matched: false },
-        { id: `${w}-2`, word: w, matched: false },
-      ]),
+    const desiredPairs = Math.max(1, Math.floor(totalTiles / 2));
+    const availableEntries =
+      uniquePlayableEntries.length > 0 ? uniquePlayableEntries : playableEntries;
+    if (availableEntries.length === 0) {
+      setCards([]);
+      setSelected([]);
+      setStatus('won');
+      setGuessesLeft(0);
+      setPairEntryIndices([]);
+      setRevealedEntryIndices(new Set());
+      return;
+    }
+    const randomized = shuffle([...availableEntries]);
+    const selectedEntries = randomized.slice(
+      0,
+      Math.min(desiredPairs, randomized.length),
     );
-    // Do not add any blank placeholder tiles; only actual word pairs are included
+    const initialGuesses = selectedEntries.length * 2;
+    const pairs = shuffle(
+      selectedEntries.flatMap((entry) => {
+        const displayWord = deriveDisplayWord(entry);
+        const matchKey = entry.canonical || displayWord.toLocaleLowerCase();
+        return [
+          {
+            id: `${entry.index}-a`,
+            word: displayWord,
+            matchKey,
+            matched: false,
+            entryIndex: entry.index,
+          },
+          {
+            id: `${entry.index}-b`,
+            word: displayWord,
+            matchKey,
+            matched: false,
+            entryIndex: entry.index,
+          },
+        ];
+      }),
+    );
     setCards(pairs);
     setSelected([]);
     setStatus('playing');
     setGuessesLeft(initialGuesses);
-    setPairWords(selectedWords);
-    setRevealedWords(new Set());
-  }, [text, level]);
+    setPairEntryIndices(selectedEntries.map((entry) => entry.index));
+    setRevealedEntryIndices(new Set());
+  }, [level, playableEntries, uniquePlayableEntries]);
   useEffect(() => {
     initGame();
   }, [initGame]);
@@ -96,10 +138,10 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
     }
     setSelected(newSelected);
     if (newSelected.length === 2) {
-      if (newSelected[0].word === newSelected[1].word) {
+      if (newSelected[0].matchKey === newSelected[1].matchKey) {
         setCards((prev) => {
           const updated = prev.map((c) =>
-            c.word === card.word ? { ...c, matched: true } : c,
+            c.matchKey === card.matchKey ? { ...c, matched: true } : c,
           );
           // if all cards matched, win
           if (updated.every((c2) => c2.matched)) {
@@ -108,9 +150,9 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
           return updated;
         });
         // reveal this word in the slate to a highly legible color
-        setRevealedWords((prev) => {
+        setRevealedEntryIndices((prev) => {
           const next = new Set(prev);
-          next.add(card.word);
+          next.add(card.entryIndex);
           return next;
         });
         setSelected([]);
@@ -160,16 +202,15 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
   const cardWidth = Math.max(40, Math.min(widthBound, widthFromHeight));
   const cardHeight = Math.floor(cardWidth * 1.35);
 
-  const words = text.split(/\s+/);
-  // Derive pair words immediately for initial render to avoid slate flashing full quote
-  const computedDefaultPairWords = (() => {
-    const uniq = Array.from(new Set(words));
+  const computedDefaultPairIndices = useMemo(() => {
     const dimensionBase = level + 3;
     const targetPairs = Math.floor((dimensionBase * dimensionBase) / 2);
-    return uniq.slice(0, targetPairs);
-  })();
-  const effectivePairWords = pairWords && pairWords.length > 0 ? pairWords : computedDefaultPairWords;
-  const pairWordSet = new Set(effectivePairWords);
+    const baseEntries = playableEntries.slice(0, targetPairs);
+    return baseEntries.map((entry) => entry.index);
+  }, [level, playableEntries]);
+  const effectivePairIndices =
+    pairEntryIndices && pairEntryIndices.length > 0 ? pairEntryIndices : computedDefaultPairIndices;
+  const pairIndexSet = useMemo(() => new Set(effectivePairIndices), [effectivePairIndices]);
   const [topArea, setTopArea] = useState({ y: 0, height: 160 });
   // Preview sizing/position: 2x card size but constrained to top area and screen width
   const previewBaseW = cardWidth * 2.5;
@@ -196,14 +237,18 @@ const MemoryMatchGame = ({ quote, onBack, onWin, onLose }) => {
         {/* Slate showing the quote for context */}
         <View style={styles.slate}>
           <View style={styles.slateInner}>
-            {words.map((w, i) => {
-              const isPairWord = pairWordSet.has(w);
-              const isRevealedWord = revealedWords.has(w);
+            {displayWords.map((w, i) => {
+              const entry = entries[i];
+              const entryIndex = entry?.index ?? i;
+              const isPairWord = pairIndexSet.has(entryIndex);
+              const isRevealedWord = revealedEntryIndices.has(entryIndex);
               const showWord = !isPairWord || isRevealedWord;
               return (
                 <View key={`slate-${i}`} style={styles.slateWordWrap}>
                   {showWord ? (
-                    <Text style={[styles.slateWord, isPairWord && isRevealedWord ? styles.slateWordRevealed : styles.slateWordDim]}>{w}</Text>
+                    <Text style={[styles.slateWord, isPairWord && isRevealedWord ? styles.slateWordRevealed : styles.slateWordDim]}>
+                      {w}
+                    </Text>
                   ) : (
                     <Text style={styles.slateWordPlaceholder}>{Array(w.length).fill('_').join('')}</Text>
                   )}
