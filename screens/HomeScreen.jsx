@@ -40,6 +40,7 @@ const HomeScreen = ({
     // eslint-disable-next-line no-console
     console.debug('HomeScreen achievements:', achievements);
   }
+  const isLinkedAccount = Boolean(profile?.linkedAccount || profile?.type === 'linked');
   // Determine prayer and quote based on grade and progress
   let prayerToShow = null;
   let quoteToShow = null;
@@ -71,6 +72,7 @@ const HomeScreen = ({
   const hasLibraryButton = typeof onOpenLibrary === 'function';
   const hasGamesButton = typeof onOpenGames === 'function';
   const hasClassButton = typeof onOpenClass === 'function';
+  const classButtonDisabled = !isLinkedAccount;
   const hasBottomButtons =
     hasLibraryButton || hasGamesButton || hasClassButton;
 
@@ -481,14 +483,34 @@ const HomeScreen = ({
               </TouchableOpacity>
             ) : null}
             {hasClassButton ? (
-              <TouchableOpacity style={styles.actionButton} onPress={onOpenClass}>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  classButtonDisabled && styles.actionButtonDisabled,
+                ]}
+                onPress={onOpenClass}
+                disabled={classButtonDisabled}
+                activeOpacity={classButtonDisabled ? 1 : 0.75}
+                accessibilityState={classButtonDisabled ? { disabled: true } : undefined}
+              >
                 <Ionicons
                   name="people-circle-outline"
                   size={28}
-                  color={themeVariables.whiteColor}
+                  color={
+                    classButtonDisabled
+                      ? 'rgba(255,255,255,0.6)'
+                      : themeVariables.whiteColor
+                  }
                   style={styles.actionButtonIcon}
                 />
-                <Text style={styles.actionButtonText}>See My Class</Text>
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    classButtonDisabled && styles.actionButtonTextDisabled,
+                  ]}
+                >
+                  See My Class
+                </Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -655,6 +677,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     minHeight: 100,
   },
+  actionButtonDisabled: {
+    opacity: 0.45,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
   actionButtonIcon: {
     marginBottom: 8,
   },
@@ -663,6 +689,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  actionButtonTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.75)',
   },
   timelineColumn: {
     width: TIMELINE_WIDTH,

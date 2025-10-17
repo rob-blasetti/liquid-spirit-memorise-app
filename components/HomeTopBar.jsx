@@ -60,7 +60,7 @@ const HomeTopBar = ({
   const canPressAvatar = typeof onAvatarPress === 'function';
   const showPointsButton = typeof onOpenAchievements === 'function';
   const showSettingsButton = typeof onOpenSettings === 'function';
-  const canOpenClass = typeof onOpenClass === 'function';
+  const canOpenClass = typeof onOpenClass === 'function' && isLinkedAccount;
 
   return (
     <View style={styles.topBar}>

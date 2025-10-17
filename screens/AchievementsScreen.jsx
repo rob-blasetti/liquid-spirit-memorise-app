@@ -34,7 +34,7 @@ const AchievementsScreen = ({ onBack }) => {
     isLoading = false,
   } = useAchievementsContext();
   const [refreshing, setRefreshing] = useState(false);
-  const [filterOption, setFilterOption] = useState('earned'); // 'earned' | 'unearned' | 'all'
+  const [filterOption, setFilterOption] = useState('all'); // 'earned' | 'unearned' | 'all'
 
   const onRefresh = async () => {
     if (isLoading) return;
@@ -93,6 +93,24 @@ const AchievementsScreen = ({ onBack }) => {
 
   const hasBackHandler = typeof onBack === 'function';
 
+  const filterAchievements = (items) => {
+    if (filterOption === 'all') return items;
+    return items.filter((a) =>
+      filterOption === 'earned' ? a.earned : !a.earned
+    );
+  };
+
+  const filteredSections = order.map((section) => {
+    const rawItems = grouped[section] || [];
+    return {
+      section,
+      items: filterAchievements(rawItems),
+    };
+  });
+
+  const hasFilteredAchievements = filteredSections.some((entry) => entry.items.length > 0);
+  const showEarnedEmptyState = filterOption === 'earned' && !hasFilteredAchievements;
+
   return (
     <LinearGradient
       start={{ x: 0, y: 0 }}
@@ -116,32 +134,33 @@ const AchievementsScreen = ({ onBack }) => {
             containerStyle={styles.topRow}
             titleStyle={styles.topRowTitle}
           />
-          <Text style={styles.title}>Achievements</Text>
-          {isGuest && (
-            <Text style={styles.guestBadge}>Guest Mode — Local Only</Text>
-          )}
           {/* total points (left) + filter (right) */}
           <View style={styles.headerRow}>
             <Text style={styles.totalPointsLeft}>Total Points: {totalPoints}</Text>
             <View style={styles.filterGroup}>
-              <TouchableOpacity
-                style={[styles.filterBtn, filterOption === 'all' && styles.filterBtnActive]}
-                onPress={() => setFilterOption('all')}
-              >
-                <Text style={[styles.filterText, filterOption === 'all' && styles.filterTextActive]}>All</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterBtn, filterOption === 'earned' && styles.filterBtnActive]}
-                onPress={() => setFilterOption('earned')}
-              >
-                <Text style={[styles.filterText, filterOption === 'earned' && styles.filterTextActive]}>Earned</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterBtn, filterOption === 'unearned' && styles.filterBtnActive]}
-                onPress={() => setFilterOption('unearned')}
-              >
-                <Text style={[styles.filterText, filterOption === 'unearned' && styles.filterTextActive]}>Unearned</Text>
-              </TouchableOpacity>
+              <View style={styles.filterRow}>
+                <TouchableOpacity
+                  style={[styles.filterBtn, filterOption === 'all' && styles.filterBtnActive]}
+                  onPress={() => setFilterOption('all')}
+                >
+                  <Text style={[styles.filterText, filterOption === 'all' && styles.filterTextActive]}>All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterBtn, filterOption === 'earned' && styles.filterBtnActive]}
+                  onPress={() => setFilterOption('earned')}
+                >
+                  <Text style={[styles.filterText, filterOption === 'earned' && styles.filterTextActive]}>Earned</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterBtn, filterOption === 'unearned' && styles.filterBtnActive]}
+                  onPress={() => setFilterOption('unearned')}
+                >
+                  <Text style={[styles.filterText, filterOption === 'unearned' && styles.filterTextActive]}>Unearned</Text>
+                </TouchableOpacity>
+              </View>
+              {isGuest ? (
+                <Text style={styles.guestBadge}>Guest Mode — Local Only</Text>
+              ) : null}
             </View>
           </View>
           {__DEV__ && !isPointsSynced && (
@@ -161,54 +180,58 @@ const AchievementsScreen = ({ onBack }) => {
             />
           }
         >
-          {order.flatMap((section) => {
-            // group and sort: earned achievements first
-            const rawItems = grouped[section] || [];
-            const items =
-              filterOption === 'all'
-                ? rawItems
-                : rawItems.filter(a => (filterOption === 'earned' ? a.earned : !a.earned));
-            return items.map((item) => {
-              const pct = Math.max(0, Math.min(100, item.points));
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.cardWrapper}
-                  activeOpacity={0.7}
-                >
-                  <LinearGradient
-                    colors={CARD_GRADIENT}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.card}
+          {showEarnedEmptyState ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="sparkles-outline" size={56} style={styles.emptyStateIcon} />
+              <Text style={styles.emptyStateTitle}>No earned badges yet</Text>
+              <Text style={styles.emptyStateSubtitle}>
+                Keep learning and exploring—complete lessons, games, or challenges to unlock your first achievements.
+              </Text>
+            </View>
+          ) : (
+            filteredSections.flatMap(({ items }) =>
+              items.map((item) => {
+                const pct = Math.max(0, Math.min(100, item.points));
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.cardWrapper}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.cardText}>
-                      <Text style={styles.cardTitle}>{item.title}</Text>
-                      <Text style={styles.cardDesc}>{item.description}</Text>
-                    </View>
+                    <LinearGradient
+                      colors={CARD_GRADIENT}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.card}
+                    >
+                      <View style={styles.cardText}>
+                        <Text style={styles.cardTitle}>{item.title}</Text>
+                        <Text style={styles.cardDesc}>{item.description}</Text>
+                      </View>
 
-                    <Ionicons
-                      name={item.earned ? 'star' : 'star-outline'}
-                      size={32}
-                      color={themeVariables.whiteColor}
-                      style={styles.cardIcon}
-                    />
-
-                    <View style={styles.progressTrack}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${pct}%` },
-                        ]}
+                      <Ionicons
+                        name={item.earned ? 'star' : 'star-outline'}
+                        size={32}
+                        color={themeVariables.whiteColor}
+                        style={styles.cardIcon}
                       />
-                    </View>
-                    {/* points value */}
-                    <Text style={styles.cardPoints}>{item.points}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              );
-            });
-          })}
+
+                      <View style={styles.progressTrack}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${pct}%` },
+                          ]}
+                        />
+                      </View>
+                      {/* points value */}
+                      <Text style={styles.cardPoints}>{item.points}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              })
+            )
+          )}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -245,13 +268,8 @@ const styles = StyleSheet.create({
     top: -20,
     left: -10,
   },
-  title: {
-    color: themeVariables.whiteColor,
-    fontSize: 24,
-    fontWeight: '700',
-  },
   headerRow: {
-    marginTop: 8,
+    marginTop: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -306,7 +324,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: themeVariables.whiteColor,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   // points badge on each card
   cardPoints: {
@@ -330,9 +348,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   filterGroup: {
+    position: 'relative',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  filterRow: {
     flexDirection: 'row',
-    gap: 8,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
   },
   filterBtn: {
     paddingVertical: 6,
@@ -355,16 +379,40 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
   },
   guestBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
+    position: 'absolute',
+    top: -32,
+    right: 0,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
-    color: themeVariables.whiteColor,
+    borderColor: themeVariables.tertiaryColor,
+    color: themeVariables.tertiaryColor,
     fontSize: 12,
     fontWeight: '700',
+  },
+  emptyState: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyStateIcon: {
+    marginBottom: 20,
+    color: themeVariables.whiteColor,
+  },
+  emptyStateTitle: {
+    color: themeVariables.whiteColor,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });
