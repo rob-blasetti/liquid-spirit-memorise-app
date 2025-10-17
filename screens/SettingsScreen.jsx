@@ -220,6 +220,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       .map(key => parseInt(key.split('-')[1], 10))
       .sort((a, b) => a - b);
 
+    const setOptions = [1, 2, 3];
+    const columns = setOptions.length;
     return (
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Lesson Progress</Text>
@@ -229,29 +231,13 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
             <Text style={styles.fieldDescription}>
               Choose the memorisation set you want to review.
             </Text>
-            <View style={styles.segmentContainer}>
-              {[1, 2, 3].map(setNum => (
-                <TouchableOpacity
-                  key={setNum}
-                  style={[
-                    styles.segmentOption,
-                    selectedSet === setNum && styles.segmentOptionSelected,
-                  ]}
-                  onPress={() => setSelectedSet(setNum)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedSet === setNum }}
-                >
-                  <Text
-                    style={[
-                      styles.segmentLabel,
-                      selectedSet === setNum && styles.segmentLabelSelected,
-                    ]}
-                  >
-                    Set {setNum}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {renderSquareSelector({
+              items: setOptions,
+              selectedValue: selectedSet,
+              onSelect: setSelectedSet,
+              accessibilityPrefix: 'Set',
+              columns,
+            })}
           </View>
           <View style={styles.sectionDivider} />
           <View style={styles.fieldGroup}>
@@ -259,29 +245,13 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
             <Text style={styles.fieldDescription}>
               Pick the lesson to jump back into for this set.
             </Text>
-            <View style={styles.segmentContainer}>
-              {lessons.map(ln => (
-                <TouchableOpacity
-                  key={ln}
-                  style={[
-                    styles.segmentOption,
-                    selectedLesson === ln && styles.segmentOptionSelected,
-                  ]}
-                  onPress={() => setSelectedLesson(ln)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedLesson === ln }}
-                >
-                  <Text
-                    style={[
-                      styles.segmentLabel,
-                      selectedLesson === ln && styles.segmentLabelSelected,
-                    ]}
-                  >
-                    Lesson {ln}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {renderSquareSelector({
+              items: lessons,
+              selectedValue: selectedLesson,
+              onSelect: setSelectedLesson,
+              accessibilityPrefix: 'Lesson',
+              columns,
+            })}
           </View>
         </View>
       </View>
@@ -294,6 +264,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
       .map(key => parseInt(key.split('-')[1], 10))
       .sort((a, b) => a - b);
 
+    const setOptions = [4, 5, 6, 7];
+    const columns = setOptions.length;
     return (
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Lesson Progress</Text>
@@ -303,29 +275,13 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
             <Text style={styles.fieldDescription}>
               Choose the memorisation set you want to review.
             </Text>
-            <View style={styles.segmentContainer}>
-              {[4, 5, 6, 7].map(setNum => (
-                <TouchableOpacity
-                  key={setNum}
-                  style={[
-                    styles.segmentOption,
-                    selectedSet === setNum && styles.segmentOptionSelected,
-                  ]}
-                  onPress={() => setSelectedSet(setNum)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedSet === setNum }}
-                >
-                  <Text
-                    style={[
-                      styles.segmentLabel,
-                      selectedSet === setNum && styles.segmentLabelSelected,
-                    ]}
-                  >
-                    Set {setNum}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {renderSquareSelector({
+              items: setOptions,
+              selectedValue: selectedSet,
+              onSelect: setSelectedSet,
+              accessibilityPrefix: 'Set',
+              columns,
+            })}
           </View>
           <View style={styles.sectionDivider} />
           <View style={styles.fieldGroup}>
@@ -333,31 +289,90 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
             <Text style={styles.fieldDescription}>
               Pick the lesson to jump back into for this set.
             </Text>
-            <View style={styles.segmentContainer}>
-              {lessons.map(ln => (
-                <TouchableOpacity
-                  key={ln}
-                  style={[
-                    styles.segmentOption,
-                    selectedLesson === ln && styles.segmentOptionSelected,
-                  ]}
-                  onPress={() => setSelectedLesson(ln)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedLesson === ln }}
-                >
-                  <Text
-                    style={[
-                      styles.segmentLabel,
-                      selectedLesson === ln && styles.segmentLabelSelected,
-                    ]}
-                  >
-                    Lesson {ln}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {renderSquareSelector({
+              items: lessons,
+              selectedValue: selectedLesson,
+              onSelect: setSelectedLesson,
+              accessibilityPrefix: 'Lesson',
+              columns,
+            })}
           </View>
         </View>
+      </View>
+    );
+  };
+
+  const renderSquareSelector = ({ items, selectedValue, onSelect, accessibilityPrefix, columns }) => {
+    const columnCount = columns || items.length || 1;
+    const wrapperSizeStyle =
+      columnCount >= 4 ? styles.segmentOptionWrapperFour : styles.segmentOptionWrapperThree;
+    return (
+      <View style={styles.segmentContainer}>
+        {items.map((value) => (
+          <View
+            key={`square-option-${value}`}
+            style={[
+              styles.segmentOptionWrapper,
+              wrapperSizeStyle,
+            ]}
+          >
+            <TouchableOpacity
+              style={[
+                styles.segmentOption,
+                selectedValue === value && styles.segmentOptionSelected,
+              ]}
+              onPress={() => onSelect(value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedValue === value }}
+              accessibilityLabel={`${accessibilityPrefix} ${value}`}
+            >
+              <Text
+                style={[
+                  styles.segmentLabel,
+                  selectedValue === value && styles.segmentLabelSelected,
+                ]}
+              >
+                {value}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const renderFontSizeOption = (size) => {
+    const isSelected = fontSize === size;
+    return (
+      <View key={`font-size-${size}`} style={styles.fontSizeOptionWrapper}>
+        <TouchableOpacity
+          style={[
+            styles.fontSizeOption,
+            isSelected && styles.fontSizeOptionSelected,
+          ]}
+          onPress={() => setFontSize(size)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isSelected }}
+          accessibilityLabel={`Set reading font size to ${size} point`}
+        >
+          <Text
+            style={[
+              styles.fontSizeSample,
+              { fontSize: size },
+              isSelected && styles.fontSizeSampleSelected,
+            ]}
+          >
+            Aa
+          </Text>
+          <Text
+            style={[
+              styles.fontSizeLabel,
+              isSelected && styles.fontSizeLabelSelected,
+            ]}
+          >
+            {size} pt
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -366,12 +381,8 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {renderHeader()}
-        <Text style={styles.screenTitle}>Personalise your experience</Text>
-        <Text style={styles.screenDescription}>
-          Tune reading, lesson, and audio preferences to suit your learning journey.
-        </Text>
 
-        <View style={styles.section}>
+        <View style={[styles.section, styles.topSection]}>
           <Text style={styles.sectionLabel}>Reading</Text>
           <View style={styles.sectionCard}>
             <View style={styles.fieldGroup}>
@@ -379,39 +390,30 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
               <Text style={styles.fieldDescription}>
                 Preview and select the size used for reading passages in the app.
               </Text>
-              <View style={styles.fontSizeRow}>
-                {FONT_SIZE_OPTIONS.map((size) => {
-                  const isSelected = fontSize === size;
+              <View style={styles.fontSizeRows}>
+                {[0, 1].map((rowIndex) => {
+                  const startIndex = rowIndex === 0 ? 0 : 3;
+                  const rowOptions = FONT_SIZE_OPTIONS.slice(startIndex, startIndex + 3);
                   return (
-                    <TouchableOpacity
-                      key={`font-size-${size}`}
+                    <View
+                      key={`font-size-row-${rowIndex}`}
                       style={[
-                        styles.fontSizeOption,
-                        isSelected && styles.fontSizeOptionSelected,
+                        styles.fontSizeRow,
+                        rowIndex === 1 && styles.fontSizeRowSpacing,
                       ]}
-                      onPress={() => setFontSize(size)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: isSelected }}
-                      accessibilityLabel={`Set reading font size to ${size} point`}
                     >
-                      <Text
-                        style={[
-                          styles.fontSizeSample,
-                          { fontSize: size },
-                          isSelected && styles.fontSizeSampleSelected,
-                        ]}
-                      >
-                        Aa
-                      </Text>
-                      <Text
-                        style={[
-                          styles.fontSizeLabel,
-                          isSelected && styles.fontSizeLabelSelected,
-                        ]}
-                      >
-                        {size} pt
-                      </Text>
-                    </TouchableOpacity>
+                      {rowOptions.map(renderFontSizeOption)}
+                      {rowOptions.length < 3 &&
+                        Array.from({ length: 3 - rowOptions.length }).map((_, idx) => (
+                          <View
+                            key={`font-size-spacer-${rowIndex}-${idx}`}
+                            style={styles.fontSizeOptionWrapper}
+                            pointerEvents="none"
+                          >
+                            <View style={[styles.fontSizeOption, styles.fontSizeOptionSpacer]} />
+                          </View>
+                        ))}
+                    </View>
                   );
                 })}
               </View>
@@ -479,20 +481,18 @@ const SettingsScreen = ({ profile, currentProgress, overrideProgress, onSaveOver
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Account</Text>
-          <View style={[styles.sectionCard, styles.accountCard]}>
-            <TouchableOpacity style={styles.accountButton} onPress={onReset}>
-              <View style={styles.accountLeft}>
-                <Ionicons
-                  name="log-out-outline"
-                  size={20}
-                  color={themeVariables.redColor}
-                  style={styles.accountIcon}
-                />
-                <Text style={styles.accountText}>Logout</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.45)" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.accountButton} onPress={onReset}>
+            <View style={styles.accountLeft}>
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={themeVariables.whiteColor}
+                style={styles.accountIcon}
+              />
+              <Text style={styles.accountText}>Logout</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={themeVariables.whiteColor} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -528,22 +528,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
   },
-  screenTitle: {
-    color: themeVariables.whiteColor,
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 32,
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  screenDescription: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
   section: {
     marginTop: 28,
+  },
+  topSection: {
+    marginTop: 8,
   },
   sectionLabel: {
     color: 'rgba(255,255,255,0.55)',
@@ -579,22 +568,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
     marginVertical: 16,
   },
-  fontSizeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  fontSizeRows: {
     marginTop: 20,
   },
+  fontSizeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  fontSizeRowSpacing: {
+    marginTop: 12,
+  },
+  fontSizeOptionWrapper: {
+    width: '31%',
+  },
   fontSizeOption: {
-    minWidth: 90,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    marginRight: 12,
-    marginBottom: 12,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
+  },
+  fontSizeOptionSpacer: {
+    opacity: 0,
   },
   fontSizeOptionSelected: {
     backgroundColor: themeVariables.whiteColor,
@@ -707,31 +704,34 @@ const styles = StyleSheet.create({
     height: 14,
   },
   segmentContainer: {
-    width: '100%',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 4,
+    flexWrap: 'nowrap',
+    justifyContent: 'flex-start',
     marginTop: 16,
-    borderRadius: themeVariables.borderRadiusPill,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  segmentOptionWrapper: {
+    flexGrow: 0,
+    marginRight: 12,
+  },
+  segmentOptionWrapperThree: {
+    width: '30%',
+  },
+  segmentOptionWrapperFour: {
+    width: '22%',
   },
   segmentOption: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    minWidth: 96,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: themeVariables.borderRadiusPill,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 4,
+    padding: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   segmentOptionSelected: {
-    backgroundColor: 'rgba(252,89,248,0.25)',
+    backgroundColor: themeVariables.whiteColor,
     borderColor: themeVariables.tertiaryColor,
   },
   segmentLabel: {
@@ -740,10 +740,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   segmentLabelSelected: {
-    color: themeVariables.whiteColor,
-  },
-  accountCard: {
-    padding: 12,
+    color: themeVariables.primaryColor,
   },
   accountButton: {
     flexDirection: 'row',
@@ -752,7 +749,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderRadius: themeVariables.borderRadiusPill,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: themeVariables.whiteColor,
+    backgroundColor: 'transparent',
   },
   accountLeft: {
     flexDirection: 'row',
@@ -762,7 +761,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   accountText: {
-    color: themeVariables.redColor,
+    color: themeVariables.whiteColor,
     fontSize: 16,
     fontWeight: '600',
   },
