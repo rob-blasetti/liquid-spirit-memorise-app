@@ -1,5 +1,73 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LEGACY_LEVEL_KEYS = ['1', '2', '3'];
+const GLOBAL_GAME_KEY = '__global';
+const MAX_DIFFICULTY_LEVEL = 3;
+
+const normalizeLevelMap = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.keys(value).reduce((acc, key) => {
+    const level = Number(key);
+    if (Number.isFinite(level) && level > 0) {
+      acc[level] = Boolean(value[key]);
+    }
+    return acc;
+  }, {});
+};
+
+const computeHighestUnlocked = (completedMap = {}) => {
+  let highest = 1;
+  for (let lvl = 1; lvl <= MAX_DIFFICULTY_LEVEL; lvl += 1) {
+    if (completedMap?.[lvl]) {
+      highest = Math.min(lvl + 1, MAX_DIFFICULTY_LEVEL);
+    } else {
+      break;
+    }
+  }
+  return highest;
+};
+
+const toProgressEntry = (raw) => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { completed: {}, highestUnlocked: 1 };
+  }
+
+  const hasStructuredShape = Object.prototype.hasOwnProperty.call(raw, 'completed')
+    || Object.prototype.hasOwnProperty.call(raw, 'highestUnlocked');
+
+  if (hasStructuredShape) {
+    const completed = normalizeLevelMap(raw.completed || {});
+    const fallbackHighest = computeHighestUnlocked(completed);
+    const numericHighest = Number(raw.highestUnlocked);
+    const highestUnlocked = Number.isFinite(numericHighest)
+      ? Math.min(Math.max(numericHighest, 1), MAX_DIFFICULTY_LEVEL)
+      : fallbackHighest;
+    return { completed, highestUnlocked };
+  }
+
+  const completed = normalizeLevelMap(raw);
+  return {
+    completed,
+    highestUnlocked: computeHighestUnlocked(completed),
+  };
+};
+
+const normalizeCompletedDifficulties = (raw) => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return {};
+  }
+  const keys = Object.keys(raw);
+  const isLegacyPayload = keys.every((key) => LEGACY_LEVEL_KEYS.includes(key));
+  if (isLegacyPayload) {
+    return { [GLOBAL_GAME_KEY]: toProgressEntry(raw) };
+  }
+  return keys.reduce((acc, key) => {
+    const progressEntry = toProgressEntry(raw[key]);
+    acc[key] = progressEntry;
+    return acc;
+  }, {});
+};
 
 const UserContext = createContext();
 
@@ -11,7 +79,7 @@ export const UserProvider = ({ children }) => {
   const [userChildren, setUserChildren] = useState([]);
   const [classes, setClasses] = useState([]);
   // Track which difficulty levels the user has completed (unlocks next level)
-  const [completedDifficulties, setCompletedDifficulties] = useState({ 1: false, 2: false, 3: false });
+  const [completedDifficulties, setCompletedDifficulties] = useState({});
   const [storageLoaded, setStorageLoaded] = useState(false);
 
   useEffect(() => {
@@ -36,7 +104,15 @@ export const UserProvider = ({ children }) => {
         // Load all user profiles
         const storedUsers = await AsyncStorage.getItem('users');
         if (storedUsers) setUsers(JSON.parse(storedUsers));
-        if (storedCompleted) setCompletedDifficulties(JSON.parse(storedCompleted));
+        if (storedCompleted) {
+          try {
+            const parsed = JSON.parse(storedCompleted);
+            setCompletedDifficulties(normalizeCompletedDifficulties(parsed));
+          } catch (parseError) {
+            console.error('Failed to parse completedDifficulties from storage:', parseError);
+            setCompletedDifficulties({});
+          }
+        }
       } catch (error) {
         console.error('Failed to load user data:', error);
       } finally {
@@ -120,13 +196,42 @@ export const UserProvider = ({ children }) => {
     }
   };
   // Mark a difficulty level as completed and persist
-  const markDifficultyComplete = async (level) => {
-    setCompletedDifficulties(prev => {
-      const next = { ...prev, [level]: true };
-      AsyncStorage.setItem('completedDifficulties', JSON.stringify(next)).catch(e => console.error('Error saving completedDifficulties:', e));
+  const markDifficultyComplete = async (gameId, level) => {
+    const numericLevel = Number(level);
+    if (!Number.isFinite(numericLevel) || numericLevel <= 0) {
+      return;
+    }
+    setCompletedDifficulties((prev) => {
+      const targetGame = gameId || GLOBAL_GAME_KEY;
+      const currentEntry = toProgressEntry(prev[targetGame]);
+      const nextCompleted = { ...currentEntry.completed, [numericLevel]: true };
+      const unlockedCandidate = Math.min(numericLevel + 1, MAX_DIFFICULTY_LEVEL);
+      const nextHighest = Math.max(currentEntry.highestUnlocked || 1, unlockedCandidate);
+      const nextEntry = {
+        completed: nextCompleted,
+        highestUnlocked: nextHighest,
+      };
+      const next = { ...prev, [targetGame]: nextEntry };
+      AsyncStorage.setItem('completedDifficulties', JSON.stringify(next)).catch((e) =>
+        console.error('Error saving completedDifficulties:', e),
+      );
       return next;
     });
   };
+
+  const getCompletedLevelsForGame = useCallback(
+    (gameId) => {
+      const fallback = completedDifficulties[GLOBAL_GAME_KEY];
+      if (!gameId) {
+        return fallback || { completed: {}, highestUnlocked: 1 };
+      }
+      if (completedDifficulties[gameId]) {
+        return completedDifficulties[gameId];
+      }
+      return fallback || { completed: {}, highestUnlocked: 1 };
+    },
+    [completedDifficulties],
+  );
 
   const clearUserData = async () => {
     setToken(null);
@@ -135,7 +240,7 @@ export const UserProvider = ({ children }) => {
     setFamily(null);
     setUserChildren([]);
     setClasses([]);
-    setCompletedDifficulties({ 1: false, 2: false, 3: false });
+    setCompletedDifficulties({});
     try {
       await AsyncStorage.multiRemove(['token', 'user', 'users', 'family', 'children', 'classes', 'completedDifficulties']);
     } catch (e) {
@@ -160,6 +265,7 @@ export const UserProvider = ({ children }) => {
         setChildren: updateChildren,
         setClasses: updateClasses,
         markDifficultyComplete,
+        getCompletedLevelsForGame,
         clearUserData,
         storageLoaded,
       }}

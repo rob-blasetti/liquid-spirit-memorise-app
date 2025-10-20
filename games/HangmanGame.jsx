@@ -109,7 +109,9 @@ const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
     if (status === 'won' && !winHandledRef.current) {
       winHandledRef.current = true;
       // record difficulty completion
-      markDifficultyComplete(level);
+      if (typeof markDifficultyComplete === 'function') {
+        markDifficultyComplete('hangmanGame', level);
+      }
       if (onWin) onWin();
     }
   }, [status, level, markDifficultyComplete, onWin]);

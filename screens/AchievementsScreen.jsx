@@ -20,6 +20,8 @@ const HORIZONTAL_PADDING = 16;
 const CARD_HEIGHT = 120;
 // Customize these two colors to match your design
 const CARD_GRADIENT = ['#E21281', '#6E33A7'];
+const EMPTY_STATE_ICON = 'sparkles-outline';
+const EMPTY_STATE_ICON_SIZE = 56;
 
 const order = ['Prayers', 'Quotes', 'Games', 'Profile', 'Explorer', 'Other'];
 
@@ -109,7 +111,26 @@ const AchievementsScreen = ({ onBack }) => {
   });
 
   const hasFilteredAchievements = filteredSections.some((entry) => entry.items.length > 0);
-  const showEarnedEmptyState = filterOption === 'earned' && !hasFilteredAchievements;
+
+  const emptyStateLookup = {
+    earned: {
+      title: 'No earned badges yet',
+      subtitle:
+        'Keep learning and exploring—complete lessons, games, or challenges to unlock your first achievements.',
+    },
+    unearned: {
+      title: 'Nothing left to unlock!',
+      subtitle:
+        'You have already earned every available badge. Check back soon for new challenges to chase.',
+    },
+    all: {
+      title: 'No badges available yet',
+      subtitle: 'Stay tuned—new achievements will appear here as you continue your journey.',
+    },
+  };
+
+  const emptyStateConfig = emptyStateLookup[filterOption] || emptyStateLookup.all;
+  const showEmptyState = !hasFilteredAchievements;
 
   return (
     <LinearGradient
@@ -180,12 +201,16 @@ const AchievementsScreen = ({ onBack }) => {
             />
           }
         >
-          {showEarnedEmptyState ? (
+          {showEmptyState ? (
             <View style={styles.emptyState}>
-              <Ionicons name="sparkles-outline" size={56} style={styles.emptyStateIcon} />
-              <Text style={styles.emptyStateTitle}>No earned badges yet</Text>
+              <Ionicons
+                name={EMPTY_STATE_ICON}
+                size={EMPTY_STATE_ICON_SIZE}
+                style={styles.emptyStateIcon}
+              />
+              <Text style={styles.emptyStateTitle}>{emptyStateConfig.title}</Text>
               <Text style={styles.emptyStateSubtitle}>
-                Keep learning and exploring—complete lessons, games, or challenges to unlock your first achievements.
+                {emptyStateConfig.subtitle}
               </Text>
             </View>
           ) : (

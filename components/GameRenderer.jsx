@@ -1,4 +1,12 @@
-import React, { useState, Suspense, useMemo, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  Suspense,
+  useMemo,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 // NotificationBanner display is handled at the root (Main)
 import { lazyGameScreens } from '../games/lazyGameRoutes';
@@ -19,13 +27,16 @@ const GameRenderer = ({
   onVictory,
 }) => {
   const GameComponent = lazyGameScreens[screen];
-  const { level: currLevel } = useDifficulty();
-  const { markDifficultyComplete } = useUser();
+  const {
+    level: contextLevel,
+    setLevel: setContextLevel,
+    activeGame,
+    setActiveGame,
+  } = useDifficulty();
+  const { markDifficultyComplete, getCompletedLevelsForGame } = useUser();
   const [gameLost, setGameLost] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const suppressWinsRef = useRef(false);
-  // Clear suppression when level OR screen changes (e.g., switching games)
-  useEffect(() => { suppressWinsRef.current = false; }, [currLevel, screen]);
   if (!GameComponent) return null;
   const resolvedRawQuote = useMemo(() => {
     if (typeof rawQuoteProp === 'string') return rawQuoteProp;
@@ -39,30 +50,75 @@ const GameRenderer = ({
     }
     return sanitizeQuoteText(resolvedRawQuote);
   }, [sanitizedQuoteProp, resolvedRawQuote]);
+  const resolveHighestUnlocked = useCallback((gameId) => {
+    if (typeof getCompletedLevelsForGame !== 'function') {
+      return 1;
+    }
+    const progress = getCompletedLevelsForGame(gameId);
+    if (progress && Number.isFinite(progress.highestUnlocked)) {
+      return Math.max(1, Math.min(progress.highestUnlocked, 3));
+    }
+    const completedMap = progress?.completed || progress || {};
+    const levelKeys = Object.keys(completedMap)
+      .map((key) => Number(key))
+      .filter((lvl) => Number.isFinite(lvl) && lvl > 0)
+      .sort((a, b) => a - b);
+    const highestDefined = levelKeys.length > 0 ? levelKeys[levelKeys.length - 1] : 3;
+    let highest = 1;
+    while (highest < highestDefined && completedMap?.[highest]) {
+      highest += 1;
+    }
+    return Math.min(highest, highestDefined);
+  }, [getCompletedLevelsForGame]);
+
+  const highestUnlocked = useMemo(() => resolveHighestUnlocked(screen), [resolveHighestUnlocked, screen]);
+
+  const currentLevel = useMemo(() => {
+    if (activeGame === screen) {
+      return Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
+    }
+    return highestUnlocked || 1;
+  }, [activeGame, screen, contextLevel, highestUnlocked]);
+
+  // Clear suppression when level OR screen changes (e.g., switching games)
+  useEffect(() => { suppressWinsRef.current = false; }, [currentLevel, screen]);
+
   const difficultyLabel = useMemo(() => {
     const map = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
-    return map[currLevel] || `Level ${currLevel}`;
-  }, [currLevel]);
+    return map[currentLevel] || `Level ${currentLevel}`;
+  }, [currentLevel]);
+
+  useLayoutEffect(() => {
+    if (!screen) return;
+    if (activeGame !== screen) {
+      setActiveGame(screen, highestUnlocked);
+      return;
+    }
+    const clamped = Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
+    if (contextLevel !== clamped) {
+      setContextLevel(clamped);
+    }
+  }, [screen, activeGame, highestUnlocked, contextLevel, setActiveGame, setContextLevel]);
 
   const gameProps = { quote, onBack, rawQuote: resolvedRawQuote, sanitizedQuote: resolvedSanitizedQuote };
   // Handle game win: award achievement then navigate to celebration screen
   gameProps.onWin = (details = {}) => {
     if (suppressWinsRef.current) {
       // eslint-disable-next-line no-console
-      console.log('[GameRenderer:onWin] suppressed', { screen, level: currLevel });
+      console.log('[GameRenderer:onWin] suppressed', { screen, level: currentLevel });
       return;
     }
     suppressWinsRef.current = true;
     if (typeof markDifficultyComplete === 'function') {
-      markDifficultyComplete(currLevel);
+      markDifficultyComplete(screen, currentLevel);
     }
     // eslint-disable-next-line no-console
-    console.log('[GameRenderer:onWin]', { screen, level: currLevel });
+    console.log('[GameRenderer:onWin]', { screen, level: currentLevel });
     if (typeof recordGamePlay === 'function') {
       Promise.resolve(
         recordGamePlay({
           screen,
-          level: currLevel,
+          level: currentLevel,
           result: 'win',
           perfect: Boolean(details?.perfect),
         }),
@@ -70,11 +126,11 @@ const GameRenderer = ({
     }
     // Show win overlay; ensure lose overlay is hidden
     setGameLost(false);
-    setTimeout(() => awardGameAchievement(screen, currLevel), 120);
+    setTimeout(() => awardGameAchievement(screen, currentLevel), 120);
     onVictory?.({
       screenId: screen,
       gameTitle: screenTitle,
-      level: currLevel,
+      level: currentLevel,
       difficultyLabel,
       perfect: Boolean(details?.perfect),
     });
@@ -82,13 +138,13 @@ const GameRenderer = ({
   // Handle game loss
   gameProps.onLose = () => {
     // eslint-disable-next-line no-console
-    console.log('[GameRenderer:onLose]', { screen, level: currLevel });
+    console.log('[GameRenderer:onLose]', { screen, level: currentLevel });
     setGameLost(true);
     if (typeof recordGamePlay === 'function') {
       Promise.resolve(
         recordGamePlay({
           screen,
-          level: currLevel,
+          level: currentLevel,
           result: 'lose',
           perfect: false,
         }),
@@ -131,7 +187,7 @@ const GameRenderer = ({
   }, [screen]);
   // Some games need the difficulty level passed through
   if (screen === 'bubblePopOrderGame') {
-    gameProps.level = currLevel;
+    gameProps.level = currentLevel;
   }
   return (
     <View style={styles.container}>
@@ -152,7 +208,7 @@ const GameRenderer = ({
         }}
       />
       <Suspense fallback={<ActivityIndicator style={{ marginTop: 24 }} size="large" />}>
-        <GameComponent key={`${screen}-${currLevel}-${retryTick}`} {...gameProps} />
+        <GameComponent key={`${screen}-${currentLevel}-${retryTick}`} {...gameProps} />
       </Suspense>
       <DifficultyFAB />
     </View>

@@ -11,8 +11,8 @@ import { BlurView } from '@react-native-community/blur';
 export const FAB_BOTTOM_MARGIN = 12;
 
 const DifficultyFAB = () => {
-  const { level, setLevel } = useDifficulty();
-  const { completedDifficulties } = useUser();
+  const { level, setLevel, activeGame } = useDifficulty();
+  const { getCompletedLevelsForGame } = useUser();
   const safeInsets = useContext(SafeAreaInsetsContext);
   const topInset = Math.max(safeInsets?.top || 0, 0);
   const bottomInset = Math.max(safeInsets?.bottom || 0, 0);
@@ -20,29 +20,34 @@ const DifficultyFAB = () => {
   const [open, setOpen] = useState(false);
   const openAnim = useRef(new Animated.Value(0)).current; // 0 closed -> 1 open
 
-  const levelOrder = useMemo(() => {
-    const keys = Object.keys(completedDifficulties || {});
-    if (keys.length === 0) {
-      return [1, 2, 3];
-    }
-    const parsed = keys
-      .map(key => Number(key))
-      .filter(lvl => Number.isFinite(lvl) && lvl > 0);
-    if (!parsed.includes(1)) {
-      parsed.push(1);
-    }
-    return parsed.sort((a, b) => a - b);
-  }, [completedDifficulties]);
+  const progressForActiveGame =
+    typeof getCompletedLevelsForGame === 'function'
+      ? getCompletedLevelsForGame(activeGame) || { completed: {}, highestUnlocked: 1 }
+      : { completed: {}, highestUnlocked: 1 };
 
-  const highestDefinedLevel = levelOrder[levelOrder.length - 1] || 1;
+  const completedForActiveGame = progressForActiveGame?.completed || {};
 
-  const highestUnlocked = useMemo(() => {
+  const levelOrder = useMemo(() => [1, 2, 3], []);
+
+  const highestDefinedLevel = levelOrder[levelOrder.length - 1];
+
+  const nextUnlockedLevel = useMemo(() => {
+    if (Number.isFinite(progressForActiveGame?.highestUnlocked)) {
+      return Math.max(1, Math.min(progressForActiveGame.highestUnlocked, highestDefinedLevel));
+    }
     let highest = 1;
-    while (highest < highestDefinedLevel && completedDifficulties?.[highest]) {
-      highest += 1;
+    for (let idx = 0; idx < levelOrder.length; idx += 1) {
+      const levelValue = levelOrder[idx];
+      if (completedForActiveGame?.[levelValue]) {
+        highest = Math.min(levelValue + 1, highestDefinedLevel);
+      } else {
+        break;
+      }
     }
-    return Math.min(highest, highestDefinedLevel);
-  }, [completedDifficulties, highestDefinedLevel]);
+    return highest;
+  }, [completedForActiveGame, progressForActiveGame, levelOrder, highestDefinedLevel]);
+
+  const highestUnlocked = nextUnlockedLevel;
 
   useEffect(() => {
     if (level > highestUnlocked) {
