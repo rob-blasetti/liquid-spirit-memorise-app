@@ -9,12 +9,11 @@ var ReactNative = require('react-native');
 var RNSound = ReactNative.NativeModules.RNSound;
 var IsAndroid = RNSound.IsAndroid;
 var IsWindows = RNSound.IsWindows;
-var resolveAssetSourceModule = require('react-native/Libraries/Image/resolveAssetSource');
 var resolveAssetSource =
-  typeof resolveAssetSourceModule === 'function'
-    ? resolveAssetSourceModule
-    : resolveAssetSourceModule && typeof resolveAssetSourceModule.default === 'function'
-      ? resolveAssetSourceModule.default
+  ReactNative.Image && typeof ReactNative.Image.resolveAssetSource === 'function'
+    ? ReactNative.Image.resolveAssetSource
+    : typeof ReactNative.resolveAssetSource === 'function'
+      ? ReactNative.resolveAssetSource
       : null;
 
 if (typeof resolveAssetSource !== 'function') {
