@@ -1,18 +1,9 @@
-import React, {
-  useState,
-  Suspense,
-  useMemo,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useCallback,
-} from 'react';
+import React, { useState, Suspense, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 // NotificationBanner display is handled at the root (Main)
 import { lazyGameScreens } from '../games/lazyGameRoutes';
 import DifficultyFAB from './DifficultyFAB';
 import { useDifficulty } from '../contexts/DifficultyContext';
-import { useUser } from '../contexts/UserContext';
 import LostOverlay from './LostOverlay';
 import { sanitizeQuoteText } from '../services/quoteSanitizer';
 
@@ -32,8 +23,9 @@ const GameRenderer = ({
     setLevel: setContextLevel,
     activeGame,
     setActiveGame,
+    markLevelComplete,
+    getProgressForGame,
   } = useDifficulty();
-  const { markDifficultyComplete, getCompletedLevelsForGame } = useUser();
   const [gameLost, setGameLost] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const suppressWinsRef = useRef(false);
@@ -50,35 +42,21 @@ const GameRenderer = ({
     }
     return sanitizeQuoteText(resolvedRawQuote);
   }, [sanitizedQuoteProp, resolvedRawQuote]);
-  const resolveHighestUnlocked = useCallback((gameId) => {
-    if (typeof getCompletedLevelsForGame !== 'function') {
-      return 1;
+  const progressEntry = useMemo(() => {
+    if (typeof getProgressForGame === 'function') {
+      return getProgressForGame(screen);
     }
-    const progress = getCompletedLevelsForGame(gameId);
-    if (progress && Number.isFinite(progress.highestUnlocked)) {
-      return Math.max(1, Math.min(progress.highestUnlocked, 3));
-    }
-    const completedMap = progress?.completed || progress || {};
-    const levelKeys = Object.keys(completedMap)
-      .map((key) => Number(key))
-      .filter((lvl) => Number.isFinite(lvl) && lvl > 0)
-      .sort((a, b) => a - b);
-    const highestDefined = levelKeys.length > 0 ? levelKeys[levelKeys.length - 1] : 3;
-    let highest = 1;
-    while (highest < highestDefined && completedMap?.[highest]) {
-      highest += 1;
-    }
-    return Math.min(highest, highestDefined);
-  }, [getCompletedLevelsForGame]);
+    return { completed: {}, highestUnlocked: 1, currentLevel: 1 };
+  }, [getProgressForGame, screen]);
 
-  const highestUnlocked = useMemo(() => resolveHighestUnlocked(screen), [resolveHighestUnlocked, screen]);
+  const highestUnlocked = progressEntry?.highestUnlocked || 1;
 
   const currentLevel = useMemo(() => {
     if (activeGame === screen) {
       return Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
     }
-    return highestUnlocked || 1;
-  }, [activeGame, screen, contextLevel, highestUnlocked]);
+    return progressEntry?.currentLevel || highestUnlocked || 1;
+  }, [activeGame, screen, contextLevel, highestUnlocked, progressEntry]);
 
   // Clear suppression when level OR screen changes (e.g., switching games)
   useEffect(() => { suppressWinsRef.current = false; }, [currentLevel, screen]);
@@ -91,7 +69,7 @@ const GameRenderer = ({
   useLayoutEffect(() => {
     if (!screen) return;
     if (activeGame !== screen) {
-      setActiveGame(screen, highestUnlocked);
+      setActiveGame(screen);
       return;
     }
     const clamped = Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
@@ -100,7 +78,13 @@ const GameRenderer = ({
     }
   }, [screen, activeGame, highestUnlocked, contextLevel, setActiveGame, setContextLevel]);
 
-  const gameProps = { quote, onBack, rawQuote: resolvedRawQuote, sanitizedQuote: resolvedSanitizedQuote };
+  const gameProps = {
+    quote,
+    onBack,
+    rawQuote: resolvedRawQuote,
+    sanitizedQuote: resolvedSanitizedQuote,
+    level: currentLevel,
+  };
   // Handle game win: award achievement then navigate to celebration screen
   gameProps.onWin = (details = {}) => {
     if (suppressWinsRef.current) {
@@ -109,9 +93,7 @@ const GameRenderer = ({
       return;
     }
     suppressWinsRef.current = true;
-    if (typeof markDifficultyComplete === 'function') {
-      markDifficultyComplete(screen, currentLevel);
-    }
+    markLevelComplete?.(screen, currentLevel);
     // eslint-disable-next-line no-console
     console.log('[GameRenderer:onWin]', { screen, level: currentLevel });
     if (typeof recordGamePlay === 'function') {

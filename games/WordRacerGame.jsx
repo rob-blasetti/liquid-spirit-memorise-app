@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
-import { useDifficulty } from '../contexts/DifficultyContext';
 import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -36,7 +35,7 @@ const DIFFICULTY_SETTINGS = {
   3: { wordsToCollect: 12, obstacleCount: 3, obstacleSpeed: 70 },
 };
 
-const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
+const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose, level = 1 }) => {
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -52,7 +51,6 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose 
     });
     return ordered;
   }, [quoteData.playableEntries]);
-  const { level } = useDifficulty() || { level: 1 };
   const difficultySettings = useMemo(
     () => DIFFICULTY_SETTINGS[level] || DIFFICULTY_SETTINGS[3],
     [level],

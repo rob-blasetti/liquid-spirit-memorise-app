@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
-import { useDifficulty } from '../contexts/DifficultyContext';
 import { FAB_BOTTOM_MARGIN } from '../components/DifficultyFAB';
 import GameTopBar from '../components/GameTopBar';
 import themeVariables from '../styles/theme';
@@ -10,8 +9,7 @@ import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanit
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
-  const { level } = useDifficulty();
+const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose, level = 1 }) => {
   const safeInsets = useContext(SafeAreaInsetsContext);
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),

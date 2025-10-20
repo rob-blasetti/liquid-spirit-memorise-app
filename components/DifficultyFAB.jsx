@@ -3,7 +3,6 @@ import { View, TouchableOpacity, Text, StyleSheet, Animated, Easing, TouchableWi
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
-import { useUser } from '../contexts/UserContext';
 import theme from '../styles/theme';
 import themeVariables from '../styles/theme';
 import { BlurView } from '@react-native-community/blur';
@@ -11,8 +10,7 @@ import { BlurView } from '@react-native-community/blur';
 export const FAB_BOTTOM_MARGIN = 12;
 
 const DifficultyFAB = () => {
-  const { level, setLevel, activeGame } = useDifficulty();
-  const { getCompletedLevelsForGame } = useUser();
+  const { level, setLevel, activeGame, getProgressForGame } = useDifficulty();
   const safeInsets = useContext(SafeAreaInsetsContext);
   const topInset = Math.max(safeInsets?.top || 0, 0);
   const bottomInset = Math.max(safeInsets?.bottom || 0, 0);
@@ -21,8 +19,8 @@ const DifficultyFAB = () => {
   const openAnim = useRef(new Animated.Value(0)).current; // 0 closed -> 1 open
 
   const progressForActiveGame =
-    typeof getCompletedLevelsForGame === 'function'
-      ? getCompletedLevelsForGame(activeGame) || { completed: {}, highestUnlocked: 1 }
+    typeof getProgressForGame === 'function'
+      ? getProgressForGame(activeGame) || { completed: {}, highestUnlocked: 1 }
       : { completed: {}, highestUnlocked: 1 };
 
   const completedForActiveGame = progressForActiveGame?.completed || {};
