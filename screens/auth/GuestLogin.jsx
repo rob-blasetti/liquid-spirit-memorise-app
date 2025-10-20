@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { Button } from 'liquid-spirit-styleguide';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
@@ -9,6 +9,7 @@ import ScreenBackground from '../../components/ScreenBackground';
 import TopNav from '../../components/TopNav';
 import buttonStyles from '../../styles/buttonStyles';
 import { UsernameInput, GradeSelector } from '../../components/form';
+import { isNonEmptyString, sanitizeString } from '../../utils/validation';
 
 export default function GuestLogin({ onSignIn, navigation }) {
   const [displayName, setDisplayName] = useState('');
@@ -18,9 +19,43 @@ export default function GuestLogin({ onSignIn, navigation }) {
   const [selectedGrade, setSelectedGrade] = useState(grades[0]);
   // Temporarily disable higher grades
   const disabledGrades = ['3', '4', '5'];
+  const [errors, setErrors] = useState({});
+
+  const clearFieldError = useCallback(field => {
+    setErrors(prev => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
+  const validate = () => {
+    const nextErrors = {};
+    const trimmedName = sanitizeString(displayName);
+    if (!isNonEmptyString(trimmedName)) {
+      nextErrors.displayName = 'Display name is required.';
+    } else if (trimmedName.length < 2) {
+      nextErrors.displayName = 'Display name must be at least 2 characters.';
+    }
+    return nextErrors;
+  };
 
   const handleLogin = () => {
-    if (!displayName) return;
+    Keyboard.dismiss();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(prev => ({
+        ...prev,
+        ...validationErrors,
+        form: 'Please fix the errors above before continuing.',
+      }));
+      return;
+    }
+
+    setErrors({});
     // Convert grade to number for 1,2,3,4,5; preserve '2b'
     const gradeVal = selectedGrade === '2b' ? '2b' : parseInt(selectedGrade, 10);
     const user = {
@@ -73,7 +108,7 @@ export default function GuestLogin({ onSignIn, navigation }) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.outer}>
           <TopNav title="Guest Login" onBack={handleBack} />
-          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="always">
             <View style={styles.container}>
               <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
                 {avatarPhoto ? (
@@ -88,10 +123,21 @@ export default function GuestLogin({ onSignIn, navigation }) {
               <UsernameInput
                 label="Display Name"
                 value={displayName}
-                onChangeText={setDisplayName}
+                onChangeText={text => {
+                  setDisplayName(text);
+                  clearFieldError('displayName');
+                  clearFieldError('form');
+                }}
                 autoCapitalize="words"
                 autoCorrect
+                onBlur={() => {
+                  const validationErrors = validate();
+                  if (validationErrors.displayName) {
+                    setErrors(prev => ({ ...prev, displayName: validationErrors.displayName }));
+                  }
+                }}
               />
+              {errors.displayName ? <Text style={styles.errorText}>{errors.displayName}</Text> : null}
               <GradeSelector
                 value={selectedGrade}
                 onChange={setSelectedGrade}
@@ -104,6 +150,7 @@ export default function GuestLogin({ onSignIn, navigation }) {
                 style={[buttonStyles.pill, styles.fullWidthButton]}
                 textStyle={buttonStyles.pillText}
               />
+              {errors.form ? <Text style={styles.generalError}>{errors.form}</Text> : null}
             </View>
           </ScrollView>
         </View>
@@ -130,4 +177,19 @@ const styles = StyleSheet.create({
   },
   secondaryButton: { width: '80%', alignSelf: 'center', marginBottom: 16 },
   fullWidthButton: { width: '80%', alignSelf: 'center', marginTop: 16 },
+  errorText: {
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginTop: -8,
+    marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
+  },
+  generalError: {
+    width: '80%',
+    alignSelf: 'center',
+    textAlign: 'center',
+    marginTop: 8,
+    color: themeVariables.redColor || '#ff4d4f',
+  },
 });

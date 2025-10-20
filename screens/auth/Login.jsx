@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Keyboard } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { loginNuriUser } from '../../services/authService';
 import { loadCredentials, saveCredentials } from '../../services/credentialService';
@@ -8,10 +8,20 @@ import TopNav from '../../components/TopNav';
 import themeVariables from '../../styles/theme';
 import buttonStyles from '../../styles/buttonStyles';
 import { EmailInput, PasswordInput } from '../../components/form';
+import { isNonEmptyString, isValidEmail, sanitizeString } from '../../utils/validation';
 
-export default function Login({ onSignIn, navigation }) {
+export default function Login({ onSignIn: onSignInProp, navigation, route }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const resolvedOnSignIn =
+    typeof onSignInProp === 'function'
+      ? onSignInProp
+      : typeof route?.params?.onSignIn === 'function'
+      ? route.params.onSignIn
+      : undefined;
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -24,18 +34,115 @@ export default function Login({ onSignIn, navigation }) {
     fetchCredentials();
   }, []);
 
+  const clearFieldError = useCallback(field => {
+    if (field === 'form') {
+      setFormError('');
+      return;
+    }
+    setErrors(prev => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
+  const validate = () => {
+    const nextErrors = {};
+    const trimmedEmail = sanitizeString(email);
+    if (!isNonEmptyString(trimmedEmail)) {
+      nextErrors.email = 'Please enter your username or email.';
+    } else if (trimmedEmail.includes('@') && !isValidEmail(trimmedEmail)) {
+      nextErrors.email = 'Enter a valid email address.';
+    }
+
+    if (!isNonEmptyString(password)) {
+      nextErrors.password = 'Password is required.';
+    }
+
+    return nextErrors;
+  };
+
+  const isSubmitDisabled = loading || !isNonEmptyString(email) || !isNonEmptyString(password);
+
   const handleLogin = async () => {
+    Keyboard.dismiss();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setFormError('Please fix the errors above before continuing.');
+      return;
+    }
+
+    setErrors({});
+    setFormError('');
+    setLoading(true);
+
     try {
-      await saveCredentials(email, password);
-      const data = await loginNuriUser(email, password);
+      const trimmedEmail = sanitizeString(email);
+      const data = await loginNuriUser(trimmedEmail, password);
+      await saveCredentials(trimmedEmail, password);
       const { user, ...rest } = data || {};
       if (!user) {
         console.warn('Login response missing user data');
         return;
       }
-      onSignIn({ ...rest, user, authType: 'nuri-login' });
-    } catch (err) {
-      console.error('Login failed', err);
+      if (typeof resolvedOnSignIn === 'function') {
+        resolvedOnSignIn({ ...rest, user, authType: 'nuri-login' });
+      } else {
+        console.warn('Login succeeded but no onSignIn handler was provided to Login screen');
+      }
+    } catch (error) {
+      if (error?.status === 400 || error?.status === 401 || error?.status === 404) {
+        console.warn('Login failed', error);
+      } else {
+        console.error('Login failed', error);
+      }
+      const fallbackMessage = 'Login failed. Please try again.';
+      const messageFromError =
+        error && typeof error.message === 'string' && error.message.trim().length > 0
+          ? error.message.trim()
+          : '';
+      const messageFromPayload =
+        error?.payload?.error && typeof error.payload.error === 'string' && error.payload.error.trim().length > 0
+          ? error.payload.error.trim()
+          : '';
+      const messageFromPayloadErrors = Array.isArray(error?.payloadErrors)
+        ? error.payloadErrors
+            .map(item => (typeof item?.message === 'string' ? item.message.trim() : ''))
+            .find(Boolean)
+        : '';
+      const resolvedMessage =
+        messageFromError || messageFromPayload || messageFromPayloadErrors || error?.fallbackMessage || fallbackMessage;
+      const isCredentialIssue = error?.status === 400 || error?.status === 401;
+      const isNotFound = error?.status === 404;
+      const credentialsMessage = 'Incorrect username/email or password.';
+      const notFoundMessage = "We couldn't find an account with that username/email.";
+      setErrors(prev => {
+        const next = { ...prev };
+        if (isCredentialIssue) {
+          next.password = credentialsMessage;
+        } else {
+          delete next.password;
+        }
+        if (isNotFound) {
+          next.email = notFoundMessage;
+        } else if (!isCredentialIssue) {
+          delete next.email;
+        }
+        return next;
+      });
+      if (isCredentialIssue) {
+        setFormError(credentialsMessage);
+      } else if (isNotFound) {
+        setFormError(notFoundMessage);
+      } else {
+        setFormError(resolvedMessage);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,18 +162,41 @@ export default function Login({ onSignIn, navigation }) {
           <EmailInput
             label="Username or Email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={text => {
+              setEmail(text);
+              clearFieldError('email');
+              clearFieldError('form');
+            }}
             placeholder="Email"
             placeholderTextColor={themeVariables.placeholderColor || '#666'}
+            onBlur={() => {
+              const validationErrors = validate();
+              if (validationErrors.email) {
+                setErrors(prev => ({ ...prev, email: validationErrors.email }));
+              }
+            }}
           />
+          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
           <PasswordInput
             value={password}
-            onChangeText={setPassword}
+            onChangeText={text => {
+              setPassword(text);
+              clearFieldError('password');
+              clearFieldError('form');
+            }}
             placeholder="Password"
             placeholderTextColor={themeVariables.placeholderColor || '#666'}
             showToggle
+            editable={!loading}
+            onBlur={() => {
+              const validationErrors = validate();
+              if (validationErrors.password) {
+                setErrors(prev => ({ ...prev, password: validationErrors.password }));
+              }
+            }}
           />
+          {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
           <Text
             style={styles.forgotLink}
@@ -75,9 +205,12 @@ export default function Login({ onSignIn, navigation }) {
             Forgot your password?
           </Text>
 
+          {formError ? <Text style={styles.generalError}>{formError}</Text> : null}
+
           <Button
-            label="Log In"
+            label={loading ? 'Logging in...' : 'Log In'}
             onPress={handleLogin}
+            disabled={isSubmitDisabled}
             style={[buttonStyles.pill, styles.fullWidthButton]}
             textStyle={buttonStyles.pillText}
           />
@@ -113,5 +246,20 @@ const styles = StyleSheet.create({
     width: '80%',
     alignSelf: 'center',
     marginTop: 12,
+  },
+  errorText: {
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginTop: -8,
+    marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
+  },
+  generalError: {
+    width: '80%',
+    alignSelf: 'center',
+    textAlign: 'center',
+    marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
   },
 });

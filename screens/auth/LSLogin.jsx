@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { signInWithLiquidSpirit } from '../../services/authService';
 import { loadCredentials, saveCredentials } from '../../services/credentialService';
@@ -8,11 +8,13 @@ import TopNav from '../../components/TopNav';
 import themeVariables from '../../styles/theme';
 import buttonStyles from '../../styles/buttonStyles';
 import { EmailInput, PasswordInput } from '../../components/form';
+import { isNonEmptyString, isValidEmail, sanitizeString } from '../../utils/validation';
 
 export default function LSLogin({ navigation, onSignIn }) {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -25,21 +27,72 @@ export default function LSLogin({ navigation, onSignIn }) {
     fetchCredentials();
   }, []);
 
+  const clearFieldError = useCallback(field => {
+    setErrors(prev => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
+  const validate = () => {
+    const nextErrors = {};
+
+    if (!isNonEmptyString(email)) {
+      nextErrors.email = 'Email is required.';
+    } else if (!isValidEmail(email)) {
+      nextErrors.email = 'Enter a valid email address.';
+    }
+
+    if (!isNonEmptyString(password)) {
+      nextErrors.password = 'Password is required.';
+    }
+
+    return nextErrors;
+  };
+
+  const isSubmitDisabled = loading || !isNonEmptyString(email) || !isNonEmptyString(password);
+
   const handleLogin = async () => {
-    console.log('Attempting Liquid Spirit login with:', { email, password });
+    Keyboard.dismiss();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors({
+        ...validationErrors,
+        form: 'Please fix the errors above before continuing.',
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-      await saveCredentials(email, password);
-      const data = await signInWithLiquidSpirit(email, password);
-      console.log('Liquid Spirit login successful', data);
+      setErrors({});
+      const trimmedEmail = sanitizeString(email);
+      const data = await signInWithLiquidSpirit(trimmedEmail, password);
+      await saveCredentials(trimmedEmail, password);
       const { user, ...rest } = data || {};
       if (!user) {
         console.warn('Liquid Spirit login response missing user data');
         return;
       }
       onSignIn({ ...rest, user, authType: 'ls-login' });
-    } catch (err) {
-      console.error('Liquid Spirit login failed', err);
+    } catch (error) {
+      console.error('Liquid Spirit login failed', error);
+      const fallbackMessage = 'Unable to log in. Please try again.';
+      const message =
+        error && typeof error.message === 'string' && error.message.trim().length > 0
+          ? error.message.trim()
+          : fallbackMessage;
+      const credentialsMessage =
+        error?.status === 400 || error?.status === 401 ? 'Incorrect email or password.' : message;
+      setErrors(prev => ({
+        ...prev,
+        ...(error?.status === 400 || error?.status === 401 ? { password: credentialsMessage } : {}),
+        form: message,
+      }));
     } finally {
       setLoading(false);
     }
@@ -58,30 +111,53 @@ export default function LSLogin({ navigation, onSignIn }) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.outer}>
           <TopNav title="Liquid Spirit Login" onBack={handleBack} />
-          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="always">
             <View style={styles.container}>
               <EmailInput
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={text => {
+                  setEmail(text);
+                  clearFieldError('email');
+                  clearFieldError('form');
+                }}
                 editable={!loading}
+                onBlur={() => {
+                  const validationErrors = validate();
+                  if (validationErrors.email) {
+                    setErrors(prev => ({ ...prev, email: validationErrors.email }));
+                  }
+                }}
               />
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
               <PasswordInput
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={text => {
+                  setPassword(text);
+                  clearFieldError('password');
+                  clearFieldError('form');
+                }}
                 editable={!loading}
                 showToggle
+                onBlur={() => {
+                  const validationErrors = validate();
+                  if (validationErrors.password) {
+                    setErrors(prev => ({ ...prev, password: validationErrors.password }));
+                  }
+                }}
               />
+              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
               <Text
                 style={styles.forgotLink}
                 onPress={() => navigation.navigate('ForgotYourPassword', { mode: 'ls' })}
               >
                 Forgot your password?
               </Text>
+              {errors.form ? <Text style={styles.generalError}>{errors.form}</Text> : null}
               <Button
-                label={loading ? 'Logging in…' : 'Log In'}
+                label={loading ? 'Logging in...' : 'Log In'}
                 onPress={handleLogin}
-                disabled={loading}
+                disabled={isSubmitDisabled}
                 style={[buttonStyles.pill, styles.fullWidthButton]}
                 textStyle={buttonStyles.pillText}
               />
@@ -129,5 +205,20 @@ const styles = StyleSheet.create({
     width: '80%',
     alignSelf: 'center',
     marginTop: 12,
+  },
+  errorText: {
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginTop: -8,
+    marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
+  },
+  generalError: {
+    width: '80%',
+    alignSelf: 'center',
+    textAlign: 'center',
+    marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
   },
 });

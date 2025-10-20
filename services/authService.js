@@ -1,5 +1,66 @@
 import { API_URL } from '../config';
 const LINKED = 'linked';
+const ERROR_MESSAGE_OVERRIDES = new Map([
+  ['guest not found', "We couldn't find an account with that username/email."],
+  ['user not found', "We couldn't find an account with that username/email."],
+]);
+
+const extractErrorMessage = async (response, fallbackMessage) => {
+  let message = fallbackMessage;
+  let parsedBody;
+
+  try {
+    const text = await response.text();
+    if (text) {
+      try {
+        parsedBody = JSON.parse(text);
+        if (parsedBody && typeof parsedBody.message === 'string' && parsedBody.message.trim().length > 0) {
+          message = parsedBody.message.trim();
+        } else if (parsedBody && typeof parsedBody.error === 'string' && parsedBody.error.trim().length > 0) {
+          message = parsedBody.error.trim();
+        } else if (Array.isArray(parsedBody.errors) && parsedBody.errors.length > 0) {
+          const firstError = parsedBody.errors.find(err => typeof err?.message === 'string' && err.message.trim().length > 0);
+          if (firstError) {
+            message = firstError.message.trim();
+          }
+        }
+      } catch {
+        const trimmed = text.trim();
+        if (trimmed.length > 0) {
+          message = trimmed;
+        }
+      }
+    }
+  } catch (parseError) {
+    console.warn('Failed to parse error response', parseError);
+  }
+
+  if (typeof message === 'string') {
+    const normalized = message.trim().toLowerCase();
+    if (ERROR_MESSAGE_OVERRIDES.has(normalized)) {
+      message = ERROR_MESSAGE_OVERRIDES.get(normalized);
+    }
+  }
+
+  const error = new Error(message);
+  error.status = response.status;
+  error.fallbackMessage = fallbackMessage;
+  if (parsedBody !== undefined) {
+    error.payload = parsedBody;
+    if (parsedBody && typeof parsedBody === 'object') {
+      if (typeof parsedBody.code !== 'undefined') {
+        error.code = parsedBody.code;
+      }
+      if (parsedBody.details) {
+        error.details = parsedBody.details;
+      }
+      if (Array.isArray(parsedBody.errors)) {
+        error.payloadErrors = parsedBody.errors;
+      }
+    }
+  }
+  throw error;
+};
 
 export const signInWithLiquidSpirit = async (email, password) => {
   try {
@@ -13,7 +74,7 @@ export const signInWithLiquidSpirit = async (email, password) => {
     console.log('Response from Liquid Spirit login:', response);
     
     if (!response.ok) {
-      throw new Error('Failed to authenticate');
+      await extractErrorMessage(response, 'Failed to authenticate');
     }
     
     const responseData = await response.json();
@@ -32,7 +93,7 @@ export const verifyBahaiEmail = async (bahaiId, email) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier: bahaiId, email, type: 'verify-email' }),
     });
-    if (!response.ok) throw new Error('Email verification failed');
+    if (!response.ok) await extractErrorMessage(response, 'Email verification failed');
     const data = await response.json();
     return data;
   } catch (e) {
@@ -48,7 +109,7 @@ export const registerNuriUser = async (username, email, password, grade) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password, grade }),
     });
-    if (!response.ok) throw new Error('Registration failed');
+    if (!response.ok) await extractErrorMessage(response, 'Registration failed');
     const data = await response.json();
     console.log('data token and user: ', data.token, data.user);
     return data;
@@ -65,11 +126,15 @@ export const loginNuriUser = async (email, password) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    if (!response.ok) throw new Error('Login failed');
+    if (!response.ok) await extractErrorMessage(response, 'Login failed');
     const data = await response.json();
     return data;
   } catch (e) {
-    console.error('Nuri login error:', e);
+    if (e?.status === 400 || e?.status === 401 || e?.status === 404) {
+      console.warn('Nuri login error:', e);
+    } else {
+      console.error('Nuri login error:', e);
+    }
     throw e;
   }
 };
@@ -81,7 +146,7 @@ export const requestPasswordReset = async identifier => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier }),
     });
-    if (!response.ok) throw new Error('Password reset request failed');
+    if (!response.ok) await extractErrorMessage(response, 'Password reset request failed');
     return await response.json();
   } catch (e) {
     console.error('Password reset request failed:', e);
@@ -96,7 +161,7 @@ export const requestLiquidSpiritPasswordReset = async email => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
-    if (!response.ok) throw new Error('Liquid Spirit password reset failed');
+    if (!response.ok) await extractErrorMessage(response, 'Liquid Spirit password reset failed');
     return await response.json();
   } catch (e) {
     console.error('Liquid Spirit password reset request failed:', e);

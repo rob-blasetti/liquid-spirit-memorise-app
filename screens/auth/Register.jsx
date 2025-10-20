@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Button } from 'liquid-spirit-styleguide';
 import { registerNuriUser } from '../../services/authService';
 import themeVariables from '../../styles/theme';
@@ -7,6 +7,9 @@ import ScreenBackground from '../../components/ScreenBackground';
 import TopNav from '../../components/TopNav';
 import buttonStyles from '../../styles/buttonStyles';
 import { UsernameInput, EmailInput, PasswordInput, GradeSelector } from '../../components/form';
+import { hasMinLength, isNonEmptyString, isValidEmail, sanitizeString } from '../../utils/validation';
+
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function Register({ onSignIn, navigation }) {
   const [username, setUsername] = useState('');
@@ -16,22 +19,87 @@ export default function Register({ onSignIn, navigation }) {
   const disabledGrades = ['3', '4', '5'];
   const [selectedGrade, setSelectedGrade] = useState(grades[0]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const clearFieldError = useCallback(field => {
+    setErrors(prev => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
+  const validate = () => {
+    const nextErrors = {};
+    const trimmedUsername = sanitizeString(username);
+    if (!isNonEmptyString(trimmedUsername)) {
+      nextErrors.username = 'Username is required.';
+    } else if (trimmedUsername.length < 3) {
+      nextErrors.username = 'Username must be at least 3 characters.';
+    }
+
+    if (!isNonEmptyString(email)) {
+      nextErrors.email = 'Email is required.';
+    } else if (!isValidEmail(email)) {
+      nextErrors.email = 'Enter a valid email address.';
+    }
+
+    if (!isNonEmptyString(password)) {
+      nextErrors.password = 'Password is required.';
+    } else if (!hasMinLength(password, MIN_PASSWORD_LENGTH)) {
+      nextErrors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    }
+
+    if (!isNonEmptyString(selectedGrade) || disabledGrades.includes(selectedGrade)) {
+      nextErrors.grade = 'Please select an available grade.';
+    }
+
+    return nextErrors;
+  };
+
+  const isSubmitDisabled =
+    loading ||
+    !isNonEmptyString(username) ||
+    !isNonEmptyString(email) ||
+    !isNonEmptyString(password);
 
   const handleRegister = async () => {
-    setError('');
+    Keyboard.dismiss();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors({
+        ...validationErrors,
+        form: 'Please fix the errors above before continuing.',
+      });
+      return;
+    }
+
+    setErrors({});
     setLoading(true);
+
     try {
-      const data = await registerNuriUser(username, email, password, selectedGrade);
+      const trimmedUsername = sanitizeString(username);
+      const trimmedEmail = sanitizeString(email);
+      const data = await registerNuriUser(trimmedUsername, trimmedEmail, password, selectedGrade);
       const { user, ...rest } = data || {};
       if (!user) {
         console.warn('Registration response missing user data');
         return;
       }
       onSignIn({ ...rest, user, authType: 'nuri-register' });
-    } catch (err) {
-      console.error('Register failed', err);
-      setError(err.message || 'Registration failed');
+    } catch (error) {
+      console.error('Register failed', error);
+      const message =
+        error && typeof error.message === 'string' && error.message.trim().length > 0
+          ? error.message.trim()
+          : 'Registration failed. Please try again.';
+      setErrors(prev => ({
+        ...prev,
+        form: message,
+      }));
     } finally {
       setLoading(false);
     }
@@ -50,22 +118,74 @@ export default function Register({ onSignIn, navigation }) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.outer}>
           <TopNav title="Register" onBack={handleBack} />
-          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="always">
             <View style={styles.container}>
-              <UsernameInput value={username} onChangeText={setUsername} />
-              <EmailInput value={email} onChangeText={setEmail} />
-              <PasswordInput value={password} onChangeText={setPassword} showToggle />
+              <UsernameInput
+                value={username}
+                onChangeText={text => {
+                  setUsername(text);
+                  clearFieldError('username');
+                  clearFieldError('form');
+                }}
+                onBlur={() => {
+                  const validationErrors = validate();
+                  if (validationErrors.username) {
+                    setErrors(prev => ({ ...prev, username: validationErrors.username }));
+                  }
+                }}
+              />
+              {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
+
+              <EmailInput
+                value={email}
+                onChangeText={text => {
+                  setEmail(text);
+                  clearFieldError('email');
+                  clearFieldError('form');
+                }}
+                onBlur={() => {
+                  const validationErrors = validate();
+                  if (validationErrors.email) {
+                    setErrors(prev => ({ ...prev, email: validationErrors.email }));
+                  }
+                }}
+              />
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+
+              <PasswordInput
+                value={password}
+                onChangeText={text => {
+                  setPassword(text);
+                  clearFieldError('password');
+                  clearFieldError('form');
+                }}
+                showToggle
+                editable={!loading}
+                onBlur={() => {
+                  const validationErrors = validate();
+                  if (validationErrors.password) {
+                    setErrors(prev => ({ ...prev, password: validationErrors.password }));
+                  }
+                }}
+              />
+              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+
               <GradeSelector
                 value={selectedGrade}
-                onChange={setSelectedGrade}
+                onChange={grade => {
+                  setSelectedGrade(grade);
+                  clearFieldError('grade');
+                  clearFieldError('form');
+                }}
                 grades={grades}
                 disabledGrades={disabledGrades}
               />
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              {errors.grade ? <Text style={styles.errorText}>{errors.grade}</Text> : null}
+              {errors.form ? <Text style={styles.generalError}>{errors.form}</Text> : null}
               <Button
                 label={loading ? 'Registering...' : 'Register'}
                 onPress={handleRegister}
-                disabled={loading}
+                disabled={isSubmitDisabled}
                 style={[buttonStyles.pill, styles.fullWidthButton]}
                 textStyle={buttonStyles.pillText}
               />
@@ -101,8 +221,19 @@ const styles = StyleSheet.create({
   },
   heading: { fontSize: 24, marginBottom: 16, color: themeVariables.whiteColor },
   errorText: {
-    color: themeVariables.redColor || 'red',
+    alignSelf: 'flex-start',
+    width: '80%',
+    marginLeft: '10%',
+    marginTop: -8,
     marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
+  },
+  generalError: {
+    width: '80%',
+    alignSelf: 'center',
+    textAlign: 'center',
+    marginBottom: 12,
+    color: themeVariables.redColor || '#ff4d4f',
   },
   fullWidthButton: {
     width: '80%',
