@@ -186,8 +186,15 @@ export default function Register({ onSignIn, navigation }) {
                 label={loading ? 'Registering...' : 'Register'}
                 onPress={handleRegister}
                 disabled={isSubmitDisabled}
-                style={[buttonStyles.pill, styles.fullWidthButton]}
-                textStyle={buttonStyles.pillText}
+                style={[
+                  buttonStyles.pill,
+                  styles.fullWidthButton,
+                  isSubmitDisabled && buttonStyles.pillDisabled,
+                ]}
+                textStyle={[
+                  buttonStyles.pillText,
+                  isSubmitDisabled && buttonStyles.pillTextDisabled,
+                ]}
               />
             </View>
           </ScrollView>

@@ -43,6 +43,11 @@ export default function GuestLogin({ onSignIn, navigation }) {
     return nextErrors;
   };
 
+  const isSubmitDisabled =
+    !isNonEmptyString(displayName) ||
+    !isNonEmptyString(selectedGrade) ||
+    disabledGrades.includes(selectedGrade);
+
   const handleLogin = () => {
     Keyboard.dismiss();
     const validationErrors = validate();
@@ -147,8 +152,16 @@ export default function GuestLogin({ onSignIn, navigation }) {
               <Button
                 label="Log In"
                 onPress={handleLogin}
-                style={[buttonStyles.pill, styles.fullWidthButton]}
-                textStyle={buttonStyles.pillText}
+                disabled={isSubmitDisabled}
+                style={[
+                  buttonStyles.pill,
+                  styles.fullWidthButton,
+                  isSubmitDisabled && buttonStyles.pillDisabled,
+                ]}
+                textStyle={[
+                  buttonStyles.pillText,
+                  isSubmitDisabled && buttonStyles.pillTextDisabled,
+                ]}
               />
               {errors.form ? <Text style={styles.generalError}>{errors.form}</Text> : null}
             </View>

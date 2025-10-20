@@ -38,6 +38,7 @@ import {
   resolveAuthType,
   resolveUserFromPayload,
 } from '../services/profileUtils';
+import { TEST_USER_EMAIL, getTestUserClassData } from '../data/testUserClassData';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import { deleteNuriUser } from '../services/authService';
 import { clearCredentials } from '../services/credentialService';
@@ -316,11 +317,35 @@ const Main = () => {
                 return;
               }
               const authType = resolveAuthType(payload, rawUser);
-              const { children: childList, family, token } = deriveAuthMetadata(payload, rawUser);
+              const authMetadata = deriveAuthMetadata(payload, rawUser);
+              const { family, token } = authMetadata;
+              let childList = Array.isArray(authMetadata.children) ? authMetadata.children : [];
+              const candidateEmails = [
+                rawUser?.email,
+                payload?.email,
+                payload?.user?.email,
+              ]
+                .map(value => (typeof value === 'string' ? value.trim().toLowerCase() : null))
+                .filter(Boolean);
+              const isTestClassUser = candidateEmails.includes(TEST_USER_EMAIL);
+              const testUserData = isTestClassUser ? getTestUserClassData() : null;
+              if (isTestClassUser && testUserData) {
+                childList = testUserData.children;
+              }
               const normalizedUser = buildProfileFromUser(rawUser, { authType, childList });
-              const normalizedChildren = normalizedUser.linkedAccount
+              let normalizedChildren = normalizedUser.linkedAccount
                 ? normalizeChildEntries(childList, { authType })
                 : [];
+              if (isTestClassUser && testUserData) {
+                const clonedClasses = (testUserData.classes || []).map(cls => ({
+                  ...cls,
+                  facilitators: (cls.facilitators || []).map(person => ({ ...person })),
+                  participants: (cls.participants || []).map(person => ({ ...person })),
+                }));
+                normalizedUser.classes = clonedClasses;
+                normalizedUser.class = clonedClasses;
+                normalizedUser.numberOfChildren = normalizedChildren.length;
+              }
               const availableProfiles = normalizedUser.linkedAccount
                 ? [normalizedUser, ...normalizedChildren]
                 : [normalizedUser];

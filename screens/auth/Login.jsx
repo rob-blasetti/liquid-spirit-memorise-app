@@ -118,8 +118,13 @@ export default function Login({ onSignIn: onSignInProp, navigation, route }) {
         messageFromError || messageFromPayload || messageFromPayloadErrors || error?.fallbackMessage || fallbackMessage;
       const isCredentialIssue = error?.status === 400 || error?.status === 401;
       const isNotFound = error?.status === 404;
+      const isServerError =
+        (typeof error?.status === 'number' && error.status >= 500) ||
+        /server error/i.test(messageFromError);
       const credentialsMessage = 'Incorrect username/email or password.';
       const notFoundMessage = "We couldn't find an account with that username/email.";
+      const serverErrorMessage =
+        "We're having trouble signing you in right now. Please try again in a moment.";
       setErrors(prev => {
         const next = { ...prev };
         if (isCredentialIssue) {
@@ -138,6 +143,8 @@ export default function Login({ onSignIn: onSignInProp, navigation, route }) {
         setFormError(credentialsMessage);
       } else if (isNotFound) {
         setFormError(notFoundMessage);
+      } else if (isServerError) {
+        setFormError(serverErrorMessage);
       } else {
         setFormError(resolvedMessage);
       }
@@ -211,8 +218,15 @@ export default function Login({ onSignIn: onSignInProp, navigation, route }) {
             label={loading ? 'Logging in...' : 'Log In'}
             onPress={handleLogin}
             disabled={isSubmitDisabled}
-            style={[buttonStyles.pill, styles.fullWidthButton]}
-            textStyle={buttonStyles.pillText}
+            style={[
+              buttonStyles.pill,
+              styles.fullWidthButton,
+              isSubmitDisabled && buttonStyles.pillDisabled,
+            ]}
+            textStyle={[
+              buttonStyles.pillText,
+              isSubmitDisabled && buttonStyles.pillTextDisabled,
+            ]}
           />
         </View>
       </View>

@@ -549,7 +549,7 @@ const HomeScreen = ({
                     classButtonDisabled && styles.actionButtonTextDisabled,
                   ]}
                 >
-                  See My Class
+                  Go To Class
                 </Text>
               </TouchableOpacity>
             ) : null}
