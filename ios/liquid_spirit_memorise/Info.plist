@@ -8,14 +8,14 @@
 	<string>Nuri</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -23,9 +23,13 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>57</string>
+	<string>58</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer> <!-- iPhone only -->
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -33,39 +37,43 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>App would like to have access to your camera in order to allow you to post realtime content to the social feed.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
-	<key>UIAppFonts</key>
-		<array>
-			<string>Ionicons.ttf</string>
-		</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access for video recording and playback.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need access to save uploaded media.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>App would like to have access to your photos in order to allow you to post content from your device to the social feed.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app uses speech for accessibility features</string>
 	<key>RCTNewArchEnabled</key>
+	<true/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Ionicons.ttf</string>
+	</array>
+	<key>UIApplicationPreferredGameMode</key>
+	<string>game</string>
+	<key>UIApplicationSupportsGameMode</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>This app uses speech for accessibility features</string>
-	<key>NSCameraUsageDescription</key>
-	<string>App would like to have access to your camera in order to allow you to post realtime content to the social feed.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>App would like to have access to your photos in order to allow you to post content from your device to the social feed.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We need access to save uploaded media.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We need microphone access for video recording and playback.</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
 	</array>
-	<key>UIApplicationSupportsGameMode</key>
-	<true/>
-	<key>UIApplicationPreferredGameMode</key>
-	<string>game</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
