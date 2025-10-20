@@ -19,7 +19,8 @@ const MARGIN = 0;
 const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose, level = 1 }) => {
   // Difficulty settings: number of pieces and pre-completed count from global context
   const safeInsets = useContext(SafeAreaInsetsContext);
-  const fabBottomSpacing = Math.max(safeInsets?.bottom || 0, 0) + FAB_BOTTOM_MARGIN;
+  const bottomInset = Math.max(safeInsets?.bottom || 0, 0);
+  const fabBottomSpacing = bottomInset + (bottomInset > 0 ? 2 : FAB_BOTTOM_MARGIN);
   const numericLevel = Number(level);
   const difficulty = Number.isFinite(numericLevel) && numericLevel > 0
     ? Math.min(Math.max(Math.floor(numericLevel), 1), 3)

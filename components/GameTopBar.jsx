@@ -13,14 +13,13 @@ const GameTopBar = ({
   ...navProps
 }) => {
   const insets = useContext(SafeAreaInsetsContext);
-  const topInset = Math.max(insets?.top ?? 0, 6);
   const mergedNavProps = {
     ...navProps,
     backIconColor: navProps.backIconColor ?? iconColor,
   };
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrapper, { paddingTop: topInset }, style]}>
+    <View pointerEvents="box-none" style={[styles.wrapper, { paddingTop: 0 }, style]}>
       <View pointerEvents="box-none" style={styles.frame}>
         <TopNav
           {...mergedNavProps}

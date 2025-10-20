@@ -192,11 +192,14 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   const cardMargin = 4;
   // compute card size constrained by both width and height so cards always fit within grid width
   const widthBound = Math.max(40, Math.floor((gridLayout.width - cardMargin * 2 * columns) / columns));
-  // reserve space at bottom for guesses card; align with FAB bottom (54)
+  // reserve space at bottom for guesses card so gameplay grid stays visible
   const bottomSafeInset = Math.max(safeInsets?.bottom || 0, 0);
-  const bottomOffset = bottomSafeInset + FAB_BOTTOM_MARGIN; // align with Difficulty FAB spacing and safe area
+  const leftSafeInset = Math.max(safeInsets?.left || 0, 0);
+  const hasBottomInset = bottomSafeInset > 0;
+  const bottomAlignmentMargin = hasBottomInset ? 2 : FAB_BOTTOM_MARGIN; // align with FAB on inset vs non-inset devices
+  const guessCardBottomOffset = bottomSafeInset + bottomAlignmentMargin;
   const guessesCardHeightEst = Math.max(48, Math.min(72, Math.floor((widthBound * 1.35) * 0.8)));
-  const bottomReserve = guessesCardHeightEst + bottomOffset + 8; // preserve space for guesses card, FAB, and safe area
+  const bottomReserve = guessesCardHeightEst + guessCardBottomOffset + 8; // preserve space for guesses card, FAB, and safe area
   const usableHeight = Math.max(120, gridLayout.height - bottomReserve);
   const heightBoundPerCard = Math.max(40, Math.floor((usableHeight - cardMargin * 2 * rows) / rows));
   // maintain aspect ratio ~1:1.35 (w:h)
@@ -349,7 +352,13 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
       </View>
       {/* Guesses card at bottom-left styled like a card */}
       {status === 'playing' && (
-        <View style={[styles.guessCardContainer, { bottom: bottomOffset }]} pointerEvents="none">
+        <View
+          style={[
+            styles.guessCardContainer,
+            { bottom: guessCardBottomOffset, left: leftSafeInset + 16 },
+          ]}
+          pointerEvents="none"
+        >
           <View
             style={[
               styles.card,
@@ -593,7 +602,6 @@ const styles = StyleSheet.create({
   },
   guessCardContainer: {
     position: 'absolute',
-    left: 16,
   },
   guessCard: {
     paddingHorizontal: 10,
