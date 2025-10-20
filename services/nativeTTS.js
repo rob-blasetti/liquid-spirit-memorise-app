@@ -17,11 +17,7 @@ const nativeModule =
 const isAvailable = Boolean(nativeModule);
 
 const stopTts = async () => {
-  if (Platform.OS === 'ios') {
-    await Tts.stop(false);
-  } else {
-    await Tts.stop();
-  }
+  await Tts.stop();
 };
 
 const cleanText = value =>
