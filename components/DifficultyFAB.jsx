@@ -1,13 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo, useContext } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Animated,
-  Easing,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Animated, Easing, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDifficulty } from '../contexts/DifficultyContext';
@@ -22,20 +14,9 @@ const DifficultyFAB = () => {
   const safeInsets = useContext(SafeAreaInsetsContext);
   const topInset = Math.max(safeInsets?.top || 0, 0);
   const bottomInset = Math.max(safeInsets?.bottom || 0, 0);
-  const leftInset = Math.max(safeInsets?.left || 0, 0);
-  const rightInset = Math.max(safeInsets?.right || 0, 0);
   const fabBottomSpacing = bottomInset + FAB_BOTTOM_MARGIN;
   const [open, setOpen] = useState(false);
   const openAnim = useRef(new Animated.Value(0)).current; // 0 closed -> 1 open
-  const overlayBounds = useMemo(
-    () => ({
-      top: -topInset,
-      bottom: -bottomInset,
-      left: -leftInset,
-      right: -rightInset,
-    }),
-    [topInset, bottomInset, leftInset, rightInset],
-  );
 
   const progressForActiveGame =
     typeof getProgressForGame === 'function'
@@ -126,16 +107,13 @@ const DifficultyFAB = () => {
   };
 
   return (
-    <View style={[styles.container, overlayBounds]} pointerEvents="box-none">
+    <View style={styles.container} pointerEvents="box-none">
       {open && (
         <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-          <View style={[styles.scrim, overlayBounds]} pointerEvents="auto" />
+          <View style={[styles.scrim, { top: -topInset, bottom: -bottomInset }]} pointerEvents="auto" />
         </TouchableWithoutFeedback>
       )}
-      <View
-        style={[styles.fabWrap, { bottom: fabBottomSpacing, right: rightInset + 24 }]}
-        pointerEvents="box-none"
-      >
+      <View style={[styles.fabWrap, { bottom: fabBottomSpacing }]} pointerEvents="box-none">
         <View style={styles.levelContainer} pointerEvents="box-none">
           {levelOrder.map((val, idx) => (
             <LevelButton key={val} value={val} index={idx} />

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 import ThemedButton from '../components/ThemedButton';
@@ -24,7 +24,6 @@ const GameVictoryScreen = ({
   maxLevel = MAX_LEVEL,
 }) => {
   const { setLevel } = useDifficulty();
-  const insets = useSafeAreaInsets();
   const normalizedLevel = typeof level === 'number' && level > 0 ? level : 1;
   const hasNextLevel = normalizedLevel < maxLevel;
   const currentDifficulty = useMemo(() => {
@@ -49,74 +48,54 @@ const GameVictoryScreen = ({
     }
   };
 
-  const edgeExtensionStyle = useMemo(
-    () => ({
-      marginTop: -insets.top,
-      marginBottom: -insets.bottom,
-    }),
-    [insets.top, insets.bottom],
-  );
-
-  const contentSpacing = useMemo(
-    () => ({
-      paddingTop: 32 + insets.top,
-      paddingBottom: 32 + insets.bottom,
-      paddingHorizontal: 24,
-    }),
-    [insets.top, insets.bottom],
-  );
-
   return (
-    <View style={[styles.root, edgeExtensionStyle]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, contentSpacing]}
-        contentInsetAdjustmentBehavior="never"
-        bounces={false}
-      >
-        <View style={styles.container}>
-          <View style={styles.animationLayer}>
-            <View pointerEvents="none" style={styles.animationBackground}>
-              {playCelebrateAnimation({ style: styles.backgroundAnimation })}
-            </View>
-            <View pointerEvents="none" style={styles.animationForeground}>
-              {playSuccessAnimation({ style: styles.foregroundAnimation })}
-            </View>
-          </View>
-          <View style={styles.content}>
-            <Text style={styles.heading}>Victory!</Text>
-            <Text style={styles.subHeading}>
-              {perfect ? 'Flawless run! ' : ''}
-              You conquered
-              <Text style={styles.highlight}> {resolvedGameTitle}</Text>.
-            </Text>
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Game</Text>
-                <Text style={styles.summaryValue}>{resolvedGameTitle}</Text>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false}>
+          <View style={styles.container}>
+            <View style={styles.animationLayer}>
+              <View pointerEvents="none" style={styles.animationBackground}>
+                {playCelebrateAnimation({ style: styles.backgroundAnimation })}
               </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Difficulty</Text>
-                <View style={styles.difficultyChip}>
-                  <Text style={styles.difficultyChipText}>{currentDifficulty}</Text>
+              <View pointerEvents="none" style={styles.animationForeground}>
+                {playSuccessAnimation({ style: styles.foregroundAnimation })}
+              </View>
+            </View>
+            <View style={styles.content}>
+              <Text style={styles.heading}>Victory!</Text>
+              <Text style={styles.subHeading}>
+                {perfect ? 'Flawless run! ' : ''}
+                You conquered
+                <Text style={styles.highlight}> {resolvedGameTitle}</Text>.
+              </Text>
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Game</Text>
+                  <Text style={styles.summaryValue}>{resolvedGameTitle}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Difficulty</Text>
+                  <View style={styles.difficultyChip}>
+                    <Text style={styles.difficultyChipText}>{currentDifficulty}</Text>
+                  </View>
                 </View>
               </View>
+              <ThemedButton
+                title={hasNextLevel ? `Play ${nextLevelLabel}` : 'Back to Home'}
+                onPress={handlePrimaryAction}
+                style={[styles.primaryCta, !hasNextLevel ? styles.homeCta : null]}
+                textStyle={styles.primaryCtaText}
+              />
+              {onGoGames ? (
+                <TouchableOpacity style={styles.secondaryLink} onPress={onGoGames}>
+                  <Text style={styles.secondaryLinkText}>Choose another game</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
-            <ThemedButton
-              title={hasNextLevel ? `Play ${nextLevelLabel}` : 'Back to Home'}
-              onPress={handlePrimaryAction}
-              style={[styles.primaryCta, !hasNextLevel ? styles.homeCta : null]}
-              textStyle={styles.primaryCtaText}
-            />
-            {onGoGames ? (
-              <TouchableOpacity style={styles.secondaryLink} onPress={onGoGames}>
-                <Text style={styles.secondaryLinkText}>Choose another game</Text>
-              </TouchableOpacity>
-            ) : null}
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
@@ -128,19 +107,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: themeVariables.primaryColor,
   },
+  safeArea: {
+    flex: 1,
+    backgroundColor: themeVariables.primaryColor,
+  },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     minHeight: '100%',
   },
   scrollView: {
     flex: 1,
   },
   container: {
-    width: '100%',
-    maxWidth: 420,
+    flexGrow: 1,
+    minHeight: '100%',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   animationLayer: {
     ...StyleSheet.absoluteFillObject,

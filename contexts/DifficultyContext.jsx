@@ -86,7 +86,7 @@ export const DifficultyProvider = ({ children }) => {
   const setActiveGame = useCallback((gameId) => {
     const normalizedId = gameId ? String(gameId) : null;
     setActiveGameState(normalizedId);
-    const entry = resolveProgressEntry(progressRef.current, normalizedId, { fallbackToGlobal: false });
+    const entry = resolveProgressEntry(progressRef.current, normalizedId);
     setLevelState(entry.currentLevel || entry.highestUnlocked || 1);
   }, []);
 
@@ -114,8 +114,7 @@ export const DifficultyProvider = ({ children }) => {
   }, [persist]);
 
   const getProgressForGame = useCallback(
-    (gameId, options = {}) =>
-      resolveProgressEntry(progressMap, gameId, { fallbackToGlobal: false, ...options }),
+    (gameId) => resolveProgressEntry(progressMap, gameId),
     [progressMap],
   );
 
