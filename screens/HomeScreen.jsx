@@ -73,7 +73,14 @@ const HomeScreen = ({
   const libraryButtonDisabled = true;
   const hasGamesButton = typeof onOpenGames === 'function';
   const hasClassButton = typeof onOpenClass === 'function';
-  const classButtonDisabled = !isLinkedAccount;
+  const normalizedClassList = Array.isArray(profile?.classes)
+    ? profile.classes.filter(Boolean)
+    : [];
+  const coerceNumberOfChildren = Number(profile?.numberOfChildren);
+  const hasLinkedChildren = Number.isFinite(coerceNumberOfChildren) && coerceNumberOfChildren > 0;
+  const hasClassAssociations = normalizedClassList.length > 0 || hasLinkedChildren;
+  const classAccessEnabled = isLinkedAccount && hasClassAssociations;
+  const classButtonDisabled = !classAccessEnabled;
   const hasBottomButtons =
     hasLibraryButton || hasGamesButton || hasClassButton;
 
@@ -337,6 +344,7 @@ const HomeScreen = ({
         onOpenAchievements={onOpenAchievements}
         onOpenSettings={onOpenSettings}
         onOpenClass={onOpenClass}
+        classAccessEnabled={classAccessEnabled}
       />
 
       <View style={styles.mainContent}>

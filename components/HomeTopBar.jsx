@@ -14,6 +14,7 @@ const HomeTopBar = ({
   onOpenAchievements,
   onOpenSettings,
   onOpenClass,
+  classAccessEnabled = true,
 }) => {
   const { displayName, totalPoints, avatarUri, isLinkedAccount, gradeChipText } = useMemo(() => {
     const {
@@ -60,7 +61,8 @@ const HomeTopBar = ({
   const canPressAvatar = typeof onAvatarPress === 'function';
   const showPointsButton = typeof onOpenAchievements === 'function';
   const showSettingsButton = typeof onOpenSettings === 'function';
-  const canOpenClass = typeof onOpenClass === 'function' && isLinkedAccount;
+  const gradeChipPressHandler = typeof onOpenClass === 'function' ? onOpenClass : undefined;
+  const canOpenClass = Boolean(gradeChipPressHandler) && isLinkedAccount && classAccessEnabled;
 
   return (
     <View style={styles.topBar}>
@@ -73,9 +75,16 @@ const HomeTopBar = ({
               color={themeVariables.whiteColor}
               bg="rgba(255, 255, 255, 0.18)"
               iconSize={18}
-              style={styles.gradeChip}
-              textStyle={styles.gradeChipText}
-              onPress={canOpenClass ? onOpenClass : undefined}
+              style={[
+                styles.gradeChip,
+                !canOpenClass && styles.gradeChipDisabled,
+              ]}
+              textStyle={[
+                styles.gradeChipText,
+                !canOpenClass && styles.gradeChipTextDisabled,
+              ]}
+              onPress={gradeChipPressHandler}
+              disabled={!canOpenClass}
               accessibilityLabel={
                 canOpenClass ? `View classes for ${gradeChipText}` : gradeChipText
               }
@@ -216,10 +225,16 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     minHeight: 40,
   },
+  gradeChipDisabled: {
+    opacity: 0.6,
+  },
   gradeChipText: {
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.2,
+  },
+  gradeChipTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.75)',
   },
   avatarWrapper: {
     width: AVATAR_SIZE,
