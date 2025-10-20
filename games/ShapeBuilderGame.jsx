@@ -6,7 +6,6 @@ import GameTopBar from '../components/GameTopBar';
 import PuzzlePiece from '../components/PuzzlePieceSvg';
 import PuzzleSlotSvg from '../components/PuzzleSlotSvg';
 import { buildJigsawPath } from '../components/PuzzlePath';
-import { useDifficulty } from '../contexts/DifficultyContext';
 import themeVariables from '../styles/theme';
 import { prepareQuoteForGame } from '../services/quoteSanitizer';
 import { FAB_BOTTOM_MARGIN } from '../components/DifficultyFAB';
@@ -17,11 +16,14 @@ import LinearGradient from 'react-native-linear-gradient';
 const { width, height } = Dimensions.get('window');
 const MARGIN = 0;
 
-const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
+const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose, level = 1 }) => {
   // Difficulty settings: number of pieces and pre-completed count from global context
   const safeInsets = useContext(SafeAreaInsetsContext);
   const fabBottomSpacing = Math.max(safeInsets?.bottom || 0, 0) + FAB_BOTTOM_MARGIN;
-  const { level: difficulty } = useDifficulty();
+  const numericLevel = Number(level);
+  const difficulty = Number.isFinite(numericLevel) && numericLevel > 0
+    ? Math.min(Math.max(Math.floor(numericLevel), 1), 3)
+    : 1;
   const pieceCounts = { 1: 8, 2: 16, 3: 24 };
   const prePlacedCounts = { 1: 2, 2: 4, 3: 6 };
   const pieceCount = pieceCounts[difficulty] || 8;

@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDifficulty } from '../contexts/DifficultyContext';
-import { useUser } from '../contexts/UserContext';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import ThemedButton from '../components/ThemedButton';
 import GameTopBar from '../components/GameTopBar';
@@ -32,13 +30,15 @@ const initGuessed = (text, level) => {
   return Array.from(revealedLetters);
 };
 
-const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
-  const { level } = useDifficulty();
-  const { markDifficultyComplete } = useUser();
+const HangmanGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
   const normalized = text.toLowerCase();
+  const numericLevel = Number(level);
+  const difficultyLevel = Number.isFinite(numericLevel) && numericLevel > 0
+    ? Math.min(Math.max(Math.floor(numericLevel), 1), 3)
+    : 1;
   // Guessed letters, initially revealing words per difficulty
-  const [guessed, setGuessed] = useState(() => initGuessed(text, level));
+  const [guessed, setGuessed] = useState(() => initGuessed(text, difficultyLevel));
   const [wrong, setWrong] = useState(0);
   const [letterChoices, setLetterChoices] = useState([]);
   const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
@@ -46,10 +46,10 @@ const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
 
   // Reset game state when difficulty level (or text) changes
   useEffect(() => {
-    setGuessed(initGuessed(text, level));
+    setGuessed(initGuessed(text, difficultyLevel));
     setWrong(0);
     setStatus('playing');
-  }, [level, text]);
+  }, [difficultyLevel, text]);
   const letters = normalized.split('');
   const masked = letters
     .map((ch) => {
@@ -72,7 +72,7 @@ const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
     const incorrect = [];
     const wrongPool = alphabet.filter(ch => !normalized.includes(ch) && !guessed.includes(ch));
     // Determine total number of choices based on difficulty level
-    const totalChoices = 4 + (level - 1) * 2; // 4, 6, or 8
+    const totalChoices = 4 + (difficultyLevel - 1) * 2; // 4, 6, or 8
     const distractCount = totalChoices - correct.length;
     for (let i = 0; i < distractCount && wrongPool.length > 0; i++) {
       const idx = Math.floor(Math.random() * wrongPool.length);
@@ -108,15 +108,11 @@ const HangmanGame = ({ quote, onBack, onWin, onLose }) => {
   useEffect(() => {
     if (status === 'won' && !winHandledRef.current) {
       winHandledRef.current = true;
-      // record difficulty completion
-      if (typeof markDifficultyComplete === 'function') {
-        markDifficultyComplete('hangmanGame', level);
-      }
       if (onWin) onWin();
     }
-  }, [status, level, markDifficultyComplete, onWin]);
+  }, [status, onWin]);
   // Reset win handler when level or quote changes
-  useEffect(() => { winHandledRef.current = false; }, [level, text]);
+  useEffect(() => { winHandledRef.current = false; }, [difficultyLevel, text]);
   // prepare letter choices on mount and after each guess
   useEffect(() => {
     if (status === 'playing') {

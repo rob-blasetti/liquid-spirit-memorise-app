@@ -4,11 +4,11 @@ import ReactTestRenderer from 'react-test-renderer';
 const mockOnVictory = jest.fn();
 const mockAwardGameAchievement = jest.fn();
 const mockRecordGamePlay = jest.fn();
-const mockMarkDifficultyComplete = jest.fn();
 const mockGoTo = jest.fn();
 const mockSetActiveGame = jest.fn();
 const mockSetLevel = jest.fn();
-const mockGetCompletedLevelsForGame = jest.fn(() => ({ completed: { 1: true }, highestUnlocked: 2 }));
+const mockMarkLevelComplete = jest.fn();
+const mockGetProgressForGame = jest.fn(() => ({ completed: { 1: true }, highestUnlocked: 2, currentLevel: 2 }));
 const mockUseDifficulty = jest.fn();
 
 jest.mock('../screens/GradesScreen', () => () => null);
@@ -40,14 +40,6 @@ jest.mock('../contexts/DifficultyContext', () => ({
   useDifficulty: () => mockUseDifficulty(),
 }));
 
-jest.mock('../contexts/UserContext', () => ({
-  useUser: () => ({
-    markDifficultyComplete: mockMarkDifficultyComplete,
-    getCompletedLevelsForGame: mockGetCompletedLevelsForGame,
-    completedDifficulties: {},
-  }),
-}));
-
 jest.mock('../components/DifficultyFAB', () => () => null);
 jest.mock('../components/LostOverlay', () => () => null);
 
@@ -56,11 +48,11 @@ describe('GameRenderer victory flow', () => {
     mockOnVictory.mockClear();
     mockAwardGameAchievement.mockClear();
     mockRecordGamePlay.mockClear();
-    mockMarkDifficultyComplete.mockClear();
+    mockMarkLevelComplete.mockClear();
     mockGoTo.mockClear();
     mockSetActiveGame.mockClear();
     mockSetLevel.mockClear();
-    mockGetCompletedLevelsForGame.mockClear();
+    mockGetProgressForGame.mockClear();
     mockUseDifficulty.mockReset();
 
     mockUseDifficulty.mockReturnValue({
@@ -68,9 +60,11 @@ describe('GameRenderer victory flow', () => {
       setLevel: mockSetLevel,
       activeGame: 'testGame',
       setActiveGame: mockSetActiveGame,
+      markLevelComplete: mockMarkLevelComplete,
+      getProgressForGame: mockGetProgressForGame,
     });
 
-    mockGetCompletedLevelsForGame.mockReturnValue({ completed: { 1: true }, highestUnlocked: 2 });
+    mockGetProgressForGame.mockReturnValue({ completed: { 1: true }, highestUnlocked: 2, currentLevel: 2 });
   });
 
   it('invokes onVictory with game summary when a game reports a win', async () => {
@@ -96,7 +90,7 @@ describe('GameRenderer victory flow', () => {
         perfect: true,
       }),
     );
-    expect(mockMarkDifficultyComplete).toHaveBeenCalledWith('testGame', 2);
+    expect(mockMarkLevelComplete).toHaveBeenCalledWith('testGame', 2);
   });
 
   it('navigates to the victory screen when a game is won', async () => {
@@ -176,12 +170,14 @@ describe('GameRenderer victory flow', () => {
   });
 
   it('sets the active game to the highest unlocked level when switching games', async () => {
-    mockGetCompletedLevelsForGame.mockReturnValueOnce({ completed: {}, highestUnlocked: 1 });
+    mockGetProgressForGame.mockReturnValueOnce({ completed: {}, highestUnlocked: 1, currentLevel: 1 });
     mockUseDifficulty.mockReturnValueOnce({
       level: 3,
       setLevel: mockSetLevel,
       activeGame: 'previousGame',
       setActiveGame: mockSetActiveGame,
+      markLevelComplete: mockMarkLevelComplete,
+      getProgressForGame: mockGetProgressForGame,
     });
 
     const GameRenderer = require('../components/GameRenderer').default;
@@ -199,6 +195,6 @@ describe('GameRenderer victory flow', () => {
       );
     });
 
-    expect(mockSetActiveGame).toHaveBeenCalledWith('testGame', 1);
+    expect(mockSetActiveGame).toHaveBeenCalledWith('testGame');
   });
 });
