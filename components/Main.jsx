@@ -42,6 +42,10 @@ import { TEST_USER_EMAIL, getTestUserClassData } from '../data/testUserClassData
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import { deleteNuriUser } from '../services/authService';
 import { clearCredentials } from '../services/credentialService';
+import {
+  markAppInteractive,
+  markNavigationComplete,
+} from '../services/performanceService';
 
 const resolveProfileId = (entity) => {
   if (!entity || typeof entity !== 'object') return null;
@@ -97,6 +101,10 @@ const Main = () => {
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [comingSoonGrade, setComingSoonGrade] = useState(null);
+
+  const previousScreenRef = useRef(null);
+  const pendingTransitionRef = useRef(null);
+  const appInteractiveReportedRef = useRef(false);
 
   const profileSwitchEligible = useMemo(() => {
     if (!profile) return false;
@@ -201,6 +209,42 @@ const Main = () => {
   useEffect(() => {
     setUsersRef.current = setUsers;
   }, [setUsers]);
+
+  useEffect(() => {
+    if (transitionState) {
+      pendingTransitionRef.current = transitionState;
+    }
+  }, [transitionState]);
+
+  useEffect(() => {
+    const screen = displayNav?.screen;
+    if (!screen || showSplash) return;
+
+    const pendingTransition = pendingTransitionRef.current;
+    const fromScreen = pendingTransition?.from?.screen ?? previousScreenRef.current ?? null;
+    const wasAnimated = Boolean(pendingTransition);
+
+    markNavigationComplete(screen, {
+      from: fromScreen,
+      animated: wasAnimated,
+    });
+
+    pendingTransitionRef.current = null;
+    previousScreenRef.current = screen;
+  }, [displayNav?.screen, showSplash, markNavigationComplete]);
+
+  useEffect(() => {
+    if (showSplash || !storageLoaded) return;
+    const screen = displayNav?.screen;
+    if (!screen || appInteractiveReportedRef.current) return;
+
+    appInteractiveReportedRef.current = true;
+    markAppInteractive({
+      initialScreen: screen,
+      hasProfile: Boolean(profile),
+      hasToken: Boolean(token),
+    });
+  }, [showSplash, storageLoaded, displayNav?.screen, profile, token, markAppInteractive]);
 
   useEffect(() => {
     if (!profile && !registeredProfile) return;
@@ -404,50 +448,50 @@ const Main = () => {
 
   return (
     <AchievementsProvider value={achievementsState}>
-    <ScreenBackground>
-    <SafeAreaView style={styles.container}>
-      <ProfileModal
-        visible={profileModalVisible}
-        profile={profile}
-        onClose={() => setProfileModalVisible(false)}
-        onOpenSwitcher={() => {
-          setProfileModalVisible(false);
-          if (profileSwitchEligible) {
-            setProfileSwitcherVisible(true);
-          }
-        }}
-        switcherAvailable={profileSwitchEligible}
-        onAvatarPress={avatarActions?.pickNewAvatar}
-      />
-      <ProfileSwitcherModal
-        visible={profileSwitcherVisible}
-        registeredProfile={registeredProfile}
-        guestProfile={guestProfile}
-        profile={profile}
-        children={children}
-        saveProfile={saveProfile}
-        setUser={setUser}
-        setProfileSwitcherVisible={setProfileSwitcherVisible}
-        deleteGuestAccount={deleteGuestAccount}
-      />
-      <View style={styles.container}>{screenContent}</View>
-      <ComingSoonModal
-        visible={comingSoonGrade != null}
-        grade={comingSoonGrade}
-        onClose={() => setComingSoonGrade(null)}
-      />
-      {notification && (
-        <NotificationBanner
-          title={notification.title}
-          onPress={() => {
-            goTo('achievements', { highlight: notification.id });
-            setNotification(null);
-          }}
-          onHide={() => setNotification(null)}
-        />
-      )}
-    </SafeAreaView>
-    </ScreenBackground>
+      <ScreenBackground>
+        <SafeAreaView style={styles.container}>
+          <ProfileModal
+            visible={profileModalVisible}
+            profile={profile}
+            onClose={() => setProfileModalVisible(false)}
+            onOpenSwitcher={() => {
+              setProfileModalVisible(false);
+              if (profileSwitchEligible) {
+                setProfileSwitcherVisible(true);
+              }
+            }}
+            switcherAvailable={profileSwitchEligible}
+            onAvatarPress={avatarActions?.pickNewAvatar}
+          />
+          <ProfileSwitcherModal
+            visible={profileSwitcherVisible}
+            registeredProfile={registeredProfile}
+            guestProfile={guestProfile}
+            profile={profile}
+            children={children}
+            saveProfile={saveProfile}
+            setUser={setUser}
+            setProfileSwitcherVisible={setProfileSwitcherVisible}
+            deleteGuestAccount={deleteGuestAccount}
+          />
+          <View style={styles.container}>{screenContent}</View>
+          <ComingSoonModal
+            visible={comingSoonGrade != null}
+            grade={comingSoonGrade}
+            onClose={() => setComingSoonGrade(null)}
+          />
+          {notification && (
+            <NotificationBanner
+              title={notification.title}
+              onPress={() => {
+                goTo('achievements', { highlight: notification.id });
+                setNotification(null);
+              }}
+              onHide={() => setNotification(null)}
+            />
+          )}
+        </SafeAreaView>
+      </ScreenBackground>
     </AchievementsProvider>
   );
 };

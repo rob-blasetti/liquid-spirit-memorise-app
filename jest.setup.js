@@ -3,6 +3,105 @@ jest.mock('liquid-spirit-styleguide', () => {
   const MockButton = ({ label, onPress }) => React.createElement('Button', { label, onPress });
   return { Button: MockButton };
 });
+jest.mock('react-native-performance', () => {
+  const marks = new Map();
+  const measures = [];
+  const metrics = [];
+  let timeOrigin = Date.now();
+
+  const now = jest.fn(() => Date.now());
+  const resolveTimestamp = (markOrTimestamp) => {
+    if (typeof markOrTimestamp === 'string') {
+      return marks.get(markOrTimestamp);
+    }
+    if (typeof markOrTimestamp === 'number') {
+      return markOrTimestamp;
+    }
+    return now();
+  };
+
+  const performance = {
+    now,
+    timeOrigin,
+    mark: jest.fn((name, options = {}) => {
+      const startTime = options.startTime ?? now();
+      marks.set(name, startTime);
+      return { name, entryType: 'mark', startTime, detail: options.detail };
+    }),
+    measure: jest.fn((name, optionsOrStart, endMark) => {
+      let startTime = timeOrigin;
+      let endTime = now();
+      let detail;
+
+      if (
+        optionsOrStart
+        && typeof optionsOrStart === 'object'
+        && optionsOrStart.constructor === Object
+      ) {
+        if (optionsOrStart.start !== undefined) {
+          startTime = resolveTimestamp(optionsOrStart.start) ?? timeOrigin;
+        }
+        if (optionsOrStart.end !== undefined) {
+          endTime = resolveTimestamp(optionsOrStart.end) ?? endTime;
+        }
+        if (optionsOrStart.duration !== undefined) {
+          endTime = startTime + optionsOrStart.duration;
+        }
+        detail = optionsOrStart.detail;
+      } else {
+        if (optionsOrStart !== undefined) {
+          startTime = resolveTimestamp(optionsOrStart) ?? timeOrigin;
+        }
+        if (endMark !== undefined) {
+          endTime = resolveTimestamp(endMark) ?? endTime;
+        }
+      }
+
+      const entry = {
+        name,
+        entryType: 'measure',
+        startTime,
+        duration: endTime - startTime,
+        detail,
+      };
+      measures.push(entry);
+      return entry;
+    }),
+    metric: jest.fn((name, valueOrOptions) => {
+      const payload =
+        valueOrOptions && typeof valueOrOptions === 'object'
+          ? { name, ...valueOrOptions }
+          : { name, value: valueOrOptions, startTime: now(), detail: undefined };
+      metrics.push(payload);
+      return payload;
+    }),
+    clearMarks: jest.fn((name) => {
+      if (typeof name === 'string') {
+        marks.delete(name);
+      } else {
+        marks.clear();
+      }
+    }),
+    clearMeasures: jest.fn(),
+    clearMetrics: jest.fn(),
+    clearResourceTimings: jest.fn(),
+  };
+
+  class PerformanceObserver {
+    constructor(callback) {
+      this.callback = callback;
+    }
+    observe() {}
+    disconnect() {}
+  }
+
+  return {
+    __esModule: true,
+    default: performance,
+    PerformanceObserver,
+    setResourceLoggingEnabled: jest.fn(),
+  };
+});
 jest.mock('@react-navigation/native', () => {
   const React = require('react');
   return {

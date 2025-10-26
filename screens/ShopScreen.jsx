@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Pressable, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import theme from '../styles/theme';
+import useParentalGate from '../hooks/useParentalGate';
 
 const SHOP_ITEMS = [
   { id: 'sticker_pack_1', title: 'Sticker Pack: Ocean', price: 50, description: 'Fun ocean-themed stickers for messages.' },
@@ -12,13 +13,40 @@ const SHOP_ITEMS = [
 
 const ShopScreen = ({ profile, children = [], setChildren, setProfile, saveProfile }) => {
   const [giftModalItem, setGiftModalItem] = useState(null);
+  const [hasGuardianAccess, setHasGuardianAccess] = useState(false);
+  const { requestPermission, ParentalGate } = useParentalGate();
 
   const points = typeof profile?.totalPoints === 'number' ? profile.totalPoints : 0;
   const owned = useMemo(() => new Set(profile?.inventory || []), [profile?.inventory]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const verifyGuardian = async () => {
+      const approved = await requestPermission();
+      if (!isMounted) return;
+      setHasGuardianAccess(Boolean(approved));
+    };
+    verifyGuardian();
+    return () => {
+      isMounted = false;
+    };
+  }, [requestPermission]);
+
+  const requireGuardianAccess = async () => {
+    if (hasGuardianAccess) return true;
+    const approved = await requestPermission();
+    if (approved) {
+      setHasGuardianAccess(true);
+      return true;
+    }
+    return false;
+  };
+
   const canAfford = (price) => points >= price;
 
   const handleBuy = async (item) => {
+    const allowed = await requireGuardianAccess();
+    if (!allowed) return;
     if (owned.has(item.id)) {
       Alert.alert('Already owned', 'You already own this item.');
       return;
@@ -42,6 +70,8 @@ const ShopScreen = ({ profile, children = [], setChildren, setProfile, saveProfi
   }, [children]);
 
   const handleGiftTo = async (recipient) => {
+    const allowed = await requireGuardianAccess();
+    if (!allowed) return;
     const item = giftModalItem;
     if (!item) return;
     if (!canAfford(item.price)) {
@@ -109,6 +139,19 @@ const ShopScreen = ({ profile, children = [], setChildren, setProfile, saveProfi
 
   return (
     <View style={styles.container}>
+      {!hasGuardianAccess ? (
+        <View style={styles.lockedOverlay}>
+          <Ionicons name="lock-closed" size={40} color={theme.whiteColor} />
+          <Text style={styles.lockedTitle}>Parental permission required</Text>
+          <Text style={styles.lockedMessage}>
+            Please ask a parent or guardian to unlock the shop before continuing.
+          </Text>
+          <TouchableOpacity style={[styles.actionBtn, styles.btnUnlock]} onPress={requireGuardianAccess}>
+            <Ionicons name="key" size={16} color={theme.whiteColor} />
+            <Text style={styles.actionText}>Unlock</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Shop</Text>
         <View style={styles.balance}>
@@ -144,6 +187,7 @@ const ShopScreen = ({ profile, children = [], setChildren, setProfile, saveProfi
           </TouchableOpacity>
         </View>
       </Modal>
+      {ParentalGate}
     </View>
   );
 };
@@ -180,6 +224,41 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 120,
+  },
+  lockedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    backgroundColor: 'rgba(20, 18, 46, 0.96)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  lockedTitle: {
+    color: theme.whiteColor,
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  lockedMessage: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  btnUnlock: {
+    backgroundColor: theme.primaryColor,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -285,4 +364,3 @@ const styles = StyleSheet.create({
 });
 
 export default ShopScreen;
-

@@ -25,7 +25,7 @@ const coerceInteger = (value, fallback) => {
 };
 
 // Set the API URL
-export const API_URL = coerceString(Config.PROD_API);
+export const API_URL = coerceString(Config.DEV_API);
 
 // ElevenLabs TTS configuration (optional)
 export const USE_ELEVENLABS = coerceBoolean(Config.USE_ELEVENLABS);

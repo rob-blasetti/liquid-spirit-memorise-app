@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  FlatList,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -57,60 +57,62 @@ const AchievementsScreen = ({ onBack }) => {
   }
   // totalPoints comes from context (server/profile canonical); computedPoints is derived for verification
   // Group achievements into categories based on id prefixes
-  const grouped = achievements.reduce((acc, ach) => {
-    // lowercase title for simpler matching
-    const t = ach.title.toLowerCase();
+  const grouped = useMemo(() => {
+    if (!Array.isArray(achievements) || achievements.length === 0) return {};
+    return achievements.reduce((acc, ach) => {
+      if (!ach || typeof ach !== 'object') return acc;
+      const title = typeof ach.title === 'string' ? ach.title.toLowerCase() : '';
 
-    let category;
-    if (t.includes('prayer')) {
-      category = 'Prayers';
-    } else if (t.includes('quote')) {
-      category = 'Quotes';
-    } else if (
-      t.includes('daily')      ||  
-      t.includes('master')     ||  
-      t.includes('star')       ||  
-      t.includes('game')       ||  
-      t.includes('tap')        ||  
-      t.includes('practice')   ||  
-      t.includes('memory')     ||  
-      t.includes('shape')      ||  
-      t.includes('hangman')    ||  
-      t.includes('bubble')
-    ) {
-      category = 'Games';
-    } else if (t.includes('profile')) {
-      category = 'Profile';
-    } else if (t.includes('explorer')) {
-      category = 'Explorer';
-    } else {
-      // if you ever add a new category, you can catch it here
-      category = 'Other';
-    }
+      let category;
+      if (title.includes('prayer')) {
+        category = 'Prayers';
+      } else if (title.includes('quote')) {
+        category = 'Quotes';
+      } else if (
+        title.includes('daily')
+        || title.includes('master')
+        || title.includes('star')
+        || title.includes('game')
+        || title.includes('tap')
+        || title.includes('practice')
+        || title.includes('memory')
+        || title.includes('shape')
+        || title.includes('hangman')
+        || title.includes('bubble')
+      ) {
+        category = 'Games';
+      } else if (title.includes('profile')) {
+        category = 'Profile';
+      } else if (title.includes('explorer')) {
+        category = 'Explorer';
+      } else {
+        category = 'Other';
+      }
 
-    acc[category] = acc[category] || [];
-    acc[category].push(ach);
-    return acc;
-  }, {});
+      acc[category] = acc[category] || [];
+      acc[category].push(ach);
+      return acc;
+    }, {});
+  }, [achievements]);
 
   const hasBackHandler = typeof onBack === 'function';
 
-  const filterAchievements = (items) => {
-    if (filterOption === 'all') return items;
-    return items.filter((a) =>
-      filterOption === 'earned' ? a.earned : !a.earned
-    );
-  };
+  const filteredAchievements = useMemo(() => {
+    const list = [];
+    order.forEach((section) => {
+      const sectionItems = grouped[section] || [];
+      const itemsToInclude =
+        filterOption === 'all'
+          ? sectionItems
+          : sectionItems.filter((a) => (filterOption === 'earned' ? a?.earned : !a?.earned));
+      if (itemsToInclude.length > 0) {
+        itemsToInclude.forEach((item) => list.push(item));
+      }
+    });
+    return list;
+  }, [grouped, filterOption]);
 
-  const filteredSections = order.map((section) => {
-    const rawItems = grouped[section] || [];
-    return {
-      section,
-      items: filterAchievements(rawItems),
-    };
-  });
-
-  const hasFilteredAchievements = filteredSections.some((entry) => entry.items.length > 0);
+  const hasFilteredAchievements = filteredAchievements.length > 0;
 
   const emptyStateLookup = {
     earned: {
@@ -129,8 +131,49 @@ const AchievementsScreen = ({ onBack }) => {
     },
   };
 
-  const emptyStateConfig = emptyStateLookup[filterOption] || emptyStateLookup.all;
-  const showEmptyState = !hasFilteredAchievements;
+  const emptyStateConfig = useMemo(
+    () => emptyStateLookup[filterOption] || emptyStateLookup.all,
+    [filterOption],
+  );
+
+  const renderAchievementItem = useCallback(({ item }) => {
+    if (!item) return null;
+    const pct = Math.max(0, Math.min(100, Number(item.points) || 0));
+    return (
+      <TouchableOpacity key={item.id} style={styles.cardWrapper} activeOpacity={0.7}>
+        <LinearGradient
+          colors={CARD_GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.card}
+        >
+          <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardDesc}>{item.description}</Text>
+          </View>
+
+          <Ionicons
+            name={item.earned ? 'star' : 'star-outline'}
+            size={32}
+            color={themeVariables.whiteColor}
+            style={styles.cardIcon}
+          />
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${pct}%` },
+              ]}
+            />
+          </View>
+          <Text style={styles.cardPoints}>{item.points}</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }, []);
+
+  const keyExtractor = useCallback((item) => item.id, []);
 
   return (
     <LinearGradient
@@ -190,7 +233,10 @@ const AchievementsScreen = ({ onBack }) => {
         </View>
 
         {/* Achievement Cards */}
-        <ScrollView
+        <FlatList
+          data={filteredAchievements}
+          keyExtractor={keyExtractor}
+          renderItem={renderAchievementItem}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -200,8 +246,7 @@ const AchievementsScreen = ({ onBack }) => {
               tintColor={themeVariables.whiteColor}
             />
           }
-        >
-          {showEmptyState ? (
+          ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons
                 name={EMPTY_STATE_ICON}
@@ -213,51 +258,8 @@ const AchievementsScreen = ({ onBack }) => {
                 {emptyStateConfig.subtitle}
               </Text>
             </View>
-          ) : (
-            filteredSections.flatMap(({ items }) =>
-              items.map((item) => {
-                const pct = Math.max(0, Math.min(100, item.points));
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.cardWrapper}
-                    activeOpacity={0.7}
-                  >
-                    <LinearGradient
-                      colors={CARD_GRADIENT}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.card}
-                    >
-                      <View style={styles.cardText}>
-                        <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.cardDesc}>{item.description}</Text>
-                      </View>
-
-                      <Ionicons
-                        name={item.earned ? 'star' : 'star-outline'}
-                        size={32}
-                        color={themeVariables.whiteColor}
-                        style={styles.cardIcon}
-                      />
-
-                      <View style={styles.progressTrack}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            { width: `${pct}%` },
-                          ]}
-                        />
-                      </View>
-                      {/* points value */}
-                      <Text style={styles.cardPoints}>{item.points}</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                );
-              })
-            )
-          )}
-        </ScrollView>
+          }
+        />
       </SafeAreaView>
     </LinearGradient>
   );

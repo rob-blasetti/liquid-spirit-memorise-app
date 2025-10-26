@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import Avatar from '@liquidspirit/react-native-boring-avatars';
@@ -6,6 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Button as StyleguideButton } from 'liquid-spirit-styleguide';
 import { BlurView } from '@react-native-community/blur';
 import themeVariables from '../styles/theme';
+import useParentalGate from '../hooks/useParentalGate';
 
 const AVATAR_SIZE = 96;
 
@@ -17,6 +18,7 @@ const ProfileModal = ({
   switcherAvailable,
   onAvatarPress,
 }) => {
+  const { requestPermission: requestParentalPermission, ParentalGate } = useParentalGate();
   const { displayName, avatarUri } = useMemo(() => {
     if (!profile || typeof profile !== 'object') {
       return {
@@ -38,6 +40,13 @@ const ProfileModal = ({
 
   const canChangeAvatar = typeof onAvatarPress === 'function';
 
+  const handleAvatarPress = useCallback(async () => {
+    if (!canChangeAvatar) return;
+    const approved = await requestParentalPermission();
+    if (!approved) return;
+    onAvatarPress?.();
+  }, [canChangeAvatar, onAvatarPress, requestParentalPermission]);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -58,7 +67,7 @@ const ProfileModal = ({
           <View style={styles.modalInner}>
             <TouchableOpacity
               style={styles.avatarWrapper}
-              onPress={onAvatarPress}
+              onPress={handleAvatarPress}
               disabled={!canChangeAvatar}
               activeOpacity={0.7}
               accessibilityRole={canChangeAvatar ? 'button' : undefined}
@@ -98,6 +107,7 @@ const ProfileModal = ({
             ) : null}
           </View>
         </View>
+        {ParentalGate}
       </View>
     </Modal>
   );

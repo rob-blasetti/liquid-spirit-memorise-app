@@ -6,6 +6,7 @@ import ScreenBackground from '../components/ScreenBackground';
 import TopNav from '../components/TopNav';
 import themeVariables from '../styles/theme';
 import buttonStyles from '../styles/buttonStyles';
+import useParentalGate from '../hooks/useParentalGate';
 
 const ForgotYourPassword = ({ route, navigation }) => {
   const isLiquidSpiritReset = route?.params?.mode === 'ls';
@@ -13,6 +14,7 @@ const ForgotYourPassword = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const { requestPermission, ParentalGate } = useParentalGate();
 
   const handleSend = async () => {
     // Clear previous messages each time the user submits.
@@ -28,6 +30,11 @@ const ForgotYourPassword = ({ route, navigation }) => {
 
     try {
       setLoading(true);
+      const approved = await requestPermission();
+      if (!approved) {
+        setLoading(false);
+        return;
+      }
       if (isLiquidSpiritReset) {
         await requestLiquidSpiritPasswordReset(trimmedEmail);
       } else {
@@ -83,6 +90,7 @@ const ForgotYourPassword = ({ route, navigation }) => {
             textStyle={buttonStyles.pillText}
           />
         </View>
+        {ParentalGate}
       </View>
     </ScreenBackground>
   );
