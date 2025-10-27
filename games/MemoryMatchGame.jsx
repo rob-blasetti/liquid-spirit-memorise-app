@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing 
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { FAB_BOTTOM_MARGIN } from '../components/DifficultyFAB';
 import GameTopBar from '../components/GameTopBar';
+import GameFeedbackToast from '../components/GameFeedbackToast';
 import themeVariables from '../styles/theme';
 import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
+import useGameFeedback from '../hooks/useGameFeedback';
 // Lost overlay handled by parent GameRenderer
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
@@ -35,6 +37,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   const [preview, setPreview] = useState(null); // { word: string, revealed: boolean }
   const previewFlip = useRef(new Animated.Value(0)).current; // 0 => 90deg, 1 => 0deg
   const previewTimer = useRef(null);
+  const { feedback, showFeedback, clearFeedback } = useGameFeedback();
   // Cache callbacks to avoid firing multiple times when parent re-renders
   const winCallbackRef = useRef(onWin);
   const loseCallbackRef = useRef(onLose);
@@ -47,11 +50,38 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   // Notify parent on terminal states without re-triggering on parent changes
   useEffect(() => {
     if (status === 'won') {
+      clearFeedback();
       winCallbackRef.current?.();
     } else if (status === 'lost') {
       loseCallbackRef.current?.();
     }
-  }, [status]);
+  }, [status, clearFeedback]);
+
+  const warningThresholdsRef = useRef([]);
+  const warningShownRef = useRef(new Set());
+
+  const computeWarningThresholds = useCallback((totalGuesses) => {
+    if (!Number.isFinite(totalGuesses) || totalGuesses <= 1) return [];
+    const candidates = [
+      Math.round(totalGuesses * 0.5),
+      Math.round(totalGuesses * 0.25),
+    ];
+    const thresholds = [];
+    candidates.forEach((candidate) => {
+      const clamped = Math.max(1, Math.min(totalGuesses - 1, candidate));
+      if (!thresholds.includes(clamped)) {
+        thresholds.push(clamped);
+      }
+    });
+    let fallback = totalGuesses - 1;
+    while (thresholds.length < 2 && fallback > 0) {
+      if (!thresholds.includes(fallback)) {
+        thresholds.push(fallback);
+      }
+      fallback -= 1;
+    }
+    return thresholds.slice(0, 2);
+  }, []);
 
   const initGame = useCallback(() => {
     const dimension = level + 3; // base difficulty factor
@@ -102,7 +132,10 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
     setGuessesLeft(initialGuesses);
     setPairEntryIndices(selectedEntries.map((entry) => entry.index));
     setRevealedEntryIndices(new Set());
-  }, [level, playableEntries, uniquePlayableEntries]);
+    clearFeedback();
+    warningThresholdsRef.current = computeWarningThresholds(initialGuesses);
+    warningShownRef.current = new Set();
+  }, [level, playableEntries, uniquePlayableEntries, clearFeedback, computeWarningThresholds]);
   useEffect(() => {
     initGame();
   }, [initGame]);
@@ -145,11 +178,11 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
             c.matchKey === card.matchKey ? { ...c, matched: true } : c,
           );
           // if all cards matched, win
-          if (updated.every((c2) => c2.matched)) {
-            setStatus('won');
-          }
-          return updated;
-        });
+      if (updated.every((c2) => c2.matched)) {
+        setStatus('won');
+      }
+      return updated;
+    });
         // reveal this word in the slate to a highly legible color
         setRevealedEntryIndices((prev) => {
           const next = new Set(prev);
@@ -157,11 +190,26 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
           return next;
         });
         setSelected([]);
+        clearFeedback();
       } else {
         // decrement guesses and check loss
         setGuessesLeft((prev) => {
           const next = prev - 1;
-          if (next <= 0) setStatus('lost');
+          if (next <= 0) {
+            setStatus('lost');
+            showFeedback('Out of guesses! Game over.', { tone: 'error', duration: 3200 });
+            return next;
+          }
+          const thresholds = warningThresholdsRef.current || [];
+          if (thresholds.includes(next) && !warningShownRef.current.has(next)) {
+            warningShownRef.current.add(next);
+            const remaining = next;
+            const message =
+              remaining === 1
+                ? 'Only 1 guess left—choose wisely!'
+                : `Only ${remaining} guesses left—choose wisely!`;
+            showFeedback(message, { tone: 'warning' });
+          }
           return next;
         });
         setTimeout(() => setSelected([]), 700);
@@ -226,6 +274,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
   const previewW = Math.max(80, Math.floor(previewBaseW * previewScale));
   const previewH = Math.max(80, Math.floor(previewBaseH * previewScale));
   const previewTop = Math.max(0, topArea.y + Math.floor((topArea.height - previewH) / 2));
+  const toastBottomOffset = guessCardBottomOffset + Math.max(guessesCardHeightEst, 72) + 28;
   return (
     <View style={styles.container}>
       {/* Victory flow handled by parent GameRenderer */}
@@ -421,6 +470,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
           </Animated.View>
         </View>
       )}
+      <GameFeedbackToast feedback={feedback} bottomOffset={toastBottomOffset} />
     </View>
   );
 };

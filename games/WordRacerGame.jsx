@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
+import GameFeedbackToast from '../components/GameFeedbackToast';
 import themeVariables from '../styles/theme';
 import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
+import useGameFeedback from '../hooks/useGameFeedback';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CAR_SIZE = 40;
@@ -29,6 +31,11 @@ const clampWordCenterY = (value, radius) =>
   Math.max(PLAY_AREA_TOP + TOP_SAFE_ZONE + radius, Math.min(PLAY_AREA_BOTTOM_EDGE - radius, value));
 const computeWordRadius = (text) =>
   Math.min(MAX_WORD_RADIUS, Math.max(MIN_WORD_RADIUS, text.length * 2.5 + 14));
+const computeCenterCarPosition = () => ({
+  x: clampCarX(SCREEN_WIDTH / 2 - CAR_SIZE / 2),
+  y: clampCarY((PLAY_AREA_TOP + CAR_BOTTOM_BOUND) / 2),
+});
+const CONTROL_UNLOCK_RADIUS = 72;
 const DIFFICULTY_SETTINGS = {
   1: { wordsToCollect: 5, obstacleCount: 2, obstacleSpeed: 0 },
   2: { wordsToCollect: 8, obstacleCount: 3, obstacleSpeed: 0 },
@@ -36,6 +43,11 @@ const DIFFICULTY_SETTINGS = {
 };
 
 const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose, level = 1 }) => {
+  const resolvedLevel = useMemo(() => {
+    const numeric = Number(level);
+    if (!Number.isFinite(numeric)) return 1;
+    return Math.min(Math.max(Math.round(numeric), 1), 3);
+  }, [level]);
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
@@ -52,8 +64,8 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
     return ordered;
   }, [quoteData.playableEntries]);
   const difficultySettings = useMemo(
-    () => DIFFICULTY_SETTINGS[level] || DIFFICULTY_SETTINGS[3],
-    [level],
+    () => DIFFICULTY_SETTINGS[resolvedLevel] || DIFFICULTY_SETTINGS[3],
+    [resolvedLevel],
   );
   const wordsTarget = difficultySettings.wordsToCollect ?? uniquePlayableEntries.length;
   const selectedEntries = useMemo(() => {
@@ -102,15 +114,13 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
   const instructionsOpacity = useRef(new Animated.Value(1)).current;
   const instructionsTimerRef = useRef(null);
   const [instructionsDismissed, setInstructionsDismissed] = useState(false);
-  const initialLives = level === 1 ? 6 : level === 2 ? 4 : 2;
+  const initialLives = resolvedLevel === 1 ? 6 : resolvedLevel === 2 ? 4 : 2;
   const carRef = useRef(null);
   const obstaclesRef = useRef([]);
   const obstacleAnimationRef = useRef(null);
   const lastObstacleHitRef = useRef(0);
   const [car, setCar] = useState(() => {
-    const initialX = clampCarX(SCREEN_WIDTH / 2 - CAR_SIZE / 2);
-    const initialY = clampCarY((PLAY_AREA_TOP + CAR_BOTTOM_BOUND) / 2);
-    const initial = { x: initialX, y: initialY };
+    const initial = computeCenterCarPosition();
     carRef.current = initial;
     return initial;
   });
@@ -118,7 +128,6 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
   const [obstacles, setObstacles] = useState([]);
   const [nextIndex, setNextIndex] = useState(0);
   const [lives, setLives] = useState(initialLives);
-  const [message, setMessage] = useState('');
   const initializedRef = useRef(false);
   const pendingLoseRef = useRef(false);
   const [showGestureCue, setShowGestureCue] = useState(false);
@@ -130,6 +139,10 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
   const showGestureRef = useRef(false);
   const gestureAnchorRef = useRef({ x: 0, y: 0 });
   const matchKeyRef = useRef([]);
+  const controlLockRef = useRef(false);
+  const warningThresholdsRef = useRef([]);
+  const warningShownRef = useRef(new Set());
+  const { feedback, showFeedback, clearFeedback } = useGameFeedback();
   const stopObstacleAnimation = useCallback(() => {
     if (obstacleAnimationRef.current != null) {
       cancelAnimationFrame(obstacleAnimationRef.current);
@@ -145,23 +158,73 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
       return dist < obs.radius + carRadius;
     });
   }, []);
+  const resetCarPosition = useCallback((lockControls = false) => {
+    const nextPosition = computeCenterCarPosition();
+    gestureAnchorRef.current = nextPosition;
+    carRef.current = nextPosition;
+    setCar(nextPosition);
+    controlLockRef.current = Boolean(lockControls);
+  }, []);
+  const computeWarningThresholds = useCallback((totalLives) => {
+    if (!Number.isFinite(totalLives) || totalLives <= 1) return [];
+    const candidates = [
+      Math.round(totalLives * 0.5),
+      Math.round(totalLives * 0.25),
+    ];
+    const thresholds = [];
+    candidates.forEach((candidate) => {
+      const clamped = Math.max(1, Math.min(totalLives - 1, candidate));
+      if (!thresholds.includes(clamped)) {
+        thresholds.push(clamped);
+      }
+    });
+    let fallback = totalLives - 1;
+    while (thresholds.length < 2 && fallback > 0) {
+      if (!thresholds.includes(fallback)) {
+        thresholds.push(fallback);
+      }
+      fallback -= 1;
+    }
+    return thresholds.slice(0, 2);
+  }, []);
+  const showLifeWarning = useCallback(
+    (remainingLives, context) => {
+      if (remainingLives <= 0) return;
+      const thresholds = warningThresholdsRef.current || [];
+      if (!thresholds.includes(remainingLives) || warningShownRef.current.has(remainingLives)) {
+        return;
+      }
+      warningShownRef.current.add(remainingLives);
+      const message =
+        context === 'wrong'
+          ? remainingLives === 1
+            ? 'Only 1 life left—pick carefully!'
+            : `${remainingLives} lives left—pick carefully!`
+          : remainingLives === 1
+            ? 'Only 1 life left—watch those obstacles!'
+            : `${remainingLives} lives left—watch those obstacles!`;
+      showFeedback(message, { tone: 'warning' });
+    },
+    [showFeedback],
+  );
   const handleObstacleHit = useCallback(() => {
     const now = Date.now();
     if (now - lastObstacleHitRef.current < OBSTACLE_HIT_COOLDOWN_MS) {
       return;
     }
     lastObstacleHitRef.current = now;
+    resetCarPosition(true);
     setLives((lv) => {
       const next = Math.max(0, lv - 1);
       if (next === 0) {
-        setMessage('');
+        clearFeedback();
         pendingLoseRef.current = true;
       } else {
-        setMessage('Watch out! Obstacle hit');
+        showLifeWarning(next, 'obstacle');
       }
       return next;
     });
-  }, []);
+  }, [resetCarPosition, showLifeWarning, clearFeedback]);
   const resolveObstacleCollision = useCallback(
     (carCenterX, carCenterY) => {
       if (!hasObstacleCollision(carCenterX, carCenterY)) {
@@ -300,9 +363,9 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
     matchKeyRef.current = matchKeys;
     hideGestureCue(true);
     stopObstacleAnimation();
-    const startX = clampCarX(SCREEN_WIDTH / 2 - CAR_SIZE / 2);
-    const startY = clampCarY((PLAY_AREA_TOP + CAR_BOTTOM_BOUND) / 2);
-    gestureAnchorRef.current = { x: startX, y: startY };
+    const startPosition = computeCenterCarPosition();
+    const { x: startX, y: startY } = startPosition;
+    gestureAnchorRef.current = startPosition;
     const carCenterX = startX + CAR_SIZE / 2;
     const carCenterY = startY + CAR_SIZE / 2;
     const isClearOfCar = (cx, cy, radius) => {
@@ -311,14 +374,52 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
       const dist = Math.sqrt(dx * dx + dy * dy);
       return dist >= radius + CAR_SPAWN_BUFFER;
     };
-    const placed = [];
-    const overlapsPlaced = (cx, cy, radius) =>
-      placed.some((p) => {
+    const placedWords = [];
+    const placedObstacles = [];
+    const overlapsWords = (cx, cy, radius) =>
+      placedWords.some((p) => {
         const dx = p.cx - cx;
         const dy = p.cy - cy;
         const dist = Math.sqrt(dx * dx + dy * dy);
         return dist < p.radius + radius + WORD_OVERLAP_BUFFER;
       });
+    const circlesOverlap = (x1, y1, r1, x2, y2, r2) => {
+      const dx = x1 - x2;
+      const dy = y1 - y2;
+      const limit = r1 + r2 + WORD_OVERLAP_BUFFER;
+      return dx * dx + dy * dy < limit * limit;
+    };
+    const lanePositionsFor = (cx, cy, minLaneX, maxLaneX) => {
+      const positions = [{ x: cx, y: cy }];
+      if (Math.abs(minLaneX - cx) > 0.5) {
+        positions.push({ x: minLaneX, y: cy });
+      }
+      if (Math.abs(maxLaneX - cx) > 0.5) {
+        positions.push({ x: maxLaneX, y: cy });
+      }
+      return positions;
+    };
+    const laneConflictsWithWords = (positions, radius) =>
+      placedWords.some((word) =>
+        positions.some((pos) => circlesOverlap(pos.x, pos.y, radius, word.cx, word.cy, word.radius)),
+      );
+    const laneConflictsWithObstacles = (positions, radius) =>
+      placedObstacles.some((obs) => {
+        const obsPositions = [
+          { x: obs.cx, y: obs.cy },
+          { x: obs.minX, y: obs.cy },
+          { x: obs.maxX, y: obs.cy },
+        ];
+        return positions.some((pos) =>
+          obsPositions.some((obsPos) => circlesOverlap(pos.x, pos.y, radius, obsPos.x, obsPos.y, obs.radius)),
+        );
+      });
+    const wordConflictsWithObstacles = (cx, cy, radius) =>
+      placedObstacles.some((obs) =>
+        lanePositionsFor(obs.cx, obs.cy, obs.minX, obs.maxX).some((pos) =>
+          circlesOverlap(pos.x, pos.y, obs.radius, cx, cy, radius),
+        ),
+      );
     const tryPlaceWord = (entry, idx) => {
       const displayWord = getEntryDisplayWord(entry);
       const matchKey = entry.canonical || entry.clean || entry.original || displayWord;
@@ -327,7 +428,8 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         const cx = clampWordCenterX(rawCx, radius);
         const cy = clampWordCenterY(rawCy, radius);
         if (!isClearOfCar(cx, cy, radius)) return null;
-        if (overlapsPlaced(cx, cy, radius)) return null;
+        if (overlapsWords(cx, cy, radius)) return null;
+        if (wordConflictsWithObstacles(cx, cy, radius)) return null;
         return { text: displayWord, matchKey, id, cx, cy, radius };
       };
       const attemptRandom = (radius) => {
@@ -489,11 +591,10 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
     };
     const obstacleCount = difficultySettings.obstacleCount ?? 0;
     const obstacleSpeed = difficultySettings.obstacleSpeed ?? 0;
-    const movementRange = level === 3 ? OBSTACLE_MOVEMENT_RANGE : 0;
+    const movementRange = resolvedLevel === 3 ? OBSTACLE_MOVEMENT_RANGE : 0;
     const tryPlaceObstacle = (idx) => {
       const radius = OBSTACLE_RADIUS;
       const horizontalAllowance = movementRange;
-      const bufferRadius = radius + (horizontalAllowance > 0 ? horizontalAllowance : 0);
       const minX = WORD_MARGIN + radius + horizontalAllowance;
       const maxX = SCREEN_WIDTH - WORD_MARGIN - radius - horizontalAllowance;
       const minY = Math.max(
@@ -504,36 +605,65 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
       if (minX > maxX || minY > maxY) {
         return null;
       }
-      const attempts = 200;
-      for (let attempt = 0; attempt < attempts; attempt += 1) {
-        const rawCx = minX + Math.random() * (maxX - minX);
-        const rawCy = minY + Math.random() * (maxY - minY);
+      const makeObstacle = (rawCx, rawCy) => {
         const cx = clampWordCenterX(rawCx, radius);
         const cy = clampWordCenterY(rawCy, radius);
-        if (!isClearOfCar(cx, cy, radius)) continue;
-        if (overlapsPlaced(cx, cy, bufferRadius)) continue;
-        const direction = Math.random() > 0.5 ? 1 : -1;
+        if (!isClearOfCar(cx, cy, radius)) return null;
         const minLaneX = Math.max(WORD_MARGIN + radius, cx - horizontalAllowance);
         const maxLaneX = Math.min(SCREEN_WIDTH - WORD_MARGIN - radius, cx + horizontalAllowance);
-        placed.push({ cx, cy, radius: bufferRadius });
+        const positions = lanePositionsFor(cx, cy, minLaneX, maxLaneX);
+        if (laneConflictsWithWords(positions, radius)) return null;
+        if (laneConflictsWithObstacles(positions, radius)) return null;
         return {
           id: `obstacle-${idx}-${Math.random().toString(36).slice(2, 7)}`,
           cx,
           cy,
           radius,
           speed: obstacleSpeed,
-          direction,
+          direction: Math.random() > 0.5 ? 1 : -1,
           minX: minLaneX,
           maxX: maxLaneX,
         };
+      };
+      const attempts = 200;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const rawCx = minX + Math.random() * (maxX - minX);
+        const rawCy = minY + Math.random() * (maxY - minY);
+        const candidate = makeObstacle(rawCx, rawCy);
+        if (candidate) {
+          placedObstacles.push({
+            cx: candidate.cx,
+            cy: candidate.cy,
+            radius: candidate.radius,
+            minX: candidate.minX,
+            maxX: candidate.maxX,
+          });
+          return candidate;
+        }
+      }
+      const fallbackTargets = [
+        { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+        { x: minX + (maxX - minX) * 0.2, y: minY + (maxY - minY) * 0.25 },
+        { x: minX + (maxX - minX) * 0.8, y: minY + (maxY - minY) * 0.65 },
+        { x: (minX + maxX) / 2, y: minY + (maxY - minY) * 0.8 },
+        { x: minX + (maxX - minX) * 0.35, y: minY + (maxY - minY) * 0.55 },
+      ];
+      for (let i = 0; i < fallbackTargets.length; i += 1) {
+        const target = fallbackTargets[i];
+        const candidate = makeObstacle(target.x, target.y);
+        if (candidate) {
+          placedObstacles.push({
+            cx: candidate.cx,
+            cy: candidate.cy,
+            radius: candidate.radius,
+            minX: candidate.minX,
+            maxX: candidate.maxX,
+          });
+          return candidate;
+        }
       }
       return null;
     };
-    const generated = tokens.map((entry, idx) => {
-      const placement = tryPlaceWord(entry, idx);
-      placed.push(placement);
-      return placement;
-    });
     const createdObstacles = [];
     for (let i = 0; i < obstacleCount; i += 1) {
       const obstacle = tryPlaceObstacle(i);
@@ -541,16 +671,24 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         createdObstacles.push(obstacle);
       }
     }
+    const generated = tokens.map((entry, idx) => {
+      const placement = tryPlaceWord(entry, idx);
+      placedWords.push({ cx: placement.cx, cy: placement.cy, radius: placement.radius });
+      return placement;
+    });
     obstaclesRef.current = createdObstacles;
     setObstacles(createdObstacles);
     setWords(generated);
     setCollectedKeys([]);
     setNextIndex(0);
     setLives(initialLives);
-    setMessage('');
-    const startPosition = { x: startX, y: startY };
-    carRef.current = startPosition;
-    setCar(startPosition);
+    clearFeedback();
+    warningThresholdsRef.current = computeWarningThresholds(initialLives);
+    warningShownRef.current = new Set();
+    const startPositionForCar = { x: startX, y: startY };
+    carRef.current = startPositionForCar;
+    setCar(startPositionForCar);
+    controlLockRef.current = false;
     lastObstacleHitRef.current = 0;
     pendingLoseRef.current = false;
     initializedRef.current = true;
@@ -563,13 +701,15 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
     quote,
     selectedEntries,
     matchKeys,
-    level,
+    resolvedLevel,
     hideGestureCue,
     startGestureCue,
     instructionsOpacity,
     difficultySettings,
     initialLives,
     stopObstacleAnimation,
+    clearFeedback,
+    computeWarningThresholds,
   ]);
 
   const checkCollision = (x, y) => {
@@ -606,26 +746,33 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         setNextIndex((i) => i + 1);
         const copy = [...prev];
         copy.splice(collidedIdx, 1);
-        setMessage('');
+        clearFeedback();
         return copy;
       }
       // Wrong word: lose a life (keep words in place)
       setLives((lv) => {
         const next = Math.max(0, lv - 1);
         if (next === 0) {
-          setMessage('');
           pendingLoseRef.current = true;
+          clearFeedback();
         } else {
-          setMessage('Oops! Wrong word');
+          showLifeWarning(next, 'wrong');
         }
         return next;
       });
+      setTimeout(() => {
+        resetCarPosition(true);
+      }, 0);
       return prev;
     });
   };
 
   useEffect(() => {
-    if (level !== 3 || obstacles.length === 0 || (difficultySettings.obstacleSpeed ?? 0) <= 0) {
+    if (
+      resolvedLevel !== 3 ||
+      obstacles.length === 0 ||
+      (difficultySettings.obstacleSpeed ?? 0) <= 0
+    ) {
       stopObstacleAnimation();
       return undefined;
     }
@@ -671,7 +818,7 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
       stopObstacleAnimation();
     };
   }, [
-    level,
+    resolvedLevel,
     obstacles,
     difficultySettings.obstacleSpeed,
     resolveObstacleCollision,
@@ -707,6 +854,17 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
   );
 
   const onTouchAt = (x, y) => {
+    const carPosition = carRef.current || computeCenterCarPosition();
+    if (controlLockRef.current) {
+      const carCenterX = carPosition.x + CAR_SIZE / 2;
+      const carCenterY = carPosition.y + CAR_SIZE / 2;
+      const dx = x - carCenterX;
+      const dy = y - carCenterY;
+      if (dx * dx + dy * dy > CONTROL_UNLOCK_RADIUS * CONTROL_UNLOCK_RADIUS) {
+        return;
+      }
+      controlLockRef.current = false;
+    }
     // Center the car under the finger and clamp to bounds
     const targetX = Math.max(0, Math.min(SCREEN_WIDTH - CAR_SIZE, x - CAR_SIZE / 2));
     const targetY = Math.max(0, Math.min(SCREEN_HEIGHT - CAR_SIZE, y - CAR_SIZE / 2));
@@ -843,7 +1001,7 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
             </Animated.View>
           </View>
         )}
-        {message !== '' && <Text style={styles.message}>{message}</Text>}
+        <GameFeedbackToast feedback={feedback} bottomOffset={130} />
       </View>
     </View>
   );
@@ -996,15 +1154,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.3,
-  },
-  message: {
-    position: 'absolute',
-    top: PLAY_AREA_TOP + 36,
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 16,
-    color: themeVariables.whiteColor,
   },
 });
 

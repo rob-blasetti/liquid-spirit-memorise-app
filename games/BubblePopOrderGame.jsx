@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { View, Text, TouchableWithoutFeedback, Animated, Easing, StyleSheet, Dimensions } from 'react-native';
 import GameTopBar from '../components/GameTopBar';
+import GameFeedbackToast from '../components/GameFeedbackToast';
 import themeVariables from '../styles/theme';
 import { prepareQuoteForGame, getEntryDisplayWord } from '../services/quoteSanitizer';
+import useGameFeedback from '../hooks/useGameFeedback';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -58,15 +60,40 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
     [bubbleEntries],
   );
   const [index, setIndex] = useState(0);
-  const [message, setMessage] = useState('');
   const [bubbles, setBubbles] = useState([]);
   const [wrongCount, setWrongCount] = useState(0);
   const shimmerValuesRef = useRef([]);
+  const { feedback, showFeedback, clearFeedback } = useGameFeedback();
+  const warningThresholdsRef = useRef([]);
+  const warningShownRef = useRef(new Set());
   // Compute remaining wrong taps based on difficulty
   const wrongLimit = level === 1 ? 5 : level === 2 ? 3 : 1;
   const remainingGuesses = Math.max(0, wrongLimit - wrongCount);
 
   // initialize bubbles with bubble-like visuals, motion, and some overlap allowed
+  const computeWarningThresholds = useCallback((totalGuesses) => {
+    if (!Number.isFinite(totalGuesses) || totalGuesses <= 1) return [];
+    const candidates = [
+      Math.round(totalGuesses * 0.5),
+      Math.round(totalGuesses * 0.25),
+    ];
+    const thresholds = [];
+    candidates.forEach((candidate) => {
+      const clamped = Math.max(1, Math.min(totalGuesses - 1, candidate));
+      if (!thresholds.includes(clamped)) {
+        thresholds.push(clamped);
+      }
+    });
+    let fallback = totalGuesses - 1;
+    while (thresholds.length < 2 && fallback > 0) {
+      if (!thresholds.includes(fallback)) {
+        thresholds.push(fallback);
+      }
+      fallback -= 1;
+    }
+    return thresholds.slice(0, 2);
+  }, []);
+
   useEffect(() => {
     const intensity = level === 1 ? 1.0 : level === 2 ? 1.2 : 1.4;
     const items = [];
@@ -155,17 +182,18 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
     });
     setBubbles(items);
     setIndex(0);
-    setMessage('');
+    clearFeedback();
     setWrongCount(0);
+    warningThresholdsRef.current = computeWarningThresholds(wrongLimit);
+    warningShownRef.current = new Set();
     // initialize per-word shimmer animators
     shimmerValuesRef.current = displayWords.map(() => new Animated.Value(0));
-  }, [bubbleWords, level, bubbleIndices, displayWords]);
+  }, [bubbleWords, level, bubbleIndices, displayWords, clearFeedback, computeWarningThresholds, wrongLimit]);
 
   // no title animation per request
 
   const handlePress = (id) => {
     // prevent interaction after win or too many wrong taps
-    const wrongLimit = level === 1 ? 5 : level === 2 ? 3 : 1;
     if (wrongCount >= wrongLimit || index >= bubbleWords.length) return;
     setBubbles((prev) => {
       const updated = prev.map((b) => {
@@ -197,13 +225,13 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
           }
           setIndex(next);
           if (next === bubbleWords.length) {
-            setMessage('Great job!');
+            clearFeedback();
             if (onWin) {
               // defer onWin to avoid state updates during render phase
               setTimeout(() => onWin(), 0);
             }
           } else {
-            setMessage('');
+            clearFeedback();
           }
         } else {
           // wrong tap
@@ -222,13 +250,10 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
               Animated.timing(b.scale, { toValue: 1, duration: 120, useNativeDriver: true }),
             ]),
           ]).start();
-          setMessage('Try again');
           setWrongCount((prevCount) => {
-            const limit = level === 1 ? 5 : level === 2 ? 3 : 1;
             const newCount = prevCount + 1;
-            if (newCount >= limit) {
-              setMessage('Game Over');
-              // surface loss state through parent overlay when possible
+            if (newCount >= wrongLimit) {
+              showFeedback('Out of bubbles! Game over.', { tone: 'error', duration: 3200 });
               setTimeout(() => {
                 if (typeof onLose === 'function') {
                   onLose();
@@ -236,6 +261,16 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
                   onBack();
                 }
               }, 120);
+            } else {
+              const thresholds = warningThresholdsRef.current || [];
+              const remaining = wrongLimit - newCount;
+              if (thresholds.includes(remaining) && !warningShownRef.current.has(remaining)) {
+                warningShownRef.current.add(remaining);
+                const message = remaining === 1
+                  ? 'Only 1 miss left—pop carefully!'
+                  : `Only ${remaining} misses left—pop carefully!`;
+                showFeedback(message, { tone: 'warning' });
+              }
             }
             return newCount;
           });
@@ -344,9 +379,7 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
           </TouchableWithoutFeedback>
         ),
       )}
-      {message !== '' && message !== 'Great job!' && (
-        <Text style={styles.message}>{message}</Text>
-      )}
+      <GameFeedbackToast feedback={feedback} bottomOffset={116} />
     </View>
   );
 };
@@ -533,11 +566,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
     fontFamily: 'Noto Sans',
-  },
-  message: {
-    fontSize: 18,
-    color: themeVariables.whiteColor,
-    marginTop: 12,
   },
   // Removed explicit success styling; success navigation handled by GameRenderer
   remainingContainer: {

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useContext, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import GameTopBar from '../components/GameTopBar';
+import GameFeedbackToast from '../components/GameFeedbackToast';
 import PuzzlePiece from '../components/PuzzlePieceSvg';
 import PuzzleSlotSvg from '../components/PuzzleSlotSvg';
 import { buildJigsawPath } from '../components/PuzzlePath';
@@ -11,6 +12,7 @@ import { prepareQuoteForGame } from '../services/quoteSanitizer';
 import { FAB_BOTTOM_MARGIN } from '../components/DifficultyFAB';
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
+import useGameFeedback from '../hooks/useGameFeedback';
 
 // Dimensions and sizes
 const { width, height } = Dimensions.get('window');
@@ -21,6 +23,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
   const safeInsets = useContext(SafeAreaInsetsContext);
   const bottomInset = Math.max(safeInsets?.bottom || 0, 0);
   const fabBottomSpacing = bottomInset + (bottomInset > 0 ? 2 : FAB_BOTTOM_MARGIN);
+  const toastBottomOffset = fabBottomSpacing + 88;
   const numericLevel = Number(level);
   const difficulty = Number.isFinite(numericLevel) && numericLevel > 0
     ? Math.min(Math.max(Math.floor(numericLevel), 1), 3)
@@ -101,26 +104,59 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
     return conns;
   }, [rows, cols]);
 
+  const computeTimeWarningThresholds = useCallback((seconds) => {
+    if (!Number.isFinite(seconds) || seconds <= 1) return [];
+    const candidates = [
+      Math.round(seconds * 0.5),
+      Math.round(seconds * 0.25),
+    ];
+    const thresholds = [];
+    candidates.forEach((candidate) => {
+      const clamped = Math.max(1, Math.min(seconds - 1, candidate));
+      if (!thresholds.includes(clamped)) {
+        thresholds.push(clamped);
+      }
+    });
+    let fallback = seconds - 1;
+    while (thresholds.length < 2 && fallback > 0) {
+      if (!thresholds.includes(fallback)) {
+        thresholds.push(fallback);
+      }
+      fallback -= 1;
+    }
+    return thresholds.slice(0, 2);
+  }, []);
+
   // Start/reset countdown timer on mount and whenever difficulty/quote changes
   useEffect(() => {
-    // clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    clearFeedback();
+    timeWarningThresholdsRef.current = computeTimeWarningThresholds(initialTime);
+    timeWarningShownRef.current = new Set();
     setTimeLeft(initialTime);
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           timerRef.current = null;
-          // time up: trigger loss overlay unless already won
           if (!winTriggeredRef.current) {
             if (typeof onLose === 'function') setTimeout(() => onLose(), 100);
           }
           return 0;
         }
-        return prev - 1;
+        const next = prev - 1;
+        const thresholds = timeWarningThresholdsRef.current || [];
+        if (thresholds.includes(next) && !timeWarningShownRef.current.has(next)) {
+          timeWarningShownRef.current.add(next);
+          const message = next === 1
+            ? 'Only 1 second left—finish it up!'
+            : `${next} seconds left—finish it up!`;
+          showFeedback(message, { tone: 'warning' });
+        }
+        return next;
       });
     }, 1000);
     return () => {
@@ -129,7 +165,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
         timerRef.current = null;
       }
     };
-  }, [initialTime, quoteData.raw]);
+  }, [initialTime, quoteData.raw, computeTimeWarningThresholds, showFeedback, clearFeedback, onLose]);
   // Compute initial positions of pieces scattered around puzzle perimeter (memoized)
   const initialPositions = useMemo(() => {
     const positions = [];
@@ -315,6 +351,9 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
   // Skip the initial mount and until the user interacts to avoid immediate win
   const didMountRef = useRef(false);
   const winTriggeredRef = useRef(false);
+  const { feedback, showFeedback, clearFeedback } = useGameFeedback();
+  const timeWarningThresholdsRef = useRef([]);
+  const timeWarningShownRef = useRef(new Set());
   useEffect(() => {
     if (!didMountRef.current) {
       didMountRef.current = true;
@@ -351,9 +390,10 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
     setPlacedCount(prePlacedIndices.length);
     hasInteractedRef.current = false;
     winTriggeredRef.current = false;
+    clearFeedback();
     // eslint-disable-next-line no-console
     console.log('[ShapeBuilder:reset]', { level: difficulty, prePlacedInteractive: prePlacedIndices.slice(0, interactiveCount) });
-  }, [prePlacedIndices, interactiveCount, difficulty]);
+  }, [prePlacedIndices, interactiveCount, difficulty, clearFeedback]);
   // Keep pan values stable across renders to avoid jumping
   const pansRef = useRef([]);
   useEffect(() => {
@@ -530,6 +570,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
           ]}
         />
       </View>
+      <GameFeedbackToast feedback={feedback} bottomOffset={toastBottomOffset} />
     </View>
   );
 };
