@@ -1,15 +1,67 @@
-env_file = File.expand_path('../../.env', __dir__)
-if File.exist?(env_file)
-  File.foreach(env_file) do |line|
+def apply_env_file(path, overwrite: false)
+  return unless path && File.exist?(path)
+
+  File.foreach(path) do |line|
     stripped = line.strip
     next if stripped.empty? || stripped.start_with?('#')
+
     key_part, value = stripped.split('=', 2)
     next unless key_part && value
+
     key = key_part.sub(/\Aexport\s+/i, '').strip
-    value = value.strip.gsub(/\A['"]|['"]\Z/, '')
-    ENV[key] = value unless ENV.key?(key)
+    processed_value = value.strip.gsub(/\A['"]|['"]\Z/, '')
+
+    next if !overwrite && ENV.key?(key)
+
+    ENV[key] = processed_value
   end
 end
+
+def mask_env_value(value, prefix: 4, suffix: 4)
+  return '<missing>' if value.nil? || value.strip.empty?
+
+  trimmed = value.strip
+  return "<set:#{trimmed.length}chars>" if trimmed.length <= prefix + suffix
+
+  head = trimmed[0, prefix]
+  tail = trimmed[-suffix, suffix]
+  "#{head}...#{tail} (len=#{trimmed.length})"
+end
+
+def log_elevenlabs_env
+  UI.message "🔐 USE_ELEVENLABS: #{ENV['USE_ELEVENLABS']&.strip || '<unset>'}"
+  UI.message "🔐 ELEVENLABS_API_KEY: #{mask_env_value(ENV['ELEVENLABS_API_KEY'])}"
+  UI.message "🔐 ELEVENLABS_VOICE_ID: #{mask_env_value(ENV['ELEVENLABS_VOICE_ID'])}"
+  UI.message "🔐 ELEVENLABS_MODEL_ID: #{mask_env_value(ENV['ELEVENLABS_MODEL_ID'])}"
+end
+
+project_root = File.expand_path('../..', __dir__)
+default_env_path = File.join(project_root, '.env')
+apply_env_file(default_env_path)
+
+selected_envfile = ENV['FASTLANE_ENVFILE']&.strip
+selected_envfile = nil if selected_envfile&.empty?
+selected_envfile ||= ENV['ENVFILE']&.strip
+selected_envfile = nil if selected_envfile&.empty?
+
+active_env_path = default_env_path
+
+if selected_envfile
+  resolved_env_path =
+    if selected_envfile.start_with?('/')
+      selected_envfile
+    else
+      File.join(project_root, selected_envfile)
+    end
+  apply_env_file(resolved_env_path, overwrite: true)
+  ENV['ENVFILE'] = selected_envfile
+  active_env_path = resolved_env_path
+else
+  ENV['ENVFILE'] ||= '.env'
+end
+
+UI.message "📄 Fastlane env file: #{ENV['ENVFILE']} (#{active_env_path})"
+log_elevenlabs_env
 
 default_platform(:ios)
 
@@ -18,6 +70,7 @@ platform :ios do
   lane :beta do
     # Print environment variables to verify they load correctly (optional)
     UI.message "🚀 Using API_URL: #{ENV['API_URL']}"
+    log_elevenlabs_env
 
     # Authenticate to Apple using Appfile credentials (no API key)
 
@@ -59,6 +112,7 @@ platform :ios do
   desc "Dry run of beta lane without side effects"
   lane :beta_dry do
     UI.message "[DRY RUN] 🚀 Using API_URL: #{ENV['API_URL']}"
+    log_elevenlabs_env
     UI.message "[DRY RUN] Authenticate with App Store Connect via API key (ASC_KEY_* envs)"
     UI.message "[DRY RUN] match(appstore) with signing repo, readonly"
     UI.message "[DRY RUN] increment_build_number on liquid_spirit_memorise.xcodeproj"
