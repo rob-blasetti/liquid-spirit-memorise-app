@@ -33,7 +33,12 @@ const createLoopedData = (data) => {
 
 const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }) => {
   const loopedData = useMemo(() => {
-    console.log('[GameCarousel] createLoopedData', { length: data.length });
+    if (__DEV__) {
+      console.debug('[GameCarousel] createLoopedData', {
+        length: data.length,
+        clones: LOOP_CLONES,
+      });
+    }
     return createLoopedData(data);
   }, [data]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -56,7 +61,9 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
     if (dataLength === 0) return 0;
     let adjusted = (index - LOOP_CLONES) % dataLength;
     if (adjusted < 0) adjusted += dataLength;
-    console.log('[GameCarousel] getActualIndex', { index, adjusted, dataLength });
+    if (__DEV__) {
+      console.debug('[GameCarousel] getActualIndex', { index, adjusted, dataLength });
+    }
     return adjusted;
   }, [data.length]);
 
@@ -77,12 +84,14 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
       const nextIndex = data.length === 0 ? 0 : (activeIndex + 1) % data.length;
       const rawTarget = hasLooping ? nextIndex + LOOP_CLONES : nextIndex;
       const offset = rawTarget * itemWidth;
-      console.log('[GameCarousel] autoScroll', {
-        activeIndex,
-        nextIndex,
-        rawTarget,
-        itemWidth,
-      });
+      if (__DEV__) {
+        console.debug('[GameCarousel] autoScroll', {
+          activeIndex,
+          nextIndex,
+          rawTarget,
+          itemWidth,
+        });
+      }
       listRef.current?.scrollToOffset({ offset, animated: true });
     }, interval);
   }, [interval, data.length, clearAutoScroll, activeIndex, itemWidth, hasLooping]);
@@ -94,12 +103,14 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
     setActiveIndex(actualIndex);
     clearAutoScroll();
     scheduleAutoScroll();
-    console.log('[GameCarousel] onMomentumEnd', {
-      xOffset,
-      rawIndex,
-      actualIndex,
-      hasLooping,
-    });
+    if (__DEV__) {
+      console.debug('[GameCarousel] onMomentumEnd', {
+        xOffset,
+        rawIndex,
+        actualIndex,
+        hasLooping,
+      });
+    }
 
     // handle looping (defer to next frame to avoid momentum conflicts)
     if (hasLooping && (rawIndex < LOOP_CLONES || rawIndex >= LOOP_CLONES + data.length)) {
@@ -130,12 +141,14 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
   useEffect(() => {
     const loopLength = loopedData.length;
     const dataLength = data.length;
-    console.log('[GameCarousel] setup', {
-      loopLength,
-      dataLength,
-      hasLooping,
-      initialized: isInitializedRef.current,
-    });
+    if (__DEV__) {
+      console.debug('[GameCarousel] setup', {
+        loopLength,
+        dataLength,
+        hasLooping,
+        initialized: isInitializedRef.current,
+      });
+    }
 
     if (loopLength === 0) {
       setActiveIndex(0);
@@ -156,7 +169,9 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
       requestAnimationFrame(() => {
         if (listRef.current) {
           const offset = hasLooping ? LOOP_CLONES * itemWidth : 0;
-          console.log('[GameCarousel] scrollToOffset initial', { offset });
+          if (__DEV__) {
+            console.debug('[GameCarousel] scrollToOffset initial', { offset });
+          }
           listRef.current.scrollToOffset({ offset, animated: false });
         }
       });

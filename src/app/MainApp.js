@@ -46,6 +46,7 @@ import {
   markAppInteractive,
   markNavigationComplete,
 } from '../services/performanceService';
+import { ACHIEVEMENTS_ENABLED } from '../config/achievementsConfig';
 
 const resolveProfileId = (entity) => {
   if (!entity || typeof entity !== 'object') return null;
@@ -167,6 +168,40 @@ const Main = () => {
     });
     return () => {
       if (task && typeof task.cancel === 'function') task.cancel();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ACHIEVEMENTS_ENABLED) return undefined;
+    const task = InteractionManager.runAfterInteractions(() => {
+      import('../modules/achievements/screens/AchievementsScreen').catch((error) => {
+        if (__DEV__) {
+          console.warn('Failed to preload AchievementsScreen', error);
+        }
+      });
+    });
+    return () => {
+      if (task && typeof task.cancel === 'function') {
+        task.cancel();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      Promise.all([
+        import('../modules/profile/screens/SettingsScreen'),
+        import('../modules/games/screens/GamesListScreen'),
+      ]).catch((error) => {
+        if (__DEV__) {
+          console.warn('Failed to preload settings/games screens', error);
+        }
+      });
+    });
+    return () => {
+      if (task && typeof task.cancel === 'function') {
+        task.cancel();
+      }
     };
   }, []);
 

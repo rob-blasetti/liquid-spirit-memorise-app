@@ -332,8 +332,14 @@ export async function fetchUserAchievements(userId) {
     registerServerIdHints(achievements);
 
     if (__DEV__) {
+      const summary = {
+        total: achievements.length,
+        earned: achievements.filter((item) => item?.earned).length,
+        sample: achievements.slice(0, 3).map((item) => item?.id),
+        totalPoints,
+      };
       // eslint-disable-next-line no-console
-      console.debug('Fetched achievements:', achievements, 'Total points:', totalPoints);
+      console.debug('Fetched achievements summary:', summary);
     }
     const resolvedTotal =
       Number.isFinite(totalPoints) && totalPoints >= 0

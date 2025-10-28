@@ -7,6 +7,7 @@ import GameFeedbackToast from '../../ui/components/GameFeedbackToast';
 import themeVariables from '../../ui/stylesheets/theme';
 import { prepareQuoteForGame, getEntryDisplayWord } from '../../services/quoteSanitizer';
 import useGameFeedback from '../../hooks/useGameFeedback';
+import DashedDivider from '../../ui/components/DashedDivider';
 // Lost overlay handled by parent GameRenderer
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
@@ -287,7 +288,7 @@ const MemoryMatchGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLos
           </View>
           <Text style={styles.title}>Memory Match</Text>
         </View>
-        <View style={styles.titleUnderline} />
+        <DashedDivider style={styles.titleUnderline} />
         {/* Slate showing the quote for context */}
         <View style={styles.slate}>
           <View style={styles.slateInner}>
@@ -503,9 +504,6 @@ const styles = StyleSheet.create({
   titleUnderline: {
     alignSelf: 'center',
     width: 180,
-    borderBottomWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
-    borderStyle: 'dashed',
     marginTop: 2,
     marginBottom: 6,
   },

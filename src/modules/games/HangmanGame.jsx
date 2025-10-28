@@ -5,6 +5,7 @@ import GameTopBar from '../../ui/components/GameTopBar';
 import themeVariables from '../../ui/stylesheets/theme';
 import Svg, { Line, Circle, Rect, Text as SvgText } from 'react-native-svg';
 import { BlurView } from '@react-native-community/blur';
+import DashedDivider from '../../ui/components/DashedDivider';
 
 const MAX_WRONG = 8;
 
@@ -135,7 +136,7 @@ const HangmanGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
           </View>
           <Text style={styles.title}>Hangman</Text>
         </View>
-        <View style={styles.titleUnderline} />
+        <DashedDivider style={styles.titleUnderline} />
         <View style={styles.quoteWrap}>
           <Text style={styles.quote}>{masked}</Text>
           {/* Loss overlay handled by parent; no inline loss text */}
@@ -341,9 +342,6 @@ const styles = StyleSheet.create({
   titleUnderline: {
     alignSelf: 'center',
     width: 180,
-    borderBottomWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
-    borderStyle: 'dashed',
     marginTop: 2,
     marginBottom: 6,
   },

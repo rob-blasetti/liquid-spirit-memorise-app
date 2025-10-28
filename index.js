@@ -110,13 +110,15 @@ if (__DEV__) {
         break;
       }
       case 'measure': {
-        const { name, entry } = event;
+        const { name, entry, rawEntry } = event;
         if (typeof name === 'string' && name.startsWith('screen-transition:')) {
           return;
         }
         console.log('[perf][measure]', name, {
           duration: entry?.duration ?? null,
           startTime: entry?.startTime ?? null,
+          rawDuration: rawEntry?.duration ?? entry?.rawDuration ?? null,
+          rawStartTime: rawEntry?.startTime ?? entry?.rawStartTime ?? null,
         });
         break;
       }

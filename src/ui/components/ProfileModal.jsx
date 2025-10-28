@@ -6,7 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Button as StyleguideButton } from 'liquid-spirit-styleguide';
 import { BlurView } from '@react-native-community/blur';
 import themeVariables from '../stylesheets/theme';
-import useParentalGate from '../hooks/useParentalGate';
+import useParentalGate from '../../hooks/useParentalGate';
 
 const AVATAR_SIZE = 96;
 

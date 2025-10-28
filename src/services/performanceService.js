@@ -12,6 +12,7 @@ let isInitialized = false;
 
 const activeTransitions = new Map();
 const listeners = new Set();
+const MICROSECONDS_THRESHOLD = 1_000_000; // values above this are likely emitted in µs
 
 const emitEvent = (event) => {
   listeners.forEach((listener) => {
@@ -21,6 +22,30 @@ const emitEvent = (event) => {
       // Ignore listener failures to avoid cascading errors.
     }
   });
+};
+
+const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(value);
+
+const maybeToMilliseconds = (value) => {
+  if (!isFiniteNumber(value)) return value;
+  return value >= MICROSECONDS_THRESHOLD ? value / 1000 : value;
+};
+
+const normalizeMeasureEntry = (entry) => {
+  if (!entry) return null;
+  const normalized = {
+    name: entry.name,
+    entryType: entry.entryType,
+    duration: maybeToMilliseconds(entry.duration),
+    startTime: maybeToMilliseconds(entry.startTime),
+    detail: entry.detail,
+    rawDuration: entry.duration,
+    rawStartTime: entry.startTime,
+  };
+  if (typeof entry.navigationId !== 'undefined') {
+    normalized.navigationId = entry.navigationId;
+  }
+  return normalized;
 };
 
 const safeMark = (name, options) => {
@@ -41,11 +66,12 @@ const safeMeasure = (name, optionsOrStart, endMark, extraEvent = {}) => {
         ? performance.measure(name, optionsOrStart)
         : performance.measure(name, optionsOrStart, endMark);
 
-    if (entry) {
-      emitEvent({ type: 'measure', name, entry, ...extraEvent });
-    }
+    if (!entry) return null;
 
-    return entry;
+    const normalizedEntry = normalizeMeasureEntry(entry);
+    emitEvent({ type: 'measure', name, entry: normalizedEntry, rawEntry: entry, ...extraEvent });
+
+    return normalizedEntry;
   } catch (error) {
     return null;
   }
@@ -77,6 +103,8 @@ const recordStartupMeasures = (markNames) => {
         value: entry.duration,
         startTime: entry.startTime,
         detail: entry.detail,
+        rawValue: entry.rawDuration,
+        rawStartTime: entry.rawStartTime,
       });
     }
   }
@@ -97,6 +125,8 @@ const recordStartupMeasures = (markNames) => {
         value: entry.duration,
         startTime: entry.startTime,
         detail: entry.detail,
+        rawValue: entry.rawDuration,
+        rawStartTime: entry.rawStartTime,
       });
     }
   }
@@ -236,6 +266,8 @@ export const markNavigationComplete = (screenName, detail = {}) => {
         value: measureEntry.duration,
         startTime: measureEntry.startTime,
         detail: measureEntry.detail,
+        rawValue: measureEntry.rawDuration,
+        rawStartTime: measureEntry.rawStartTime,
       });
     }
 
@@ -276,6 +308,8 @@ export const markAppInteractive = (detail = {}) => {
       value: startupEntry.duration,
       startTime: startupEntry.startTime,
       detail: startupEntry.detail,
+      rawValue: startupEntry.rawDuration,
+      rawStartTime: startupEntry.rawStartTime,
     });
   }
 
@@ -295,6 +329,8 @@ export const markAppInteractive = (detail = {}) => {
       value: bundleEntry.duration,
       startTime: bundleEntry.startTime,
       detail: bundleEntry.detail,
+      rawValue: bundleEntry.rawDuration,
+      rawStartTime: bundleEntry.rawStartTime,
     });
   }
 };

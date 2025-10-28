@@ -59,7 +59,17 @@ export default function useProfile() {
       }
       // Try loading a guest profile
       const guest = await loadGuestProfile();
-      console.log('GUEST: ', guest);
+      if (__DEV__) {
+        const prettyGuest =
+          guest && typeof guest === 'object'
+            ? {
+                ...guest,
+                profilePicture: summariseDataUri(guest.profilePicture),
+                avatar: summariseDataUri(guest.avatar),
+              }
+            : guest;
+        console.log('GUEST:', prettyGuest);
+      }
       if (guest) {
         const normalizedGuest = normalizeProfileGrade(guest);
         // store guestProfile in state
@@ -154,3 +164,11 @@ export default function useProfile() {
   };
 }
 export { useProfile };
+
+function summariseDataUri(value) {
+  if (!value || typeof value !== 'string') return value;
+  if (!value.startsWith('data:')) return value;
+  const [meta, payload = ''] = value.split(',', 2);
+  const payloadLength = payload.length;
+  return `${meta},<encoded:${payloadLength} chars>`;
+}

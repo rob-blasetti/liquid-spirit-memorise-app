@@ -1,9 +1,9 @@
 // services/contentSelector.js
 // Centralizes content selection by grade and current progress
 
-import { grade1Lessons } from '../../utils/data/core/grade1';
-import { quoteMap } from '../../utils/data/core/grade2';
-import { quoteMap as quoteMap2b } from '../../utils/data/core/grade2b';
+import { grade1Lessons } from '../utils/data/core/grade1';
+import { quoteMap } from '../utils/data/core/grade2';
+import { quoteMap as quoteMap2b } from '../utils/data/core/grade2b';
 
 export function getContentFor(profile, setNumber, lessonNumber, options = {}) {
   const { type = 'quote' } = options; // 'quote' | 'prayer'
@@ -35,4 +35,3 @@ export function getCurrentContent(profile, getCurrentProgress, options = {}) {
   const { setNumber, lessonNumber } = getCurrentProgress();
   return getContentFor(profile, setNumber, lessonNumber, options);
 }
-

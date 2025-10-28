@@ -48,8 +48,19 @@ const AchievementsScreen = ({ onBack }) => {
     }
   };
   if (__DEV__) {
+    const totalCount = Array.isArray(achievements) ? achievements.length : 0;
+    const earnedCount = Array.isArray(achievements)
+      ? achievements.filter((item) => item?.earned).length
+      : 0;
+    const sampleIds = Array.isArray(achievements)
+      ? achievements.slice(0, 3).map((item) => item?.id).filter(Boolean)
+      : [];
     // eslint-disable-next-line no-console
-    console.debug('Achievements screen achievements:', achievements);
+    console.debug('Achievements screen achievements:', {
+      totalCount,
+      earnedCount,
+      sampleIds,
+    });
     if (!isPointsSynced) {
       // eslint-disable-next-line no-console
       console.warn('AchievementsScreen: points mismatch', { totalPoints, computedPoints });

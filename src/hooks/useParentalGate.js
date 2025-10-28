@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import ParentalGateModal from '../components/ParentalGateModal';
+import ParentalGateModal from '../ui/components/ParentalGateModal';
 
 const randomInt = (min, max) => {
   const minVal = Math.ceil(min);

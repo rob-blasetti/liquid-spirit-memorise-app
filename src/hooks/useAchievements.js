@@ -40,8 +40,15 @@ export default function useAchievements(profile, saveProfile) {
     };
   }
   if (__DEV__) {
+    const profileSummary = profile
+      ? {
+          id: profile._id || profile.id || profile.nuriUserId || profile.username || null,
+          guest: Boolean(profile.guest || profile.type === 'guest'),
+          grade: profile.grade ?? null,
+        }
+      : null;
     // eslint-disable-next-line no-console
-    console.debug('useAchievements profile:', profile);
+    console.debug('useAchievements profile summary:', profileSummary);
   }
 
   const isGuest = Boolean(profile?.type === 'guest' || profile?.guest);

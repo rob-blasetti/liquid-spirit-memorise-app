@@ -13,6 +13,7 @@ import { FAB_BOTTOM_MARGIN } from '../../ui/components/DifficultyFAB';
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
 import useGameFeedback from '../../hooks/useGameFeedback';
+import DashedDivider from '../../ui/components/DashedDivider';
 
 // Dimensions and sizes
 const { width, height } = Dimensions.get('window');
@@ -494,7 +495,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
         </View>
         <Text style={styles.title}>Solve The Puzzle</Text>
       </View>
-      <View style={styles.titleUnderline} />
+      <DashedDivider style={styles.titleUnderline} />
       {/* Outline slots rendered as true jigsaw silhouettes */}
       {slots.map((pos, i) => (
         <PuzzleSlotSvg
@@ -601,9 +602,6 @@ const styles = StyleSheet.create({
   titleUnderline: {
     alignSelf: 'center',
     width: 180,
-    borderBottomWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
-    borderStyle: 'dashed',
     marginTop: 2,
     marginBottom: 6,
   },
