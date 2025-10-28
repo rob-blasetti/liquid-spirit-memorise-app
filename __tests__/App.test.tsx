@@ -23,11 +23,11 @@ jest.mock('react-native-fast-image', () => {
   FastImage.preload = jest.fn();
   return FastImage;
 }, { virtual: true });
-jest.mock('../components/Main', () => () => null);
-jest.mock('../contexts/UserContext', () => ({
+jest.mock('../src/app/MainApp', () => () => null);
+jest.mock('../src/app/contexts/UserContext', () => ({
   UserProvider: ({ children }) => children,
 }));
-jest.mock('../contexts/DifficultyContext', () => ({
+jest.mock('../src/app/contexts/DifficultyContext', () => ({
   DifficultyProvider: ({ children }) => children,
 }));
 // Mock external styleguide UI library
@@ -44,7 +44,7 @@ jest.mock('liquid-spirit-styleguide', () => {
   return { Button };
 }, { virtual: true });
 
-import App from '../App';
+import App from '../src/app/AppRoot';
 
 test('renders correctly', async () => {
   await ReactTestRenderer.act(() => {

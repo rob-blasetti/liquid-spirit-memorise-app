@@ -1,7 +1,7 @@
 import React from 'react';
-import WordRacerGame from '../games/WordRacerGame';
-import { gameIds } from '../games';
-import { achievements } from '../data/achievements';
+import WordRacerGame from '../src/modules/games/WordRacerGame';
+import { gameIds } from '../src/modules/games';
+import { achievements } from '../src/utils/data/core/achievements';
 
 describe('WordRacerGame', () => {
   it('exports a component', () => {

@@ -6,7 +6,7 @@ jest.mock('liquid-spirit-styleguide', () => {
     React.createElement('Button', { label, onPress, ...props });
   return { Button };
 }, { virtual: true });
-import Start from '../screens/Start.jsx';
+import Start from '../src/modules/auth/screens/Start.jsx';
 
 describe('Start sign in navigation', () => {
   it('navigates to GuestLogin from Continue as Guest', () => {

@@ -11,20 +11,20 @@ const mockMarkLevelComplete = jest.fn();
 const mockGetProgressForGame = jest.fn(() => ({ completed: { 1: true }, highestUnlocked: 2, currentLevel: 2 }));
 const mockUseDifficulty = jest.fn();
 
-jest.mock('../screens/GradesScreen', () => () => null);
-jest.mock('../screens/Grade1SetScreen', () => () => null);
-jest.mock('../screens/Grade1LessonScreen', () => () => null);
-jest.mock('../screens/SettingsScreen', () => () => null);
-jest.mock('../screens/AchievementsScreen', () => () => null);
-jest.mock('../screens/HomeScreen', () => () => null);
-jest.mock('../screens/GamesListScreen', () => () => null);
-jest.mock('../screens/ClassScreen', () => () => null);
-jest.mock('../screens/LessonJourneyScreen', () => () => null);
-jest.mock('../screens/StoryModeScreen', () => () => null);
-jest.mock('../screens/GameVictoryScreen', () => () => null);
-jest.mock('../screens/Splash', () => () => null);
+jest.mock('../src/modules/profile/screens/GradesScreen', () => () => null);
+jest.mock('../src/modules/profile/screens/Grade1SetScreen', () => () => null);
+jest.mock('../src/modules/profile/screens/Grade1LessonScreen', () => () => null);
+jest.mock('../src/modules/profile/screens/SettingsScreen', () => () => null);
+jest.mock('../src/modules/achievements/screens/AchievementsScreen', () => () => null);
+jest.mock('../src/modules/profile/screens/HomeScreen', () => () => null);
+jest.mock('../src/modules/games/screens/GamesListScreen', () => () => null);
+jest.mock('../src/modules/profile/screens/ClassScreen', () => () => null);
+jest.mock('../src/modules/profile/screens/LessonJourneyScreen', () => () => null);
+jest.mock('../src/modules/games/screens/StoryModeScreen', () => () => null);
+jest.mock('../src/modules/games/screens/GameVictoryScreen', () => () => null);
+jest.mock('../src/modules/auth/screens/Splash', () => () => null);
 
-jest.mock('../games/lazyGameRoutes', () => {
+jest.mock('../src/modules/games/lazyGameRoutes', () => {
   const React = require('react');
   const { useEffect } = React;
   const TestGame = (props) => {
@@ -36,12 +36,12 @@ jest.mock('../games/lazyGameRoutes', () => {
   return { lazyGameScreens: { testGame: TestGame } };
 });
 
-jest.mock('../contexts/DifficultyContext', () => ({
+jest.mock('../src/app/contexts/DifficultyContext', () => ({
   useDifficulty: () => mockUseDifficulty(),
 }));
 
-jest.mock('../components/DifficultyFAB', () => () => null);
-jest.mock('../components/LostOverlay', () => () => null);
+jest.mock('../src/ui/components/DifficultyFAB', () => () => null);
+jest.mock('../src/ui/components/LostOverlay', () => () => null);
 
 describe('GameRenderer victory flow', () => {
   beforeEach(() => {
@@ -68,7 +68,7 @@ describe('GameRenderer victory flow', () => {
   });
 
   it('invokes onVictory with game summary when a game reports a win', async () => {
-    const GameRenderer = require('../components/GameRenderer').default;
+    const GameRenderer = require('../src/ui/components/GameRenderer').default;
 
     await ReactTestRenderer.act(async () => {
       ReactTestRenderer.create(
@@ -94,7 +94,7 @@ describe('GameRenderer victory flow', () => {
   });
 
   it('navigates to the victory screen when a game is won', async () => {
-    const ScreenRenderer = require('../components/ScreenRenderer').default;
+    const ScreenRenderer = require('../src/ui/components/ScreenRenderer').default;
     const navigationActions = {
       goHome: jest.fn(),
       goGrade1: jest.fn(),
@@ -180,7 +180,7 @@ describe('GameRenderer victory flow', () => {
       getProgressForGame: mockGetProgressForGame,
     });
 
-    const GameRenderer = require('../components/GameRenderer').default;
+    const GameRenderer = require('../src/ui/components/GameRenderer').default;
 
     await ReactTestRenderer.act(async () => {
       ReactTestRenderer.create(

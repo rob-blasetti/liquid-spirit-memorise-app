@@ -1,4 +1,4 @@
-const { createNavigationActions } = require('../services/navigationService');
+const { createNavigationActions } = require('../src/services/navigationService');
 
 describe('createNavigationActions', () => {
   let goTo;
