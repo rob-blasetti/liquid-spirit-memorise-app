@@ -13,8 +13,100 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      run_ios: ${{ steps.evaluate.outputs.run_ios }}
+      run_android: ${{ steps.evaluate.outputs.run_android }}
+      ios_missing: ${{ steps.evaluate.outputs.ios_missing }}
+      android_missing: ${{ steps.evaluate.outputs.android_missing }}
+      ios_missing_secrets: ${{ steps.evaluate.outputs.ios_missing_secrets }}
+      android_missing_secrets: ${{ steps.evaluate.outputs.android_missing_secrets }}
+    steps:
+      - id: evaluate
+        env:
+          RUN_RELEASE: ${{ github.event.inputs.run_release }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_CONTENT_BASE64: ${{ secrets.ASC_KEY_CONTENT_BASE64 }}
+          MATCH_SSH_PRIVATE_KEY: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          API_URL: ${{ secrets.API_URL }}
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          run_ios="false"
+          run_android="false"
+          ios_missing="false"
+          android_missing="false"
+          ios_missing_secrets=""
+          android_missing_secrets=""
+
+          if [ "$RUN_RELEASE" = "true" ]; then
+            run_ios="true"
+            run_android="true"
+
+            if [ -z "$ASC_ISSUER_ID" ]; then
+              ios_missing_secrets="$ios_missing_secrets ASC_ISSUER_ID"
+            fi
+            if [ -z "$ASC_KEY_ID" ]; then
+              ios_missing_secrets="$ios_missing_secrets ASC_KEY_ID"
+            fi
+            if [ -z "$ASC_KEY_CONTENT_BASE64" ]; then
+              ios_missing_secrets="$ios_missing_secrets ASC_KEY_CONTENT_BASE64"
+            fi
+            if [ -z "$MATCH_SSH_PRIVATE_KEY" ]; then
+              ios_missing_secrets="$ios_missing_secrets MATCH_SSH_PRIVATE_KEY"
+            fi
+            if [ -z "$MATCH_PASSWORD" ]; then
+              ios_missing_secrets="$ios_missing_secrets MATCH_PASSWORD"
+            fi
+            if [ -z "$API_URL" ]; then
+              ios_missing_secrets="$ios_missing_secrets API_URL"
+            fi
+
+            if [ -z "$GOOGLE_PLAY_JSON_KEY" ]; then
+              android_missing_secrets="$android_missing_secrets GOOGLE_PLAY_JSON_KEY"
+            fi
+            if [ -z "$ANDROID_SIGNING_KEYSTORE_BASE64" ]; then
+              android_missing_secrets="$android_missing_secrets ANDROID_SIGNING_KEYSTORE_BASE64"
+            fi
+            if [ -z "$ANDROID_SIGNING_STORE_PASSWORD" ]; then
+              android_missing_secrets="$android_missing_secrets ANDROID_SIGNING_STORE_PASSWORD"
+            fi
+            if [ -z "$ANDROID_SIGNING_KEY_ALIAS" ]; then
+              android_missing_secrets="$android_missing_secrets ANDROID_SIGNING_KEY_ALIAS"
+            fi
+            if [ -z "$ANDROID_SIGNING_KEY_PASSWORD" ]; then
+              android_missing_secrets="$android_missing_secrets ANDROID_SIGNING_KEY_PASSWORD"
+            fi
+
+            if [ -n "$ios_missing_secrets" ]; then
+              run_ios="false"
+              ios_missing="true"
+            fi
+
+            if [ -n "$android_missing_secrets" ]; then
+              run_android="false"
+              android_missing="true"
+            fi
+          fi
+
+          {
+            echo "run_ios=$run_ios"
+            echo "run_android=$run_android"
+            echo "ios_missing=$ios_missing"
+            echo "android_missing=$android_missing"
+            echo "ios_missing_secrets=${ios_missing_secrets# }"
+            echo "android_missing_secrets=${android_missing_secrets# }"
+          } >> "$GITHUB_OUTPUT"
+
   ios-testflight:
-    if: ${{ github.event.inputs.run_release == 'true' }}
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_ios == 'true' }}
     runs-on: macos-14
     env:
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -67,7 +159,8 @@ jobs:
         run: fastlane beta
 
   android-internal:
-    if: ${{ github.event.inputs.run_release == 'true' }}
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_android == 'true' }}
     runs-on: macos-14
     env:
       GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
@@ -107,3 +200,21 @@ jobs:
         run: |
           gem install fastlane -N
           fastlane internal
+
+  fail-when-missing-secrets:
+    needs:
+      - preflight
+      - ios-testflight
+      - android-internal
+    if: ${{ github.event.inputs.run_release == 'true' && (needs.preflight.outputs.ios_missing == 'true' || needs.preflight.outputs.android_missing == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail run when required secrets are missing
+        run: |
+          if [ "${{ needs.preflight.outputs.ios_missing }}" = "true" ]; then
+            echo "::error::Missing iOS release secrets: ${{ needs.preflight.outputs.ios_missing_secrets }}"
+          fi
+          if [ "${{ needs.preflight.outputs.android_missing }}" = "true" ]; then
+            echo "::error::Missing Android release secrets: ${{ needs.preflight.outputs.android_missing_secrets }}"
+          fi
+          exit 1
