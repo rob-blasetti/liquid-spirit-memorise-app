@@ -58,6 +58,30 @@ async function getCachePath(text, voiceId, modelId) {
   return `${AUDIO_DIR}/${key}.mp3`;
 }
 
+async function responseToBase64(response) {
+  if (typeof response?.arrayBuffer === 'function') {
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString('base64');
+  }
+  if (typeof response?.blob === 'function') {
+    const blob = await response.blob();
+    if (blob && typeof blob.arrayBuffer === 'function') {
+      const buffer = await blob.arrayBuffer();
+      return Buffer.from(buffer).toString('base64');
+    }
+  }
+  const fallbackBlob = response?._bodyBlob;
+  if (fallbackBlob && typeof fallbackBlob.arrayBuffer === 'function') {
+    const buffer = await fallbackBlob.arrayBuffer();
+    return Buffer.from(buffer).toString('base64');
+  }
+  if (typeof response?.text === 'function') {
+    const text = await response.text();
+    return Buffer.from(text, 'binary').toString('base64');
+  }
+  throw new Error('Unable to decode ElevenLabs response');
+}
+
 async function readEntries() {
   await ensureDir();
   try {
@@ -140,9 +164,8 @@ export async function synthesizeToFile({ text, voiceId = ELEVENLABS_VOICE_ID, mo
       const t = await res.text().catch(() => '');
       throw new Error(`ElevenLabs failed ${res.status}: ${t}`);
     }
-    const buf = await res.arrayBuffer();
-    const b = Buffer.from(buf);
-    await RNFS.writeFile(path, b.toString('base64'), 'base64');
+    const base64 = await responseToBase64(res);
+    await RNFS.writeFile(path, base64, 'base64');
     // Enforce cache limits after writing
     await enforceCacheLimit();
     return path;
