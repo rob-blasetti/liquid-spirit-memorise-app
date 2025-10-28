@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-jest.mock('../services/authService', () => ({
+jest.mock('../src/services/authService', () => ({
   loginNuriUser: jest.fn(),
 }));
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -23,8 +23,8 @@ jest.mock('liquid-spirit-styleguide', () => {
   return { Button };
 }, { virtual: true });
 
-import Login from '../screens/auth/Login.jsx';
-import { loginNuriUser } from '../services/authService';
+import Login from '../src/modules/auth/screens/auth/Login.jsx';
+import { loginNuriUser } from '../src/services/authService';
 
 beforeEach(() => {
   loginNuriUser.mockReset();

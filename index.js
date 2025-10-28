@@ -1,9 +1,9 @@
 import { AppRegistry } from 'react-native';
-import App from './App';
+import App from './src/app';
 import {
   initializePerformanceMonitoring,
   subscribeToPerformanceEvents,
-} from './services/performanceService';
+} from './src/services/performanceService';
 import { name as appName } from './app.json';
 
 initializePerformanceMonitoring();

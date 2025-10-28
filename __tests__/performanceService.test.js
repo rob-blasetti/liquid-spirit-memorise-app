@@ -6,7 +6,7 @@ import {
   markAppInteractive,
   subscribeToPerformanceEvents,
   __unsafeResetPerformanceState,
-} from '../services/performanceService';
+} from '../src/services/performanceService';
 
 describe('performanceService', () => {
   beforeEach(() => {

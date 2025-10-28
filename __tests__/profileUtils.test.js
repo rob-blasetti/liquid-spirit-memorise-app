@@ -1,4 +1,4 @@
-import { normalizeGradeValue, normalizeChildEntries } from '../services/profileUtils';
+import { normalizeGradeValue, normalizeChildEntries } from '../src/services/profileUtils';
 
 describe('normalizeGradeValue', () => {
   it('keeps preschool grade strings intact', () => {

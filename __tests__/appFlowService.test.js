@@ -1,14 +1,14 @@
-jest.mock('../services/contentSelector', () => ({
+jest.mock('../src/services/contentSelector', () => ({
   getContentFor: jest.fn(() => 'mock-quote'),
 }));
 
-jest.mock('../services/quoteSanitizer', () => ({
+jest.mock('../src/services/quoteSanitizer', () => ({
   sanitizeQuoteText: jest.fn((text) => `sanitized-${text}`),
 }));
 
-const { getContentFor } = require('../services/contentSelector');
-const { sanitizeQuoteText } = require('../services/quoteSanitizer');
-const { createAppActions } = require('../services/appFlowService');
+const { getContentFor } = require('../src/services/contentSelector');
+const { sanitizeQuoteText } = require('../src/services/quoteSanitizer');
+const { createAppActions } = require('../src/services/appFlowService');
 
 describe('createAppActions', () => {
   const profile = { id: 'user-1', grade: 2 };

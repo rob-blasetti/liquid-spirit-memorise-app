@@ -1,4 +1,4 @@
-jest.mock('../services/achievementsService', () => ({
+jest.mock('../src/services/achievementsService', () => ({
   updateAchievementOnServer: jest.fn(() => Promise.resolve()),
   fetchUserAchievements: jest.fn(() => Promise.resolve({ achievements: [], totalPoints: 0 })),
   getTotalPoints: (list = []) => list.reduce((sum, a) => sum + (a.earned && a.points ? a.points : 0), 0),
@@ -8,11 +8,11 @@ const {
   grantAchievement,
   grantGameAchievement,
   getAchievementIdsForGame,
-} = require('../services/achievementGrantService');
+} = require('../src/services/achievementGrantService');
 const {
   updateAchievementOnServer,
   fetchUserAchievements,
-} = require('../services/achievementsService');
+} = require('../src/services/achievementsService');
 
 const A = (id, points, earned = false) => ({ id, title: id, points, earned, slug: id });
 

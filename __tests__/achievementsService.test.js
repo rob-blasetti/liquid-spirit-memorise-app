@@ -1,6 +1,6 @@
 // Mock deps before requiring the module under test
-jest.mock('../services/profileService', () => ({ saveProfile: jest.fn() }));
-jest.mock('../config', () => ({ API_URL: 'http://test.local' }));
+jest.mock('../src/services/profileService', () => ({ saveProfile: jest.fn() }));
+jest.mock('../src/config', () => ({ API_URL: 'http://test.local' }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
@@ -9,7 +9,7 @@ const {
   getTotalPoints,
   awardAchievementData,
   fetchUserAchievements,
-} = require('../services/achievementsService');
+} = require('../src/services/achievementsService');
 const AsyncStorage = require('@react-native-async-storage/async-storage');
 
 // Helper: build achievement items quickly
