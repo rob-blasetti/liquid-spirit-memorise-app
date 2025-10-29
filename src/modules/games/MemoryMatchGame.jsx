@@ -652,6 +652,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   guessCard: {
+    margin: 0,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },

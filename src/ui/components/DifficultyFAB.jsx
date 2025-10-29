@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 1000,
   },
   fabWrap: {
     position: 'absolute',
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: 56,
     height: 56,
+    bottom: 30,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
