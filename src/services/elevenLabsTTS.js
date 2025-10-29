@@ -18,12 +18,19 @@ const AUDIO_DIR = `${RNFS.DocumentDirectoryPath}/tts_cache`;
 let CACHE_MAX_BYTES = Math.max(16, Number(TTS_CACHE_MAX_MB) || 64) * 1024 * 1024;
 const inflight = new Map(); // key -> Promise<string>
 
+const log = (...args) => {
+  try {
+    console.log('[ElevenLabsTTS]', ...args);
+  } catch {}
+};
+
 const configureIosPlaybackCategory = () => {
   if (Platform.OS !== 'ios') return;
   try {
     Sound.setCategory?.('Playback', true);
     Sound.enableInSilenceMode?.(true);
     Sound.setActive?.(true);
+    log('Configured iOS audio session for playback');
   } catch (error) {
     console.warn('elevenLabsTTS: failed to configure audio session', error);
   }
@@ -82,6 +89,11 @@ async function responseToBase64(response) {
   throw new Error('Unable to decode ElevenLabs response');
 }
 
+function previewText(value) {
+  const str = String(value || '');
+  return str.length > 96 ? `${str.slice(0, 93)}...` : str;
+}
+
 async function readEntries() {
   await ensureDir();
   try {
@@ -126,16 +138,26 @@ async function enforceCacheLimit() {
 
 export async function synthesizeToFile({ text, voiceId = ELEVENLABS_VOICE_ID, modelId = ELEVENLABS_MODEL_ID }) {
   if (!ELEVENLABS_API_KEY || !voiceId) {
+    log('Skipping ElevenLabs synthesis: missing API key or voice id');
     throw new Error('Missing ElevenLabs API key or voice id');
   }
   await ensureDir();
   const normalized = normalizeText(text);
-  if (!normalized) throw new Error('Empty text');
+  if (!normalized) {
+    log('Skipping ElevenLabs synthesis: empty text payload');
+    throw new Error('Empty text');
+  }
   const path = await getCachePath(normalized, voiceId, modelId);
   const exists = await RNFS.exists(path);
-  if (exists) return path;
+  if (exists) {
+    log('Cache hit, using cached audio file', { path, voiceId, modelId });
+    return path;
+  }
   const key = `${voiceId}|${modelId}|${normalized}`;
-  if (inflight.has(key)) return inflight.get(key);
+  if (inflight.has(key)) {
+    log('Awaiting inflight synthesis request', { voiceId, modelId, textPreview: previewText(normalized) });
+    return inflight.get(key);
+  }
 
   const p = (async () => {
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
@@ -151,6 +173,14 @@ export async function synthesizeToFile({ text, voiceId = ELEVENLABS_VOICE_ID, mo
       },
     };
 
+    log('Requesting ElevenLabs synthesis', {
+      endpoint: url,
+      modelId,
+      optimizeLatency: ELEVENLABS_OPTIMIZE_STREAMING,
+      textPreview: previewText(normalized),
+      textLength: normalized.length,
+    });
+
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -162,10 +192,19 @@ export async function synthesizeToFile({ text, voiceId = ELEVENLABS_VOICE_ID, mo
     });
     if (!res.ok) {
       const t = await res.text().catch(() => '');
+      log('ElevenLabs synthesis failed', {
+        status: res.status,
+        statusText: res.statusText,
+        responsePreview: previewText(t),
+      });
       throw new Error(`ElevenLabs failed ${res.status}: ${t}`);
     }
     const base64 = await responseToBase64(res);
     await RNFS.writeFile(path, base64, 'base64');
+    log('Wrote synthesized audio to disk', {
+      path,
+      byteLength: base64.length,
+    });
     // Enforce cache limits after writing
     await enforceCacheLimit();
     return path;
@@ -183,10 +222,15 @@ export async function synthesizeToFile({ text, voiceId = ELEVENLABS_VOICE_ID, mo
 export async function playText({ text, voiceId, onEnd }) {
   // stop any ongoing audio
   await stop();
+  log('Starting ElevenLabs playback', {
+    requestedVoiceId: voiceId,
+    textPreview: previewText(text),
+  });
   const filePath = await synthesizeToFile({ text, voiceId });
   return new Promise((resolve, reject) => {
     const sound = new Sound(filePath, '', (err) => {
       if (err) {
+        log('Failed to load synthesized audio', { filePath, error: err?.message });
         reject(err);
         return;
       }
@@ -196,9 +240,11 @@ export async function playText({ text, voiceId, onEnd }) {
       try { RNFS.touch?.(filePath, new Date(), new Date()); } catch {}
       sound.play((success) => {
         if (success) {
+          log('Playback finished successfully', { filePath, duration: sound.getDuration?.() });
           onEnd?.();
           resolve(true);
         } else {
+          log('Playback failed during play callback', { filePath });
           reject(new Error('Playback failed'));
         }
       });
@@ -211,6 +257,7 @@ export async function stop() {
     if (currentSound) {
       const sound = currentSound;
       currentSound = null;
+      log('Stopping current ElevenLabs playback');
       sound.stop(() => {
         try { sound.release(); } catch {}
       });
@@ -223,6 +270,7 @@ export function setSpeed(value) {
   const fallback = Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED;
   const v = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, fallback));
   currentSpeed = v;
+  log('Set ElevenLabs playback speed', { speed: v });
   try {
     if (currentSound && typeof currentSound.setSpeed === 'function') {
       currentSound.setSpeed(v);
