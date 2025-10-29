@@ -495,7 +495,6 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
         </View>
         <Text style={styles.title}>Solve The Puzzle</Text>
       </View>
-      <DashedDivider style={styles.titleUnderline} />
       {/* Outline slots rendered as true jigsaw silhouettes */}
       {slots.map((pos, i) => (
         <PuzzleSlotSvg
