@@ -251,6 +251,18 @@ const normalizeChildEntries = (entries = [], options = {}) => {
   return deduped;
 };
 
+const resolveProfileId = (entity) => {
+  if (!entity || typeof entity !== 'object') return null;
+  const id =
+    entity._id ??
+    entity.id ??
+    entity.nuriUserId ??
+    entity.memberRef ??
+    entity.profileId ??
+    null;
+  return id != null ? String(id) : null;
+};
+
 export {
   normalizeGradeValue,
   coerceNumber,
@@ -261,4 +273,5 @@ export {
   deriveAuthMetadata,
   resolveAuthType,
   normalizeChildEntries,
+  resolveProfileId,
 };

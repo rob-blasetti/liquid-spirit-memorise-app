@@ -17,6 +17,8 @@ const GameRenderer = ({
   awardGameAchievement,
   recordGamePlay,
   onVictory,
+  coloringInitialDrawing,
+  onSaveColoring,
 }) => {
   const GameComponent = lazyGameScreens[screen];
   const {
@@ -175,6 +177,14 @@ const GameRenderer = ({
   }
   if (initialImageId) {
     gameProps.initialImageId = initialImageId;
+  }
+  if (screen === 'coloringBookGame') {
+    if (coloringInitialDrawing) {
+      gameProps.initialDrawing = coloringInitialDrawing;
+    }
+    if (typeof onSaveColoring === 'function') {
+      gameProps.onSaveDrawing = onSaveColoring;
+    }
   }
   const showDifficultyFab = screen !== 'coloringBookGame';
   return (

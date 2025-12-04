@@ -6,12 +6,18 @@ import {
   Image,
   TouchableOpacity,
   PanResponder,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import Slider from '@react-native-community/slider';
 import GameTopBar from '../../ui/components/GameTopBar';
 import theme from '../../ui/stylesheets/theme';
+import {
+  COLORING_IMAGES,
+  isValidImageId,
+  pickRandomImageId,
+} from './coloringImages';
 
 const COLOR_PALETTE = [
   '#FF6B6B',
@@ -24,15 +30,6 @@ const COLOR_PALETTE = [
   '#2D3748',
 ];
 
-const COLORING_IMAGES = [
-  { id: 'love', label: 'Love', source: require('../../assets/img/nuri_images/love.png') },
-  { id: 'justice', label: 'Justice', source: require('../../assets/img/nuri_images/justice.png') },
-  { id: 'generosity', label: 'Generosity', source: require('../../assets/img/nuri_images/generosity.png') },
-  { id: 'purity', label: 'Purity', source: require('../../assets/img/nuri_images/purity.png') },
-  { id: 'selflessness', label: 'Selflessness', source: require('../../assets/img/nuri_images/selflessness.png') },
-  { id: 'truthfulness', label: 'Truthfulness', source: require('../../assets/img/nuri_images/truthfulness.png') },
-];
-
 const buildPathD = (points = []) => {
   if (!points.length) return '';
   const [first, ...rest] = points;
@@ -43,22 +40,27 @@ const buildPathD = (points = []) => {
   return d;
 };
 
-const pickRandomImageId = () => {
-  const choice = COLORING_IMAGES[Math.floor(Math.random() * COLORING_IMAGES.length)];
-  return choice?.id || COLORING_IMAGES[0].id;
-};
-
-const isValidImageId = (id) => COLORING_IMAGES.some((img) => img.id === id);
-
-const ColoringBookGame = ({ onBack, initialImageId }) => {
+const ColoringBookGame = ({ onBack, initialImageId, initialDrawing, onSaveDrawing }) => {
   const [selectedId, setSelectedId] = useState(() =>
     isValidImageId(initialImageId) ? initialImageId : pickRandomImageId(),
   );
-  const [strokes, setStrokes] = useState([]);
+  const [strokes, setStrokes] = useState(() =>
+    Array.isArray(initialDrawing?.strokes) ? initialDrawing.strokes : [],
+  );
+  const [canvasSize, setCanvasSize] = useState(
+    initialDrawing?.canvasSize && typeof initialDrawing.canvasSize === 'object'
+      ? initialDrawing.canvasSize
+      : null,
+  );
   const [brushSize, setBrushSize] = useState(8);
   const [activeColor, setActiveColor] = useState(COLOR_PALETTE[0]);
   const colorRef = useRef(activeColor);
   const brushRef = useRef(brushSize);
+  const canvasSizeRef = useRef(
+    initialDrawing?.canvasSize && typeof initialDrawing.canvasSize === 'object'
+      ? initialDrawing.canvasSize
+      : null,
+  );
 
   useEffect(() => {
     colorRef.current = activeColor;
@@ -67,6 +69,28 @@ const ColoringBookGame = ({ onBack, initialImageId }) => {
   useEffect(() => {
     brushRef.current = brushSize;
   }, [brushSize]);
+
+  useEffect(() => {
+    if (isValidImageId(initialImageId)) {
+      setSelectedId(initialImageId);
+    }
+  }, [initialImageId]);
+
+  useEffect(() => {
+    if (!initialDrawing) {
+      setStrokes([]);
+      setCanvasSize(null);
+      canvasSizeRef.current = null;
+      return;
+    }
+    if (Array.isArray(initialDrawing.strokes)) {
+      setStrokes(initialDrawing.strokes);
+    }
+    if (initialDrawing.canvasSize) {
+      setCanvasSize(initialDrawing.canvasSize);
+      canvasSizeRef.current = initialDrawing.canvasSize;
+    }
+  }, [initialDrawing]);
 
   const selectedImage = useMemo(
     () => COLORING_IMAGES.find((img) => img.id === selectedId) || COLORING_IMAGES[0],
@@ -105,6 +129,19 @@ const ColoringBookGame = ({ onBack, initialImageId }) => {
     [],
   );
 
+  const handleCanvasLayout = (event) => {
+    const { width, height } = event.nativeEvent.layout;
+    const nextSize = { width, height };
+    const prev = canvasSizeRef.current;
+    const unchanged =
+      prev &&
+      Math.abs(prev.width - width) < 0.5 &&
+      Math.abs(prev.height - height) < 0.5;
+    if (unchanged) return;
+    canvasSizeRef.current = nextSize;
+    setCanvasSize(nextSize);
+  };
+
   const handleUndo = () => {
     setStrokes((prev) => prev.slice(0, -1));
   };
@@ -113,12 +150,47 @@ const ColoringBookGame = ({ onBack, initialImageId }) => {
     setStrokes([]);
   };
 
+  const handleSaveAndBack = async () => {
+    if (typeof onSaveDrawing !== 'function') {
+      onBack?.();
+      return;
+    }
+    // Derive a canvas size if layout info is missing; use stroke extents as fallback
+    const fallbackSize = (() => {
+      if (canvasSizeRef.current || canvasSize) {
+        return canvasSizeRef.current || canvasSize;
+      }
+      let maxX = 0;
+      let maxY = 0;
+      strokes.forEach((stroke) => {
+        (stroke.points || []).forEach((p) => {
+          if (typeof p.x === 'number') maxX = Math.max(maxX, p.x);
+          if (typeof p.y === 'number') maxY = Math.max(maxY, p.y);
+        });
+      });
+      if (maxX === 0 && maxY === 0) return null;
+      return { width: Math.max(1, Math.ceil(maxX)), height: Math.max(1, Math.ceil(maxY)) };
+    })();
+
+    try {
+      await onSaveDrawing(selectedId, {
+        strokes,
+        canvasSize: canvasSizeRef.current || canvasSize || fallbackSize,
+        updatedAt: Date.now(),
+      });
+      onBack?.();
+    } catch (error) {
+      console.warn('Failed to save coloring progress', error);
+      Alert.alert('Save failed', 'Something went wrong while saving. Please try again.');
+    }
+  };
+
   return (
     <LinearGradient colors={['#120C2C', '#1A1F3F']} style={styles.gradient}>
       <GameTopBar title="Color In" onBack={onBack} />
 
       <View style={styles.content}>
-        <View style={styles.canvasCard} {...panResponder.panHandlers}>
+        <View style={styles.canvasCard} {...panResponder.panHandlers} onLayout={handleCanvasLayout}>
           <Image
             source={selectedImage.source}
             resizeMode="contain"
@@ -186,6 +258,9 @@ const ColoringBookGame = ({ onBack, initialImageId }) => {
             </TouchableOpacity>
             <TouchableOpacity onPress={handleClear} style={styles.actionButton}>
               <Text style={styles.actionText}>Clear</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSaveAndBack} style={styles.primaryActionButton}>
+              <Text style={styles.primaryActionText}>Save & Back</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -290,10 +365,31 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
   },
+  primaryActionButton: {
+    flex: 1.4,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#2563EB',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
   actionText: {
     color: '#E5E7EB',
     fontSize: 15,
     fontWeight: '600',
+  },
+  primaryActionText: {
+    color: theme.whiteColor,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   paletteBar: {
     paddingVertical: 12,

@@ -37,6 +37,7 @@ import {
   normalizeChildEntries,
   resolveAuthType,
   resolveUserFromPayload,
+  resolveProfileId,
 } from '../services/profileUtils';
 import { TEST_USER_EMAIL, getTestUserClassData } from '../utils/data/core/testUserClassData';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
@@ -47,12 +48,6 @@ import {
   markNavigationComplete,
 } from '../services/performanceService';
 import { ACHIEVEMENTS_ENABLED } from '../config/achievementsConfig';
-
-const resolveProfileId = (entity) => {
-  if (!entity || typeof entity !== 'object') return null;
-  const id = entity._id ?? entity.id ?? entity.nuriUserId ?? null;
-  return id != null ? String(id) : null;
-};
 
 const Main = () => {
   const {

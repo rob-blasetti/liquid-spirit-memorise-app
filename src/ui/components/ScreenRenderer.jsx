@@ -10,6 +10,8 @@ import {
 import GameRenderer from './GameRenderer';
 import { GRADE_SCREEN_CONFIG } from '../../utils/data/core/gradesConfig';
 import { sanitizeQuoteText } from '../../services/quoteSanitizer';
+import { resolveProfileId } from '../../services/profileUtils';
+import { saveColoringProgress } from '../../services/coloringProgressService';
 
 const ensureLazy = (loader, fallbackModule) => {
   if (typeof React.lazy === 'function') {
@@ -30,7 +32,6 @@ const Grade1LessonScreen = ensureLazy(
   () => import('../../modules/profile/screens/Grade1LessonScreen'),
   require('../../modules/profile/screens/Grade1LessonScreen').default,
 );
-const COLORING_IMAGE_IDS = ['love', 'justice', 'generosity', 'purity', 'selflessness', 'truthfulness'];
 const SettingsScreen = ensureLazy(
   () => import('../../modules/profile/screens/SettingsScreen'),
   require('../../modules/profile/screens/SettingsScreen').default,
@@ -62,6 +63,10 @@ const StoryModeScreen = ensureLazy(
 const GameVictoryScreen = ensureLazy(
   () => import('../../modules/games/screens/GameVictoryScreen'),
   require('../../modules/games/screens/GameVictoryScreen').default,
+);
+const ColoringGalleryScreen = ensureLazy(
+  () => import('../../modules/games/screens/ColoringGalleryScreen'),
+  require('../../modules/games/screens/ColoringGalleryScreen').default,
 );
 
 export const SplashScreen = ensureLazy(
@@ -109,6 +114,8 @@ const ScreenRenderer = ({
   recordGamePlay,
 }) => {
   if (!navState) return null;
+
+  const profileId = resolveProfileId(profile);
 
   const {
     goHome,
@@ -160,6 +167,17 @@ const ScreenRenderer = ({
     };
   };
 
+  const handleSaveColoring = async (imageId, drawing) => {
+    try {
+      if (profileId && imageId) {
+        await saveColoringProgress(profileId, imageId, drawing || {});
+      }
+    } catch (error) {
+      console.warn('Saving coloring progress failed', error);
+    }
+    goTo('coloringGallery', { highlightImageId: imageId });
+  };
+
   if (isGameScreen(currentNav.screen)) {
     const backHandler = (() => {
       if (currentNav.fromStoryMode) {
@@ -167,6 +185,9 @@ const ScreenRenderer = ({
       }
       if (currentNav.fromGames) {
         return () => goTo('games');
+      }
+      if (currentNav.fromGallery) {
+        return () => goTo('coloringGallery', { highlightImageId: currentNav.imageId });
       }
       if (currentNav.fromHome) {
         return () => goTo('home');
@@ -184,6 +205,8 @@ const ScreenRenderer = ({
         initialImageId={currentNav.imageId}
         awardGameAchievement={awardGameAchievement}
         recordGamePlay={recordGamePlay}
+        coloringInitialDrawing={currentNav.drawing}
+        onSaveColoring={handleSaveColoring}
         onVictory={(details = {}) => {
           const resolvedLevel =
             typeof details.level === 'number' ? details.level : level ?? 1;
@@ -412,6 +435,21 @@ const ScreenRenderer = ({
           }}
         />,
       );
+    case 'coloringGallery':
+      return renderLazy(
+        <ColoringGalleryScreen
+          profile={profile}
+          highlightImageId={currentNav.highlightImageId}
+          onBack={goHome}
+          onSelectImage={(imageId, drawing) => {
+            goTo('coloringBookGame', {
+              fromGallery: true,
+              imageId,
+              drawing,
+            });
+          }}
+        />,
+      );
     case 'grades':
       return renderLazy(
         <GradesScreen
@@ -449,9 +487,7 @@ const ScreenRenderer = ({
           onOpenLibrary={() => goTo('grades')}
           onOpenGames={() => goTo('games')}
           onOpenColoring={() => {
-            const randomId =
-              COLORING_IMAGE_IDS[Math.floor(Math.random() * COLORING_IMAGE_IDS.length)];
-            goTo('coloringBookGame', { fromHome: true, imageId: randomId });
+            goTo('coloringGallery');
           }}
         />,
       );
