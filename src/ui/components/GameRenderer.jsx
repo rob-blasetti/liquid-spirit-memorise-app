@@ -13,6 +13,7 @@ const GameRenderer = ({
   rawQuote: rawQuoteProp,
   sanitizedQuote: sanitizedQuoteProp,
   onBack,
+  initialImageId,
   awardGameAchievement,
   recordGamePlay,
   onVictory,
@@ -158,6 +159,7 @@ const GameRenderer = ({
       buildRecallGame: 'Build Recall',
       bubblePopOrderGame: 'Bubble Pop',
       wordRacerGame: 'Word Racer',
+      coloringBookGame: 'Color & Create',
     };
     if (map[screen]) return map[screen];
     // Fallback: Title Case the screen id
@@ -171,6 +173,10 @@ const GameRenderer = ({
   if (screen === 'bubblePopOrderGame') {
     gameProps.level = currentLevel;
   }
+  if (initialImageId) {
+    gameProps.initialImageId = initialImageId;
+  }
+  const showDifficultyFab = screen !== 'coloringBookGame';
   return (
     <View style={styles.container}>
       <LostOverlay
@@ -192,7 +198,7 @@ const GameRenderer = ({
       <Suspense fallback={<ActivityIndicator style={{ marginTop: 24 }} size="large" />}>
         <GameComponent key={`${screen}-${currentLevel}-${retryTick}`} {...gameProps} />
       </Suspense>
-      <DifficultyFAB />
+      {showDifficultyFab && <DifficultyFAB />}
     </View>
   );
 };

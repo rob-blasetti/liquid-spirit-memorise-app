@@ -17,6 +17,7 @@ const gameLoaders = {
   fillBlankGame: () => import('./FillBlankTypingGame'),
   shapeBuilderGame: () => import('./ShapeBuilderGame'),
   colorSwitchGame: () => import('./ColorSwitchGame'),
+  coloringBookGame: () => import('./ColoringBookGame'),
   rhythmRepeatGame: () => import('./RhythmRepeatGame'),
   silhouetteSearchGame: () => import('./SilhouetteSearchGame'),
   memoryMazeGame: () => import('./MemoryMazeGame'),

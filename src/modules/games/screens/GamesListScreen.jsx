@@ -29,6 +29,7 @@ const titles = {
   buildRecallGame: 'Build & Recall',
   bubblePopOrderGame: 'Bubble Pop',
   wordRacerGame: 'Word Racer',
+  coloringBookGame: 'Color In',
 };
 const iconMap = {
   practice: 'book-outline',
@@ -53,6 +54,7 @@ const iconMap = {
   buildRecallGame: 'build-outline',
   bubblePopOrderGame: 'water-outline',
   wordRacerGame: 'car-sport-outline',
+  coloringBookGame: 'color-palette-outline',
 };
 
 const GamesListScreen = ({ onSelect, onBack }) => {

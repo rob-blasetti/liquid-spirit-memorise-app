@@ -35,6 +35,7 @@ const HomeScreen = ({
   onOpenClass,
   onOpenLibrary,
   onOpenGames,
+  onOpenColoring,
 }) => {
   if (__DEV__) {
     // eslint-disable-next-line no-console
@@ -72,7 +73,7 @@ const HomeScreen = ({
   const hasLibraryButton = typeof onOpenLibrary === 'function';
   const libraryButtonDisabled = true;
   const hasGamesButton = typeof onOpenGames === 'function';
-  const hasClassButton = typeof onOpenClass === 'function';
+  const hasColoringButton = typeof onOpenColoring === 'function';
   const normalizedClassList = Array.isArray(profile?.classes)
     ? profile.classes.filter(Boolean)
     : [];
@@ -80,9 +81,8 @@ const HomeScreen = ({
   const hasLinkedChildren = Number.isFinite(coerceNumberOfChildren) && coerceNumberOfChildren > 0;
   const hasClassAssociations = normalizedClassList.length > 0 || hasLinkedChildren;
   const classAccessEnabled = isLinkedAccount && hasClassAssociations;
-  const classButtonDisabled = !classAccessEnabled;
   const hasBottomButtons =
-    hasLibraryButton || hasGamesButton || hasClassButton;
+    hasLibraryButton || hasGamesButton || hasColoringButton;
 
   const currentLessonNumber = Number(currentLesson);
   const currentSetNumber = Number(currentSet);
@@ -522,35 +522,15 @@ const HomeScreen = ({
                 <Text style={styles.actionButtonText}>Games</Text>
               </TouchableOpacity>
             ) : null}
-            {hasClassButton ? (
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  classButtonDisabled && styles.actionButtonDisabled,
-                ]}
-                onPress={onOpenClass}
-                disabled={classButtonDisabled}
-                activeOpacity={classButtonDisabled ? 1 : 0.75}
-                accessibilityState={classButtonDisabled ? { disabled: true } : undefined}
-              >
+            {hasColoringButton ? (
+              <TouchableOpacity style={styles.actionButton} onPress={onOpenColoring}>
                 <Ionicons
-                  name="people-circle-outline"
+                  name="color-palette-outline"
                   size={28}
-                  color={
-                    classButtonDisabled
-                      ? 'rgba(255,255,255,0.6)'
-                      : themeVariables.whiteColor
-                  }
+                  color={themeVariables.whiteColor}
                   style={styles.actionButtonIcon}
                 />
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    classButtonDisabled && styles.actionButtonTextDisabled,
-                  ]}
-                >
-                  Go To Class
-                </Text>
+                <Text style={styles.actionButtonText}>Colouring</Text>
               </TouchableOpacity>
             ) : null}
           </View>

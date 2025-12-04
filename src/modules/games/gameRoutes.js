@@ -20,6 +20,7 @@ import WordSwapGame from './WordSwapGame';
 import BuildRecallGame from './BuildRecallGame';
 import BubblePopOrderGame from './BubblePopOrderGame';
 import WordRacerGame from './WordRacerGame';
+import ColoringBookGame from './ColoringBookGame';
 
 export const gameScreens = {
   practice: QuotePracticeScreen,
@@ -44,4 +45,5 @@ export const gameScreens = {
   buildRecallGame: BuildRecallGame,
   bubblePopOrderGame: BubblePopOrderGame,
   wordRacerGame: WordRacerGame,
+  coloringBookGame: ColoringBookGame,
 };

@@ -30,6 +30,7 @@ const Grade1LessonScreen = ensureLazy(
   () => import('../../modules/profile/screens/Grade1LessonScreen'),
   require('../../modules/profile/screens/Grade1LessonScreen').default,
 );
+const COLORING_IMAGE_IDS = ['love', 'justice', 'generosity', 'purity', 'selflessness', 'truthfulness'];
 const SettingsScreen = ensureLazy(
   () => import('../../modules/profile/screens/SettingsScreen'),
   require('../../modules/profile/screens/SettingsScreen').default,
@@ -167,6 +168,9 @@ const ScreenRenderer = ({
       if (currentNav.fromGames) {
         return () => goTo('games');
       }
+      if (currentNav.fromHome) {
+        return () => goTo('home');
+      }
       return goBackToLesson;
     })();
     const { screen: _screen, ...navSnapshot } = currentNav;
@@ -177,6 +181,7 @@ const ScreenRenderer = ({
         rawQuote={currentNav.rawQuote}
         sanitizedQuote={currentNav.sanitizedQuote}
         onBack={backHandler}
+        initialImageId={currentNav.imageId}
         awardGameAchievement={awardGameAchievement}
         recordGamePlay={recordGamePlay}
         onVictory={(details = {}) => {
@@ -443,6 +448,11 @@ const ScreenRenderer = ({
           onOpenClass={() => goTo('class')}
           onOpenLibrary={() => goTo('grades')}
           onOpenGames={() => goTo('games')}
+          onOpenColoring={() => {
+            const randomId =
+              COLORING_IMAGE_IDS[Math.floor(Math.random() * COLORING_IMAGE_IDS.length)];
+            goTo('coloringBookGame', { fromHome: true, imageId: randomId });
+          }}
         />,
       );
     }
