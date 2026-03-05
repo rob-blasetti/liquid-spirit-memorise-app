@@ -1,35 +1,41 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Root-first app: `index.js` bootstraps `App.jsx`.
-- Key folders: `components/` (reusable UI), `screens/` (navigation targets), `services/` (API/auth/storage), `navigation/`, `contexts/`, `games/`, `hooks/`, `styles/`, `assets/` (img, animations), `data/` (seed/config), `__tests__/` (unit/integration). Native code lives in `android/` and `ios/`.
-- Configuration: `.env` (env vars) with `react-native-config` used via `config.js`.
+- Entry point: `index.js` boots `src/app/index.js`.
+- App shell: `src/app/` (`AppRoot.js`, `MainApp.js`, contexts, auth navigator).
+- Feature modules: `src/modules/` (`auth/`, `profile/`, `games/`, `achievements/`).
+- Shared UI: `src/ui/components/`, styles in `src/ui/stylesheets/`.
+- Business/data layer: `src/services/`, `src/hooks/`, `src/config/`, `src/utils/`.
+- Assets: `src/assets/` (images + animations).
+- Tests: `__tests__/`.
+- Native projects: `android/`, `ios/`.
 
 ## Build, Test, and Development Commands
-- `npm start` or `yarn start`: start Metro bundler.
-- `npm run android` / `npm run ios`: build and run on emulator/device.
-- iOS pods: from `ios/`, run `bundle install` then `bundle exec pod install` on first setup or native changes.
-- `npm test`: run Jest test suite. Add `--coverage` for a report.
-- `npm run lint`: run ESLint.
+- `yarn start` / `npm start`: Metro bundler.
+- `yarn android` / `npm run android`: Android build/run.
+- `yarn ios` / `npm run ios`: iOS build/run.
+- `yarn test` / `npm test`: Jest suite.
+- `yarn lint` / `npm run lint`: ESLint.
+- iOS setup: from `ios/` run `bundle install` then `bundle exec pod install`.
 
 ## Coding Style & Naming Conventions
-- Linting: ESLint extends `@react-native`; format with Prettier (single quotes, trailing commas, avoid parens on single-arg arrows, 2-space indent).
-- Files: Components and screens use `PascalCase.jsx` (e.g., `NotificationBanner.jsx`); utility modules use `camelCase.js`.
-- Code: variables/functions `camelCase`, components `PascalCase`, constants `UPPER_SNAKE_CASE`.
-- Keep modules focused; colocate small, component-specific assets with the component when practical.
+- ESLint: `@react-native` config, Prettier (single quotes, trailing commas, 2-space indent).
+- Components/screens: `PascalCase.jsx`.
+- Utilities/services/hooks: `camelCase.js`.
+- Keep modules focused; avoid adding cross-module coupling in screen files.
 
 ## Testing Guidelines
-- Framework: Jest with React Native preset; mocks configured in `jest.setup.js`.
-- Location/naming: place tests in `__tests__/` as `*.test.js(x)` or `*.test.tsx` (e.g., `NuriLoginScreen.test.js`).
-- Run: `npm test`. Prefer `react-test-renderer` for component tests; mock native modules as in existing tests.
+- Framework: Jest + React Native preset (`jest.setup.js`).
+- Place tests in `__tests__/` as `*.test.js(x)` / `*.test.tsx`.
+- Prefer service/hook unit tests and focused screen behavior tests.
 
 ## Commit & Pull Request Guidelines
-- Commits: prefer Conventional Commits (e.g., `feat:`, `fix:`, `refactor:`) as seen in history; keep changes small and scoped.
-- Branches: use clear names like `codex/<short-purpose>` or `feature/<scope>`.
-- PRs: include summary, linked issues, before/after screenshots for UI, and test updates. Ensure `npm test` and `npm run lint` pass.
+- Use Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`).
+- Keep commits scoped and reviewable.
+- PRs should include: summary, risk notes, screenshots (UI changes), and test evidence.
 
 ## Security & Configuration Tips
-- Env vars: manage via `.env` (`DEV_API`, `STAGING_API`, `PROD_API`). Never commit secrets.
-- Access config through `react-native-config` (`Config.*`); avoid logging sensitive values and remove debug `console.log` calls before merging.
-- Use Node >= 18; for iOS, manage CocoaPods via Bundler.
-
+- Env vars come from `.env` via `react-native-config`.
+- `src/config/index.js` expects `PROD_API` for API base URL.
+- Never commit secrets or auth tokens.
+- Avoid logging sensitive payloads/tokens in production paths.
