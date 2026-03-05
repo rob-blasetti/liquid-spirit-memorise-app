@@ -32,14 +32,13 @@ import ScreenTransition from '../ui/components/ScreenTransition';
 import { prefetchGames } from '../modules/games/lazyGameRoutes';
 import { gameIds } from '../modules/games';
 import {
-  buildProfileFromUser,
   deriveAuthMetadata,
   normalizeChildEntries,
   resolveAuthType,
   resolveUserFromPayload,
   resolveProfileId,
 } from '../services/profileUtils';
-import { TEST_USER_EMAIL, getTestUserClassData } from '../utils/data/core/testUserClassData';
+import { dedupeProfiles, deriveAuthUserBundle } from './mainAppHelpers';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import { deleteNuriUser } from '../services/authService';
 import { clearCredentials } from '../services/credentialService';
@@ -280,21 +279,11 @@ const Main = () => {
     if (!profile && !registeredProfile) return;
     const childEntries = Array.isArray(children) ? children : [];
     const normalizedChildList = normalizeChildEntries(childEntries, { authType: 'ls-login' });
-    const candidateProfiles = [
+    const dedupedProfiles = dedupeProfiles([
       registeredProfile,
       profile,
       ...normalizedChildList,
-    ].filter(Boolean);
-
-    const seen = new Set();
-    const dedupedProfiles = [];
-    candidateProfiles.forEach((candidate, index) => {
-      const id = resolveProfileId(candidate);
-      const key = id != null ? `id:${id}` : `fallback:${candidate.accountType || 'profile'}:${index}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      dedupedProfiles.push(candidate);
-    });
+    ]);
 
     if (dedupedProfiles.length > 0) {
       setUsersRef.current(dedupedProfiles);
@@ -393,36 +382,11 @@ const Main = () => {
               const authType = resolveAuthType(payload, rawUser);
               const authMetadata = deriveAuthMetadata(payload, rawUser);
               const { family, token } = authMetadata;
-              let childList = Array.isArray(authMetadata.children) ? authMetadata.children : [];
-              const candidateEmails = [
-                rawUser?.email,
-                payload?.email,
-                payload?.user?.email,
-              ]
-                .map(value => (typeof value === 'string' ? value.trim().toLowerCase() : null))
-                .filter(Boolean);
-              const isTestClassUser = candidateEmails.includes(TEST_USER_EMAIL);
-              const testUserData = isTestClassUser ? getTestUserClassData() : null;
-              if (isTestClassUser && testUserData) {
-                childList = testUserData.children;
-              }
-              const normalizedUser = buildProfileFromUser(rawUser, { authType, childList });
-              let normalizedChildren = normalizedUser.linkedAccount
-                ? normalizeChildEntries(childList, { authType })
-                : [];
-              if (isTestClassUser && testUserData) {
-                const clonedClasses = (testUserData.classes || []).map(cls => ({
-                  ...cls,
-                  facilitators: (cls.facilitators || []).map(person => ({ ...person })),
-                  participants: (cls.participants || []).map(person => ({ ...person })),
-                }));
-                normalizedUser.classes = clonedClasses;
-                normalizedUser.class = clonedClasses;
-                normalizedUser.numberOfChildren = normalizedChildren.length;
-              }
-              const availableProfiles = normalizedUser.linkedAccount
-                ? [normalizedUser, ...normalizedChildren]
-                : [normalizedUser];
+              const {
+                normalizedUser,
+                normalizedChildren,
+                availableProfiles,
+              } = deriveAuthUserBundle({ payload, rawUser, authType, authMetadata });
               try {
                 await setToken(token ?? null);
                 await setFamily(normalizedUser.guest ? null : (family ?? null));
