@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import LottieView from 'lottie-react-native';
 import Svg, { Rect, Circle, Ellipse } from 'react-native-svg';
 import GameTopBar from '../../ui/components/GameTopBar';
 import themeVariables from '../../ui/stylesheets/theme';
@@ -108,6 +109,9 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
   const [message, setMessage] = useState('Choose a colour, then paint the matching scene zone.');
   const [completed, setCompleted] = useState(false);
 
+  const paintPopAnim = useRef(new Animated.Value(1)).current;
+  const celebrateFadeAnim = useRef(new Animated.Value(0)).current;
+
   const selectedColor = PALETTE.find(entry => entry.key === selectedColorKey) || PALETTE[0];
 
   const handlePaintZone = zone => {
@@ -133,10 +137,23 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
     setPaintedZones(nextPaintedZones);
     setMessage(`Great! You painted “${word}” with ${expected.label}.`);
 
+    paintPopAnim.setValue(0.96);
+    Animated.spring(paintPopAnim, {
+      toValue: 1,
+      friction: 4,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+
     const allDone = activeZones.every(entry => nextPaintedZones[entry.id]);
     if (allDone) {
       setCompleted(true);
       setMessage('Beautiful! You coloured the whole quote scene.');
+      Animated.timing(celebrateFadeAnim, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }).start();
       onWin?.({ perfect: mistakes === 0 });
     }
   };
@@ -155,7 +172,7 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
         <Text style={styles.progressText}>Mistakes: {mistakes}</Text>
       </View>
 
-      <View style={styles.canvasCard}>
+      <Animated.View style={[styles.canvasCard, { transform: [{ scale: paintPopAnim }] }]}> 
         <Svg width="100%" height="100%" viewBox="0 0 300 260">
           {activeZones.map(zone => {
             const word = zoneWordMap[zone.id];
@@ -174,7 +191,17 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
             );
           })}
         </Svg>
-      </View>
+        {completed ? (
+          <Animated.View pointerEvents="none" style={[styles.celebrateOverlay, { opacity: celebrateFadeAnim }]}> 
+            <LottieView
+              source={require('../../assets/animations/sparkle.json')}
+              autoPlay
+              loop={false}
+              style={styles.sparkleAnimation}
+            />
+          </Animated.View>
+        ) : null}
+      </Animated.View>
 
       <View style={styles.paletteRow}>
         {PALETTE.slice(0, Math.max(targets.length, 4)).map(entry => {
@@ -252,6 +279,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
     marginBottom: 12,
+  },
+  celebrateOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sparkleAnimation: {
+    width: '100%',
+    height: '100%',
   },
   paletteRow: {
     width: '100%',
