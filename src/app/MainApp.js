@@ -22,14 +22,8 @@ import { createAppActions } from '../services/appFlowService';
 import { createAvatarActions } from '../services/avatarService';
 import ScreenTransition from '../ui/components/ScreenTransition';
 
-import {
-  deriveAuthMetadata,
-  normalizeChildEntries,
-  resolveAuthType,
-  resolveUserFromPayload,
-  resolveProfileId,
-} from '../services/profileUtils';
-import { dedupeProfiles, deriveAuthUserBundle } from './mainAppHelpers';
+import { normalizeChildEntries, resolveProfileId } from '../services/profileUtils';
+import { dedupeProfiles } from './mainAppHelpers';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import { deleteNuriUser } from '../services/authService';
 import { clearCredentials } from '../services/credentialService';
@@ -38,6 +32,7 @@ import {
   markNavigationComplete,
 } from '../services/performanceService';
 import useAppPreloadEffects from './hooks/useAppPreloadEffects';
+import useAuthSignInHandler from './hooks/useAuthSignInHandler';
 
 const Main = () => {
   const {
@@ -139,6 +134,16 @@ const Main = () => {
       }),
     [profile, goTo, nav, getCurrentProgress, awardAchievement, recordDailyChallenge],
   );
+
+  const handleAuthSignIn = useAuthSignInHandler({
+    setToken,
+    setFamily,
+    setChildren,
+    setUsers,
+    setUser,
+    saveProfile,
+    goTo,
+  });
   useAppPreloadEffects({
     navScreen: nav.screen,
     profile,
@@ -285,28 +290,8 @@ const Main = () => {
         <NavigationContainer>
           <AuthNavigator
             onSignIn={async (data) => {
-              const payload = data || {};
-              const rawUser = resolveUserFromPayload(payload);
-              if (!rawUser) {
-                console.warn('Auth payload did not include a user object');
-                return;
-              }
-              const authType = resolveAuthType(payload, rawUser);
-              const authMetadata = deriveAuthMetadata(payload, rawUser);
-              const { family, token } = authMetadata;
-              const {
-                normalizedUser,
-                normalizedChildren,
-                availableProfiles,
-              } = deriveAuthUserBundle({ payload, rawUser, authType, authMetadata });
               try {
-                await setToken(token ?? null);
-                await setFamily(normalizedUser.guest ? null : (family ?? null));
-                await setChildren(normalizedChildren);
-                await setUsers(availableProfiles);
-                await setUser(normalizedUser);
-                await saveProfile(normalizedUser);
-                goTo('home');
+                await handleAuthSignIn(data);
               } catch (error) {
                 console.error('Failed to process authentication payload', error);
               }
