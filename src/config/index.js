@@ -27,6 +27,10 @@ const coerceInteger = (value, fallback) => {
 // Set the API URL
 export const API_URL = coerceString(Config.PROD_API);
 
+if (!API_URL) {
+  console.warn('[config] Missing PROD_API. Network requests may fail until .env is configured.');
+}
+
 // ElevenLabs TTS configuration (optional)
 export const USE_ELEVENLABS = coerceBoolean(Config.USE_ELEVENLABS);
 export const ELEVENLABS_API_KEY = coerceString(Config.ELEVENLABS_API_KEY);

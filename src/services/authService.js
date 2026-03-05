@@ -71,14 +71,11 @@ export const signInWithLiquidSpirit = async (email, password) => {
       },
       body: JSON.stringify({ email, password, type: LINKED }),
     });
-    console.log('Response from Liquid Spirit login:', response);
-    
     if (!response.ok) {
       await extractErrorMessage(response, 'Failed to authenticate');
     }
     
     const responseData = await response.json();
-    console.log('Fetched auth with LS:', responseData);
     return responseData;
   } catch (e) {
     console.error('Sign in failed', e);
@@ -111,7 +108,6 @@ export const registerNuriUser = async (username, email, password, grade) => {
     });
     if (!response.ok) await extractErrorMessage(response, 'Registration failed');
     const data = await response.json();
-    console.log('data token and user: ', data.token, data.user);
     return data;
   } catch (e) {
     console.error('Nuri registration error:', e);
