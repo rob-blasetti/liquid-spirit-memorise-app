@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import {
-  SafeAreaView,
-  View,
-  Image as RNImage,
-  InteractionManager,
-  Animated,
-  StyleSheet,
-} from 'react-native';
+import { SafeAreaView, View, Animated, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from './contexts/UserContext';
 import { useDifficulty } from './contexts/DifficultyContext';
@@ -18,8 +11,7 @@ import ProfileModal from '../ui/components/ProfileModal';
 import ScreenRenderer, { renderLazy, SplashScreen } from '../ui/components/ScreenRenderer';
 import ScreenBackground from '../ui/components/ScreenBackground';
 import ComingSoonModal from '../ui/components/ComingSoonModal';
-import FastImage from 'react-native-fast-image';
-import { preloadImages, collectChildAndClassImageUris } from '../services/imageCache';
+
 import useNavigationHandlers from '../hooks/useNavigationHandlers';
 import useProfile from '../hooks/useProfile';
 import useAchievements from '../hooks/useAchievements';
@@ -29,8 +21,7 @@ import { createNavigationActions } from '../services/navigationService';
 import { createAppActions } from '../services/appFlowService';
 import { createAvatarActions } from '../services/avatarService';
 import ScreenTransition from '../ui/components/ScreenTransition';
-import { prefetchGames } from '../modules/games/lazyGameRoutes';
-import { gameIds } from '../modules/games';
+
 import {
   deriveAuthMetadata,
   normalizeChildEntries,
@@ -46,7 +37,7 @@ import {
   markAppInteractive,
   markNavigationComplete,
 } from '../services/performanceService';
-import { ACHIEVEMENTS_ENABLED } from '../config/achievementsConfig';
+import useAppPreloadEffects from './hooks/useAppPreloadEffects';
 
 const Main = () => {
   const {
@@ -148,90 +139,11 @@ const Main = () => {
       }),
     [profile, goTo, nav, getCurrentProgress, awardAchievement, recordDailyChallenge],
   );
-  // Preload Pearlina image for Home screen into FastImage cache
-  // Animate slide transitions when toggling between home and classes
-  useEffect(() => {
-    const asset = RNImage.resolveAssetSource(require('../assets/img/pearlina-pointing-right.png'));
-    FastImage.preload([{ uri: asset.uri }]);
-  }, []);
-
-  // Warm the most common game modules after first paint to trim Suspense delays
-  useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => {
-      prefetchGames(['practice', ...gameIds.slice(0, 3)]);
-    });
-    return () => {
-      if (task && typeof task.cancel === 'function') task.cancel();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!ACHIEVEMENTS_ENABLED) return undefined;
-    const task = InteractionManager.runAfterInteractions(() => {
-      import('../modules/achievements/screens/AchievementsScreen').catch((error) => {
-        if (__DEV__) {
-          console.warn('Failed to preload AchievementsScreen', error);
-        }
-      });
-    });
-    return () => {
-      if (task && typeof task.cancel === 'function') {
-        task.cancel();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => {
-      Promise.all([
-        import('../modules/profile/screens/SettingsScreen'),
-        import('../modules/games/screens/GamesListScreen'),
-      ]).catch((error) => {
-        if (__DEV__) {
-          console.warn('Failed to preload settings/games screens', error);
-        }
-      });
-    });
-    return () => {
-      if (task && typeof task.cancel === 'function') {
-        task.cancel();
-      }
-    };
-  }, []);
-
-  // When player opens the games hub, preload the rest of the listed games in the background
-  useEffect(() => {
-    if (nav.screen !== 'games') return undefined;
-    const task = InteractionManager.runAfterInteractions(() => {
-      prefetchGames(gameIds);
-    });
-    return () => {
-      if (task && typeof task.cancel === 'function') task.cancel();
-    };
-  }, [nav.screen]);
-
-  // Warm cache with likely avatar + class images when child list or active profile changes
-  useEffect(() => {
-    const uris = new Set();
-    const avatarUri = profile?.profilePicture || profile?.avatar;
-    if (avatarUri) uris.add(avatarUri);
-    const childUris = collectChildAndClassImageUris(children || []);
-    childUris.forEach((uri) => {
-      if (uri) {
-        uris.add(uri);
-      }
-    });
-    if (uris.size === 0) return;
-    const primary = [];
-    const secondary = [];
-    uris.forEach((uri) => {
-      if (!uri) return;
-      if (uri === avatarUri) primary.push(uri);
-      else secondary.push(uri);
-    });
-    if (primary.length) preloadImages(primary, { priority: 'normal' });
-    if (secondary.length) preloadImages(secondary, { priority: 'low' });
-  }, [children, profile?.profilePicture, profile?.avatar]);
+  useAppPreloadEffects({
+    navScreen: nav.screen,
+    profile,
+    childrenProfiles: children,
+  });
 
   const setUsersRef = useRef(setUsers);
   const achievementsFetchRef = useRef(null);
