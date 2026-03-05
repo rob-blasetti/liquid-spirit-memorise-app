@@ -1,16 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  FlatList,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Animated,
-} from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
+import { FlatList, View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
 import themeVariables from '../stylesheets/theme';
+import GameTile from './GameTile';
 
 const { width } = Dimensions.get('window');
 const CAROUSEL_SPACING = 18;
@@ -193,34 +184,16 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
     return () => clearAutoScroll();
   }, [scheduleAutoScroll, clearAutoScroll]);
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item }) => (
     <View style={styles.cardWrapper}>
-      <TouchableOpacity
-        activeOpacity={0.8}
+      <GameTile
+        variant="carousel"
+        title={item.title}
+        icon={item.icon}
+        cardImage={item.cardImage}
+        gradient={item.gradient}
         onPress={() => onSelect?.(item.id)}
-        style={styles.cardTouchable}
-      >
-        <LinearGradient
-          colors={item.gradient || ['#E21281', '#6E33A7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.card}
-        >
-          <View style={styles.cardContent}>
-            <View style={styles.cardIconWrap}>
-              <Ionicons
-                name={item.icon || 'game-controller-outline'}
-                size={40}
-                color={themeVariables.whiteColor}
-              />
-            </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <View style={styles.cardButton}>
-              <Text style={styles.cardButtonText}>{item.buttonLabel || 'Play'}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
+      />
     </View>
   );
 
@@ -284,60 +257,6 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     marginHorizontal: CAROUSEL_SPACING / 2,
-  },
-  cardTouchable: {
-    flex: 1,
-    borderRadius: 28,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 10,
-  },
-  card: {
-    flex: 1,
-    borderRadius: 28,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardContent: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  cardIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 0,
-  },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: themeVariables.whiteColor,
-    letterSpacing: 0.6,
-    marginBottom: 0,
-  },
-  cardButton: {
-    paddingHorizontal: 26,
-    paddingVertical: 8,
-    borderRadius: themeVariables.borderRadiusPill,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'center',
-  },
-  cardButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: themeVariables.whiteColor,
-    letterSpacing: 0.4,
   },
   emptyState: {
     width,

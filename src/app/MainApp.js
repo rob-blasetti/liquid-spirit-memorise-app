@@ -78,7 +78,14 @@ const Main = () => {
     recordDailyChallenge,
   } = achievementsState;
   // Pass profile to lesson progress hook to adjust defaults by grade
-  const { completedLessons, overrideProgress, setOverrideProgress, completeLesson, getCurrentProgress } = useLessonProgress(profile, awardAchievement, recordLessonCompletion);
+  const {
+    completedLessons,
+    overrideProgress,
+    setOverrideProgress,
+    completeLesson,
+    getCurrentProgress,
+    getProgressForGrade,
+  } = useLessonProgress(profile, awardAchievement, recordLessonCompletion);
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [comingSoonGrade, setComingSoonGrade] = useState(null);
@@ -213,9 +220,17 @@ const Main = () => {
       overrideProgress,
       setOverrideProgress,
       getCurrentProgress,
+      getProgressForGrade,
       completedLessons,
     }),
-    [completeLesson, overrideProgress, setOverrideProgress, getCurrentProgress, completedLessons],
+    [
+      completeLesson,
+      overrideProgress,
+      setOverrideProgress,
+      getCurrentProgress,
+      getProgressForGrade,
+      completedLessons,
+    ],
   );
 
   const handleDeleteRegisteredAccount = useCallback(async () => {

@@ -1,14 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { isGameScreen } from '../../app/navigation/router';
-import {
-  GradeSetLanding,
-  GradeLessonSelector,
-  GradeLessonContent,
-  GradeComingSoon,
-} from './GradeLayouts';
 import GameRenderer from './GameRenderer';
-import { GRADE_SCREEN_CONFIG } from '../../utils/data/core/gradesConfig';
 import { sanitizeQuoteText } from '../../services/quoteSanitizer';
 import { resolveProfileId } from '../../services/profileUtils';
 import { saveColoringProgress } from '../../services/coloringProgressService';
@@ -20,58 +13,54 @@ const ensureLazy = (loader, fallbackModule) => {
   return fallbackModule;
 };
 
-const GradesScreen = ensureLazy(
-  () => import('../../modules/profile/screens/GradesScreen'),
-  require('../../modules/profile/screens/GradesScreen').default,
+const LibraryScreen = ensureLazy(
+  () => import('../../screens/profile/LibraryScreen'),
+  require('../../screens/profile/LibraryScreen').default,
 );
-const Grade1SetScreen = ensureLazy(
-  () => import('../../modules/profile/screens/Grade1SetScreen'),
-  require('../../modules/profile/screens/Grade1SetScreen').default,
-);
-const Grade1LessonScreen = ensureLazy(
-  () => import('../../modules/profile/screens/Grade1LessonScreen'),
-  require('../../modules/profile/screens/Grade1LessonScreen').default,
+const GradeScreen = ensureLazy(
+  () => import('../../screens/profile/GradeScreen'),
+  require('../../screens/profile/GradeScreen').default,
 );
 const SettingsScreen = ensureLazy(
-  () => import('../../modules/profile/screens/SettingsScreen'),
-  require('../../modules/profile/screens/SettingsScreen').default,
+  () => import('../../screens/profile/SettingsScreen'),
+  require('../../screens/profile/SettingsScreen').default,
 );
 const AchievementsScreen = ensureLazy(
-  () => import('../../modules/achievements/screens/AchievementsScreen'),
-  require('../../modules/achievements/screens/AchievementsScreen').default,
+  () => import('../../screens/achievements/AchievementsScreen'),
+  require('../../screens/achievements/AchievementsScreen').default,
 );
 const HomeScreen = ensureLazy(
-  () => import('../../modules/profile/screens/HomeScreen'),
-  require('../../modules/profile/screens/HomeScreen').default,
+  () => import('../../screens/profile/HomeScreen'),
+  require('../../screens/profile/HomeScreen').default,
 );
 const GamesListScreen = ensureLazy(
-  () => import('../../modules/games/screens/GamesListScreen'),
-  require('../../modules/games/screens/GamesListScreen').default,
+  () => import('../../screens/games/GamesListScreen'),
+  require('../../screens/games/GamesListScreen').default,
 );
 const ClassScreen = ensureLazy(
-  () => import('../../modules/profile/screens/ClassScreen'),
-  require('../../modules/profile/screens/ClassScreen').default,
+  () => import('../../screens/profile/ClassScreen'),
+  require('../../screens/profile/ClassScreen').default,
 );
 const LessonJourneyScreen = ensureLazy(
-  () => import('../../modules/profile/screens/LessonJourneyScreen'),
-  require('../../modules/profile/screens/LessonJourneyScreen').default,
+  () => import('../../screens/profile/LessonJourneyScreen'),
+  require('../../screens/profile/LessonJourneyScreen').default,
 );
 const StoryModeScreen = ensureLazy(
-  () => import('../../modules/games/screens/StoryModeScreen'),
-  require('../../modules/games/screens/StoryModeScreen').default,
+  () => import('../../screens/games/StoryModeScreen'),
+  require('../../screens/games/StoryModeScreen').default,
 );
 const GameVictoryScreen = ensureLazy(
-  () => import('../../modules/games/screens/GameVictoryScreen'),
-  require('../../modules/games/screens/GameVictoryScreen').default,
+  () => import('../../screens/games/GameVictoryScreen'),
+  require('../../screens/games/GameVictoryScreen').default,
 );
 const ColoringGalleryScreen = ensureLazy(
-  () => import('../../modules/games/screens/ColoringGalleryScreen'),
-  require('../../modules/games/screens/ColoringGalleryScreen').default,
+  () => import('../../screens/games/ColoringGalleryScreen'),
+  require('../../screens/games/ColoringGalleryScreen').default,
 );
 
 export const SplashScreen = ensureLazy(
-  () => import('../../modules/auth/screens/Splash'),
-  require('../../modules/auth/screens/Splash').default,
+  () => import('../../screens/auth/SplashScreen'),
+  require('../../screens/auth/SplashScreen').default,
 );
 
 const fallbackStyles = StyleSheet.create({
@@ -119,15 +108,6 @@ const ScreenRenderer = ({
 
   const {
     goHome,
-    goGrade1,
-    goGrade2,
-    goGrade3,
-    goGrade4,
-    goGrade2Set,
-    goGrade2Lesson,
-    goGrade2b,
-    goGrade2bSet,
-    goGrade2bLesson,
     goBackToLesson,
   } = navigationActions;
 
@@ -143,6 +123,7 @@ const ScreenRenderer = ({
     overrideProgress,
     setOverrideProgress,
     getCurrentProgress,
+    getProgressForGrade,
     completedLessons,
   } = lessonState;
 
@@ -176,6 +157,28 @@ const ScreenRenderer = ({
       console.warn('Saving coloring progress failed', error);
     }
     goTo('coloringGallery', { highlightImageId: imageId });
+  };
+
+  const goToGradeJourney = (gradeValue) => {
+    const gradeKey = String(gradeValue || '');
+    const progress =
+      typeof getProgressForGrade === 'function'
+        ? getProgressForGrade(gradeKey)
+        : getCurrentProgress();
+    const resolvedLessonNumber = Number(progress?.lessonNumber) || 1;
+    if (gradeKey === '1') {
+      goTo('grade1Lesson', { lessonNumber: resolvedLessonNumber });
+      return;
+    }
+    if (gradeKey === '2b') {
+      const resolvedSetNumber = Number(progress?.setNumber) || 4;
+      goTo('grade2bLesson', { setNumber: resolvedSetNumber, lessonNumber: resolvedLessonNumber });
+      return;
+    }
+    if (gradeKey === '2') {
+      const resolvedSetNumber = Number(progress?.setNumber) || 1;
+      goTo('grade2Lesson', { setNumber: resolvedSetNumber, lessonNumber: resolvedLessonNumber });
+    }
   };
 
   if (isGameScreen(currentNav.screen)) {
@@ -250,129 +253,63 @@ const ScreenRenderer = ({
         />,
       );
     case 'grade1':
-      return renderLazy(
-        <Grade1SetScreen
-          onBack={() => goTo('grades')}
-          onLessonSelect={(lessonNumber) => goTo('grade1Lesson', { lessonNumber })}
-        />,
-      );
     case 'grade1Lesson':
       return renderLazy(
-        <Grade1LessonScreen
+        <GradeScreen
+          grade={1}
           lessonNumber={currentNav.lessonNumber}
-          onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
-          onComplete={(lesson) => {
-            if (!lesson) return;
-            completeLesson(null, lesson.lesson, lesson, { grade: 1, setNumber: lesson.lesson });
-          }}
+          from={currentNav.from}
+          onBackToLibrary={() => goTo('grades')}
+          onBackToJourney={() => goTo('lessonJourney')}
+          onSelectLesson={(_setNumber, lessonNumber) => goTo('grade1Lesson', { lessonNumber })}
+          onComplete={completeLesson}
+          onPractice={(quote) => goTo('practice', buildQuotePayload(quote))}
+          onPlayGame={(quote) => goTo('tapGame', buildQuotePayload(quote))}
         />,
       );
-    case 'grade2Lesson': {
-      const config = GRADE_SCREEN_CONFIG[2];
-      if (!config) return null;
-      return (
-        <GradeLessonContent
-          gradeTitle={config.title}
-          grade={config.grade}
+    case 'grade2':
+    case 'grade2Set':
+    case 'grade2Lesson':
+      return renderLazy(
+        <GradeScreen
+          grade={2}
           setNumber={currentNav.setNumber}
           lessonNumber={currentNav.lessonNumber}
-          getLessonContent={config.getLessonContent}
-          fallbackQuote={config.fallbackQuote}
-          onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
+          from={currentNav.from}
+          onBackToLibrary={() => goTo('grades')}
+          onBackToJourney={() => goTo('lessonJourney')}
+          onSelectLesson={(setNumber, lessonNumber) => goTo('grade2Lesson', { setNumber, lessonNumber })}
           onComplete={completeLesson}
           onPractice={(quote) => goTo('practice', buildQuotePayload(quote))}
           onPlayGame={(quote) => goTo('tapGame', buildQuotePayload(quote))}
-        />
+        />,
       );
-    }
-    case 'grade2bLesson': {
-      const config = GRADE_SCREEN_CONFIG['2b'];
-      if (!config) return null;
-      return (
-        <GradeLessonContent
-          gradeTitle={config.title}
-          grade={config.grade}
+    case 'grade2b':
+    case 'grade2bSet':
+    case 'grade2bLesson':
+      return renderLazy(
+        <GradeScreen
+          grade="2b"
           setNumber={currentNav.setNumber}
           lessonNumber={currentNav.lessonNumber}
-          getLessonContent={config.getLessonContent}
-          fallbackQuote={config.fallbackQuote}
-          onBack={currentNav.from === 'journey' ? () => goTo('lessonJourney') : () => goTo('grades')}
+          from={currentNav.from}
+          onBackToLibrary={() => goTo('grades')}
+          onBackToJourney={() => goTo('lessonJourney')}
+          onSelectLesson={(setNumber, lessonNumber) => goTo('grade2bLesson', { setNumber, lessonNumber })}
           onComplete={completeLesson}
           onPractice={(quote) => goTo('practice', buildQuotePayload(quote))}
           onPlayGame={(quote) => goTo('tapGame', buildQuotePayload(quote))}
-        />
+        />,
       );
-    }
-    case 'grade2Set': {
-      const config = GRADE_SCREEN_CONFIG[2];
-      if (!config) return null;
-      return (
-        <GradeLessonSelector
-          title={`${config.title} - Set ${currentNav.setNumber}`}
-          lessonNumbers={config.lessonNumbers}
-          onLessonSelect={goGrade2Lesson}
-          onBack={() => goTo('grades')}
-        />
+    case 'grade3':
+    case 'grade4':
+      return renderLazy(
+        <GradeScreen
+          grade={currentNav.screen === 'grade4' ? 4 : 3}
+          onBackToLibrary={() => goTo('grades')}
+          onBackToJourney={() => goTo('lessonJourney')}
+        />,
       );
-    }
-    case 'grade2bSet': {
-      const config = GRADE_SCREEN_CONFIG['2b'];
-      if (!config) return null;
-      return (
-        <GradeLessonSelector
-          title={`${config.title} - Set ${currentNav.setNumber}`}
-          lessonNumbers={config.lessonNumbers}
-          onLessonSelect={goGrade2bLesson}
-          onBack={() => goTo('grades')}
-        />
-      );
-    }
-    case 'grade2': {
-      const config = GRADE_SCREEN_CONFIG[2];
-      if (!config) return null;
-      return (
-        <GradeSetLanding
-          title={config.title}
-          sets={config.sets}
-          onSetSelect={goGrade2Set}
-          onBack={() => goTo('grades')}
-        />
-      );
-    }
-    case 'grade2b': {
-      const config = GRADE_SCREEN_CONFIG['2b'];
-      if (!config) return null;
-      return (
-        <GradeSetLanding
-          title={config.title}
-          sets={config.sets}
-          onSetSelect={goGrade2bSet}
-          onBack={() => goTo('grades')}
-        />
-      );
-    }
-    case 'grade3': {
-      const config = GRADE_SCREEN_CONFIG[3];
-      if (!config) return null;
-      return (
-        <GradeComingSoon
-          title={config.title}
-          message={config.message}
-          onBack={() => goTo('grades')}
-        />
-      );
-    }
-    case 'grade4': {
-      const config = GRADE_SCREEN_CONFIG[4];
-      if (!config) return null;
-      return (
-        <GradeComingSoon
-          title={config.title}
-          message={config.message}
-          onBack={() => goTo('grades')}
-        />
-      );
-    }
     case 'storyMode': {
       const { quote, setNumber, lessonNumber } = getQuoteOfTheWeek();
       return renderLazy(
@@ -452,21 +389,21 @@ const ScreenRenderer = ({
       );
     case 'grades':
       return renderLazy(
-        <GradesScreen
+        <LibraryScreen
           onBack={goHome}
           comingSoonGrades={[3, 4, 5]}
+          grade={profile?.grade}
+          profileId={profileId}
+          currentProgress={getCurrentProgress()}
+          completedLessons={completedLessons}
+          onContinue={() => goToGradeJourney(profile?.grade)}
           onComingSoonGrade={(grade) => setComingSoonGrade(grade)}
-          onGradeSelect={(gradeValue, setNumber) => {
+          onGradeSelect={(gradeValue) => {
             if (gradeValue === 1) {
-              goGrade1();
+              goToGradeJourney(1);
             } else if (gradeValue === 2) {
-              if (setNumber === 2) {
-                goGrade2b();
-              } else if (setNumber) {
-                goGrade2Set(setNumber);
-              } else {
-                goGrade2();
-              }
+              const preferredGrade = String(profile?.grade || '') === '2b' ? '2b' : 2;
+              goToGradeJourney(preferredGrade);
             }
           }}
         />,

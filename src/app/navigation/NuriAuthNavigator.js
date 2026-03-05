@@ -1,22 +1,22 @@
 // navigation/NuriAuthNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import Start from '../../modules/auth/screens/Start';
-import GuestLogin from '../../modules/auth/screens/auth/GuestLogin';
-import LSLogin from '../../modules/auth/screens/auth/LSLogin';
-import Register from '../../modules/auth/screens/auth/Register';
-import Login from '../../modules/auth/screens/auth/Login';
+import WelcomeScreen from '../../screens/auth/WelcomeScreen';
+import GuestLoginScreen from '../../screens/auth/GuestLoginScreen';
+import LiquidSpiritLoginScreen from '../../screens/auth/LiquidSpiritLoginScreen';
+import NuriRegisterScreen from '../../screens/auth/NuriRegisterScreen';
+import NuriLoginScreen from '../../screens/auth/NuriLoginScreen';
 
 const Stack = createStackNavigator();
 
 export default function NuriAuthNavigator({ onSignIn }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Welcome" component={Start} initialParams={{ onSignIn }} />
-      <Stack.Screen name="GuestLogin" component={GuestLogin} initialParams={{ onSignIn }} />
-      <Stack.Screen name="NuriRegister" component={Register} initialParams={{ onSignIn }} />
-      <Stack.Screen name="NuriLogin" component={Login} initialParams={{ onSignIn }} />
-      <Stack.Screen name="LSLogin" component={LSLogin} initialParams={{ onSignIn }} />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} initialParams={{ onSignIn }} />
+      <Stack.Screen name="GuestLogin" component={GuestLoginScreen} initialParams={{ onSignIn }} />
+      <Stack.Screen name="NuriRegister" component={NuriRegisterScreen} initialParams={{ onSignIn }} />
+      <Stack.Screen name="NuriLogin" component={NuriLoginScreen} initialParams={{ onSignIn }} />
+      <Stack.Screen name="LSLogin" component={LiquidSpiritLoginScreen} initialParams={{ onSignIn }} />
     </Stack.Navigator>
   );
 }

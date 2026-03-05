@@ -23,7 +23,7 @@ jest.mock('liquid-spirit-styleguide', () => {
   return { Button };
 }, { virtual: true });
 
-import Login from '../src/modules/auth/screens/auth/Login.jsx';
+import NuriLoginScreen from '../src/screens/auth/NuriLoginScreen.jsx';
 import { loginNuriUser } from '../src/services/authService';
 
 beforeEach(() => {
@@ -33,7 +33,7 @@ beforeEach(() => {
 it('prefills stored credentials', async () => {
   let instance;
   await ReactTestRenderer.act(async () => {
-    instance = ReactTestRenderer.create(<Login onSignIn={jest.fn()} />);
+    instance = ReactTestRenderer.create(<NuriLoginScreen onSignIn={jest.fn()} />);
   });
   const emailInput = instance.root.findByProps({ placeholder: 'Email' });
   const passInput = instance.root.findByProps({ placeholder: 'Password' });
@@ -48,7 +48,7 @@ it('shows a helpful error message when credentials are incorrect', async () => {
 
   let instance;
   await ReactTestRenderer.act(async () => {
-    instance = ReactTestRenderer.create(<Login onSignIn={signInSpy} />);
+    instance = ReactTestRenderer.create(<NuriLoginScreen onSignIn={signInSpy} />);
   });
 
   const loginButton = instance.root.findByProps({ label: 'Log In' });
@@ -81,7 +81,7 @@ it('informs the user when the account cannot be found', async () => {
 
   let instance;
   await ReactTestRenderer.act(async () => {
-    instance = ReactTestRenderer.create(<Login onSignIn={signInSpy} />);
+    instance = ReactTestRenderer.create(<NuriLoginScreen onSignIn={signInSpy} />);
   });
 
   const loginButton = instance.root.findByProps({ label: 'Log In' });

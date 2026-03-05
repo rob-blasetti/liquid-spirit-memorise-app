@@ -11,20 +11,19 @@ const mockMarkLevelComplete = jest.fn();
 const mockGetProgressForGame = jest.fn(() => ({ completed: { 1: true }, highestUnlocked: 2, currentLevel: 2 }));
 const mockUseDifficulty = jest.fn();
 
-jest.mock('../src/modules/profile/screens/GradesScreen', () => () => null);
-jest.mock('../src/modules/profile/screens/Grade1SetScreen', () => () => null);
-jest.mock('../src/modules/profile/screens/Grade1LessonScreen', () => () => null);
-jest.mock('../src/modules/profile/screens/SettingsScreen', () => () => null);
-jest.mock('../src/modules/achievements/screens/AchievementsScreen', () => () => null);
-jest.mock('../src/modules/profile/screens/HomeScreen', () => () => null);
-jest.mock('../src/modules/games/screens/GamesListScreen', () => () => null);
-jest.mock('../src/modules/profile/screens/ClassScreen', () => () => null);
-jest.mock('../src/modules/profile/screens/LessonJourneyScreen', () => () => null);
-jest.mock('../src/modules/games/screens/StoryModeScreen', () => () => null);
-jest.mock('../src/modules/games/screens/GameVictoryScreen', () => () => null);
-jest.mock('../src/modules/auth/screens/Splash', () => () => null);
+jest.mock('../src/screens/profile/LibraryScreen', () => () => null);
+jest.mock('../src/screens/profile/GradeScreen', () => () => null);
+jest.mock('../src/screens/profile/SettingsScreen', () => () => null);
+jest.mock('../src/screens/achievements/AchievementsScreen', () => () => null);
+jest.mock('../src/screens/profile/HomeScreen', () => () => null);
+jest.mock('../src/screens/games/GamesListScreen', () => () => null);
+jest.mock('../src/screens/profile/ClassScreen', () => () => null);
+jest.mock('../src/screens/profile/LessonJourneyScreen', () => () => null);
+jest.mock('../src/screens/games/StoryModeScreen', () => () => null);
+jest.mock('../src/screens/games/GameVictoryScreen', () => () => null);
+jest.mock('../src/screens/auth/SplashScreen', () => () => null);
 
-jest.mock('../src/modules/games/lazyGameRoutes', () => {
+jest.mock('../src/games/lazyGameRoutes', () => {
   const React = require('react');
   const { useEffect } = React;
   const TestGame = (props) => {

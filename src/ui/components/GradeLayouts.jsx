@@ -51,6 +51,75 @@ export const GradeLessonSelector = ({
   </View>
 );
 
+export const GradeSetLessonSelector = ({
+  title,
+  sets = [],
+  lessonNumbers = [],
+  initialSetNumber,
+  onLessonSelect,
+  onBack,
+}) => {
+  const resolvedInitialSet =
+    sets.includes(initialSetNumber) && initialSetNumber != null
+      ? initialSetNumber
+      : sets[0];
+  const [selectedSet, setSelectedSet] = React.useState(resolvedInitialSet);
+
+  React.useEffect(() => {
+    if (sets.length === 0) {
+      setSelectedSet(undefined);
+      return;
+    }
+    if (
+      initialSetNumber != null &&
+      sets.includes(initialSetNumber) &&
+      initialSetNumber !== selectedSet
+    ) {
+      setSelectedSet(initialSetNumber);
+      return;
+    }
+    if (!sets.includes(selectedSet)) {
+      setSelectedSet(resolvedInitialSet);
+    }
+  }, [sets, selectedSet, resolvedInitialSet, initialSetNumber]);
+
+  return (
+    <View style={baseStyles.container}>
+      <TopNav
+        title={title}
+        onBack={onBack}
+        containerStyle={headerStyles.container}
+        backAccessibilityLabel="Back to library"
+      />
+      <Text style={baseStyles.helperText}>Choose a set</Text>
+      <ButtonList
+        containerStyle={selectorStyles.buttonList}
+        buttons={sets.map(setNumber => ({
+          key: `set-${setNumber}`,
+          title: `Set ${setNumber}`,
+          onPress: () => setSelectedSet(setNumber),
+          style: selectedSet === setNumber ? selectorStyles.selectedButton : null,
+          textStyle: selectedSet === setNumber ? selectorStyles.selectedButtonText : null,
+        }))}
+      />
+      <Text style={baseStyles.helperText}>
+        {selectedSet != null
+          ? `Choose a lesson in Set ${selectedSet}`
+          : 'Choose a lesson to continue'}
+      </Text>
+      <ButtonList
+        containerStyle={selectorStyles.buttonList}
+        buttons={lessonNumbers.map(number => ({
+          key: `lesson-${number}`,
+          title: `Lesson ${number}`,
+          onPress: () => onLessonSelect?.(selectedSet, number),
+          disabled: selectedSet == null,
+        }))}
+      />
+    </View>
+  );
+};
+
 export const GradeComingSoon = ({ title, message, onBack }) => (
   <View style={baseStyles.container}>
     <TopNav
@@ -68,6 +137,7 @@ export const GradeLessonContent = ({
   grade,
   setNumber,
   lessonNumber,
+  showSetInTitle = true,
   getLessonContent,
   fallbackQuote,
   onBack,
@@ -99,7 +169,9 @@ export const GradeLessonContent = ({
         backAccessibilityLabel="Back to library"
       />
       <Text style={lessonStyles.title}>
-        {gradeTitle} - Set {setNumber} Lesson {lessonNumber}
+        {showSetInTitle
+          ? `${gradeTitle} - Set ${setNumber} Lesson ${lessonNumber}`
+          : `${gradeTitle} - Lesson ${lessonNumber}`}
       </Text>
       {lessonContent?.prayer ? (
         <PrayerBlock prayer={lessonContent.prayer} profile={profile} />
@@ -154,6 +226,13 @@ const selectorStyles = StyleSheet.create({
   buttonList: {
     marginVertical: 8,
   },
+  selectedButton: {
+    backgroundColor: themeVariables.secondaryColor,
+  },
+  selectedButtonText: {
+    color: themeVariables.whiteColor,
+    fontWeight: '700',
+  },
 });
 
 const comingSoonStyles = StyleSheet.create({
@@ -196,6 +275,7 @@ const headerStyles = StyleSheet.create({
 export default {
   GradeSetLanding,
   GradeLessonSelector,
+  GradeSetLessonSelector,
   GradeComingSoon,
   GradeLessonContent,
 };

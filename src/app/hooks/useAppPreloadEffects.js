@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { Image as RNImage, InteractionManager } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { preloadImages, collectChildAndClassImageUris } from '../../services/imageCache';
-import { prefetchGames } from '../../modules/games/lazyGameRoutes';
-import { gameIds } from '../../modules/games';
+import { prefetchGames } from '../../games/lazyGameRoutes';
+import { gameIds } from '../../games';
 import { ACHIEVEMENTS_ENABLED } from '../../config/achievementsConfig';
 
 export default function useAppPreloadEffects({ navScreen, profile, childrenProfiles }) {
@@ -26,7 +26,7 @@ export default function useAppPreloadEffects({ navScreen, profile, childrenProfi
   useEffect(() => {
     if (!ACHIEVEMENTS_ENABLED) return undefined;
     const task = InteractionManager.runAfterInteractions(() => {
-      import('../../modules/achievements/screens/AchievementsScreen').catch((error) => {
+      import('../../screens/achievements/AchievementsScreen').catch((error) => {
         if (__DEV__) {
           console.warn('Failed to preload AchievementsScreen', error);
         }
@@ -42,8 +42,8 @@ export default function useAppPreloadEffects({ navScreen, profile, childrenProfi
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
       Promise.all([
-        import('../../modules/profile/screens/SettingsScreen'),
-        import('../../modules/games/screens/GamesListScreen'),
+        import('../../screens/profile/SettingsScreen'),
+        import('../../screens/games/GamesListScreen'),
       ]).catch((error) => {
         if (__DEV__) {
           console.warn('Failed to preload settings/games screens', error);

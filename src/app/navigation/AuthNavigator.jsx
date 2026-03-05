@@ -1,12 +1,12 @@
 // navigation/AuthNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import Start from '../../modules/auth/screens/Start';
-import GuestLogin from '../../modules/auth/screens/auth/GuestLogin';
-import LSLogin from '../../modules/auth/screens/auth/LSLogin';
-import Register from '../../modules/auth/screens/auth/Register';
-import Login from '../../modules/auth/screens/auth/Login';
-import ForgotYourPassword from '../../modules/auth/screens/ForgotYourPassword';
+import WelcomeScreen from '../../screens/auth/WelcomeScreen';
+import GuestLoginScreen from '../../screens/auth/GuestLoginScreen';
+import LiquidSpiritLoginScreen from '../../screens/auth/LiquidSpiritLoginScreen';
+import NuriRegisterScreen from '../../screens/auth/NuriRegisterScreen';
+import NuriLoginScreen from '../../screens/auth/NuriLoginScreen';
+import ForgotPasswordScreen from '../../screens/auth/ForgotPasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -19,21 +19,21 @@ export default function AuthNavigator({ onSignIn }) {
     >
       {/* Hide header on initial welcome screen */}
       <Stack.Screen name="Welcome" options={{ headerShown: false }}>
-        {props => <Start {...props} />}
+        {props => <WelcomeScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="GuestLogin">
-        {props => <GuestLogin {...props} onSignIn={onSignIn} />}
+        {props => <GuestLoginScreen {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="NuriRegister">
-        {props => <Register {...props} onSignIn={onSignIn} />}
+        {props => <NuriRegisterScreen {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="NuriLogin">
-        {props => <Login {...props} onSignIn={onSignIn} />}
+        {props => <NuriLoginScreen {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
       <Stack.Screen name="LSLogin">
-        {props => <LSLogin {...props} onSignIn={onSignIn} />}
+        {props => <LiquidSpiritLoginScreen {...props} onSignIn={onSignIn} />}
       </Stack.Screen>
-      <Stack.Screen name="ForgotYourPassword" component={ForgotYourPassword} />
+      <Stack.Screen name="ForgotYourPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }

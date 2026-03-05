@@ -1,6 +1,6 @@
 import React from 'react';
-import WordRacerGame from '../src/modules/games/WordRacerGame';
-import { gameIds } from '../src/modules/games';
+import WordRacerGame from '../src/games/WordRacerGame';
+import { gameIds } from '../src/games';
 import { achievements } from '../src/utils/data/core/achievements';
 
 describe('WordRacerGame', () => {
