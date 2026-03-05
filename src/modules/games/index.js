@@ -6,6 +6,7 @@ export const gameIds = [
   'memoryGame',
   'shapeBuilderGame',
   'coloringBookGame',
+  'colorQuoteGame',
   'bubblePopOrderGame',
   'wordRacerGame',
   // temporarily hide games pending polish

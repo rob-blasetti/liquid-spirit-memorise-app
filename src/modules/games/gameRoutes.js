@@ -21,6 +21,7 @@ import BuildRecallGame from './BuildRecallGame';
 import BubblePopOrderGame from './BubblePopOrderGame';
 import WordRacerGame from './WordRacerGame';
 import ColoringBookGame from './ColoringBookGame';
+import ColorQuoteGame from './ColorQuoteGame';
 
 export const gameScreens = {
   practice: QuotePracticeScreen,
@@ -46,4 +47,5 @@ export const gameScreens = {
   bubblePopOrderGame: BubblePopOrderGame,
   wordRacerGame: WordRacerGame,
   coloringBookGame: ColoringBookGame,
+  colorQuoteGame: ColorQuoteGame,
 };

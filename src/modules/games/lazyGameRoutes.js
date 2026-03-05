@@ -18,6 +18,7 @@ const gameLoaders = {
   shapeBuilderGame: () => import('./ShapeBuilderGame'),
   colorSwitchGame: () => import('./ColorSwitchGame'),
   coloringBookGame: () => import('./ColoringBookGame'),
+  colorQuoteGame: () => import('./ColorQuoteGame'),
   rhythmRepeatGame: () => import('./RhythmRepeatGame'),
   silhouetteSearchGame: () => import('./SilhouetteSearchGame'),
   memoryMazeGame: () => import('./MemoryMazeGame'),

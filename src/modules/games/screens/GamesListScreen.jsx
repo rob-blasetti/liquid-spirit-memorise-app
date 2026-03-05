@@ -30,6 +30,7 @@ const titles = {
   bubblePopOrderGame: 'Bubble Pop',
   wordRacerGame: 'Word Racer',
   coloringBookGame: 'Color In',
+  colorQuoteGame: 'Colour the Quote',
 };
 const iconMap = {
   practice: 'book-outline',
@@ -55,6 +56,7 @@ const iconMap = {
   bubblePopOrderGame: 'water-outline',
   wordRacerGame: 'car-sport-outline',
   coloringBookGame: 'color-palette-outline',
+  colorQuoteGame: 'brush-outline',
 };
 
 const GamesListScreen = ({ onSelect, onBack }) => {

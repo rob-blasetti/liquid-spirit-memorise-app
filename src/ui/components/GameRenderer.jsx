@@ -162,6 +162,7 @@ const GameRenderer = ({
       bubblePopOrderGame: 'Bubble Pop',
       wordRacerGame: 'Word Racer',
       coloringBookGame: 'Color & Create',
+      colorQuoteGame: 'Colour the Quote',
     };
     if (map[screen]) return map[screen];
     // Fallback: Title Case the screen id
