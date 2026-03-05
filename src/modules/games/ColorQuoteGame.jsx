@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Svg, { Rect, Circle, Ellipse } from 'react-native-svg';
 import GameTopBar from '../../ui/components/GameTopBar';
 import themeVariables from '../../ui/stylesheets/theme';
 
@@ -12,19 +13,28 @@ const PALETTE = [
   { key: 'ocean', label: 'Ocean', color: '#1f78b4' },
 ];
 
-const normalizeWords = (quote) => {
+const ZONES = [
+  { id: 'sky', label: 'Sky', kind: 'rect', x: 0, y: 0, width: 300, height: 95, rx: 0 },
+  { id: 'sun', label: 'Sun', kind: 'circle', cx: 240, cy: 55, r: 28 },
+  { id: 'treeTop', label: 'Tree Top', kind: 'ellipse', cx: 85, cy: 130, rx: 42, ry: 34 },
+  { id: 'treeTrunk', label: 'Tree Trunk', kind: 'rect', x: 72, y: 140, width: 26, height: 58, rx: 4 },
+  { id: 'ground', label: 'Ground', kind: 'rect', x: 0, y: 205, width: 300, height: 55, rx: 0 },
+  { id: 'path', label: 'Path', kind: 'ellipse', cx: 180, cy: 210, rx: 66, ry: 22 },
+];
+
+const normalizeWords = quote => {
   const raw = typeof quote === 'string' ? quote : quote?.text || '';
   return raw
     .split(/\s+/)
-    .map((word) => word.trim())
-    .map((word) => word.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, ''))
+    .map(word => word.trim())
+    .map(word => word.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, ''))
     .filter(Boolean);
 };
 
 const uniqueWords = (words = []) => {
   const seen = new Set();
   const out = [];
-  words.forEach((word) => {
+  words.forEach(word => {
     const key = word.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
@@ -33,10 +43,38 @@ const uniqueWords = (words = []) => {
   return out;
 };
 
-const getWordCountForLevel = (level) => {
+const getWordCountForLevel = level => {
   if (level >= 3) return 6;
   if (level === 2) return 5;
   return 4;
+};
+
+const ZoneShape = ({ zone, fill, stroke, onPress }) => {
+  const commonProps = {
+    fill,
+    stroke,
+    strokeWidth: 2,
+    onPress,
+  };
+
+  if (zone.kind === 'circle') {
+    return <Circle {...commonProps} cx={zone.cx} cy={zone.cy} r={zone.r} />;
+  }
+
+  if (zone.kind === 'ellipse') {
+    return <Ellipse {...commonProps} cx={zone.cx} cy={zone.cy} rx={zone.rx} ry={zone.ry} />;
+  }
+
+  return (
+    <Rect
+      {...commonProps}
+      x={zone.x}
+      y={zone.y}
+      width={zone.width}
+      height={zone.height}
+      rx={zone.rx || 0}
+    />
+  );
 };
 
 const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
@@ -46,6 +84,8 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
     return uniqueWords(words).slice(0, count);
   }, [words, level]);
 
+  const activeZones = useMemo(() => ZONES.slice(0, Math.max(targets.length, 1)), [targets.length]);
+
   const colorMap = useMemo(() => {
     const map = {};
     targets.forEach((word, index) => {
@@ -54,54 +94,90 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
     return map;
   }, [targets]);
 
+  const zoneWordMap = useMemo(() => {
+    const map = {};
+    activeZones.forEach((zone, index) => {
+      map[zone.id] = targets[index] || targets[targets.length - 1] || null;
+    });
+    return map;
+  }, [activeZones, targets]);
+
   const [selectedColorKey, setSelectedColorKey] = useState(PALETTE[0].key);
-  const [painted, setPainted] = useState({});
+  const [paintedZones, setPaintedZones] = useState({});
   const [mistakes, setMistakes] = useState(0);
-  const [message, setMessage] = useState('Pick a colour, then tap a word tile to paint it.');
+  const [message, setMessage] = useState('Choose a colour, then paint the matching scene zone.');
   const [completed, setCompleted] = useState(false);
 
-  const selectedColor = PALETTE.find((entry) => entry.key === selectedColorKey) || PALETTE[0];
+  const selectedColor = PALETTE.find(entry => entry.key === selectedColorKey) || PALETTE[0];
 
-  const handlePaint = (word) => {
+  const handlePaintZone = zone => {
     if (completed) return;
-    const lower = word.toLowerCase();
-    const expected = colorMap[lower];
+
+    const word = zoneWordMap[zone.id];
+    if (!word) return;
+
+    const expected = colorMap[word.toLowerCase()];
     if (!expected) return;
 
     if (selectedColor.key !== expected.key) {
-      setMistakes((value) => value + 1);
-      setMessage(`Try again: “${word}” is ${expected.label}.`);
+      setMistakes(value => value + 1);
+      setMessage(`Try again: “${word}” matches ${expected.label}.`);
       return;
     }
 
-    const nextPainted = { ...painted, [lower]: true };
-    setPainted(nextPainted);
-    setMessage(`Nice! “${word}” painted ${expected.label}.`);
+    const nextPaintedZones = {
+      ...paintedZones,
+      [zone.id]: true,
+    };
 
-    const allDone = targets.every((target) => nextPainted[target.toLowerCase()]);
+    setPaintedZones(nextPaintedZones);
+    setMessage(`Great! You painted “${word}” with ${expected.label}.`);
+
+    const allDone = activeZones.every(entry => nextPaintedZones[entry.id]);
     if (allDone) {
       setCompleted(true);
-      setMessage('Beautiful! You coloured the quote correctly.');
+      setMessage('Beautiful! You coloured the whole quote scene.');
       onWin?.({ perfect: mistakes === 0 });
     }
   };
 
-  const paintedCount = targets.filter((target) => painted[target.toLowerCase()]).length;
+  const paintedCount = activeZones.filter(zone => paintedZones[zone.id]).length;
 
   return (
     <View style={styles.container}>
       <GameTopBar onBack={onBack} variant="whiteShadow" />
 
       <Text style={styles.title}>Colour the Quote</Text>
-      <Text style={styles.subtitle}>Paint each word tile with its matching colour.</Text>
+      <Text style={styles.subtitle}>Paint the scene using the colours linked to the lesson words.</Text>
 
       <View style={styles.progressRow}>
-        <Text style={styles.progressText}>Progress: {paintedCount}/{targets.length}</Text>
+        <Text style={styles.progressText}>Progress: {paintedCount}/{activeZones.length}</Text>
         <Text style={styles.progressText}>Mistakes: {mistakes}</Text>
       </View>
 
+      <View style={styles.canvasCard}>
+        <Svg width="100%" height="100%" viewBox="0 0 300 260">
+          {activeZones.map(zone => {
+            const word = zoneWordMap[zone.id];
+            const expected = word ? colorMap[word.toLowerCase()] : null;
+            const isPainted = paintedZones[zone.id];
+            const fill = isPainted && expected ? expected.color : 'rgba(255,255,255,0.12)';
+
+            return (
+              <ZoneShape
+                key={zone.id}
+                zone={zone}
+                fill={fill}
+                stroke="rgba(255,255,255,0.85)"
+                onPress={() => handlePaintZone(zone)}
+              />
+            );
+          })}
+        </Svg>
+      </View>
+
       <View style={styles.paletteRow}>
-        {PALETTE.slice(0, Math.max(targets.length, 4)).map((entry) => {
+        {PALETTE.slice(0, Math.max(targets.length, 4)).map(entry => {
           const active = entry.key === selectedColor.key;
           return (
             <TouchableOpacity
@@ -115,25 +191,21 @@ const ColorQuoteGame = ({ quote, onBack, onWin, level = 1 }) => {
         })}
       </View>
 
-      <View style={styles.board}>
-        {targets.map((word) => {
-          const lower = word.toLowerCase();
-          const done = Boolean(painted[lower]);
-          const expected = colorMap[lower];
+      <View style={styles.legendWrap}>
+        {activeZones.map(zone => {
+          const word = zoneWordMap[zone.id];
+          const expected = word ? colorMap[word.toLowerCase()] : null;
           return (
-            <TouchableOpacity
-              key={lower}
-              onPress={() => handlePaint(word)}
-              style={[styles.wordTile, done && { backgroundColor: expected.color, borderColor: expected.color }]}
-            >
-              <Text style={[styles.wordText, done && styles.wordTextDone]}>{word}</Text>
-            </TouchableOpacity>
+            <View key={`legend-${zone.id}`} style={styles.legendChip}>
+              <View style={[styles.legendDot, { backgroundColor: expected?.color || '#999' }]} />
+              <Text style={styles.legendText}>{zone.label} → {word || '—'}</Text>
+            </View>
           );
         })}
       </View>
 
       <Text style={styles.message}>{message}</Text>
-      <Text style={styles.hint}>Hint: each word has one correct colour.</Text>
+      <Text style={styles.hint}>Tip: tap scene zones, not words, to paint.</Text>
     </View>
   );
 };
@@ -170,13 +242,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  canvasCard: {
+    width: '100%',
+    maxWidth: 360,
+    aspectRatio: 1.15,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
   paletteRow: {
     width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   swatch: {
     minWidth: 78,
@@ -195,31 +278,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 12,
   },
-  board: {
+  legendWrap: {
     width: '100%',
+    gap: 6,
+    marginBottom: 8,
+  },
+  legendChip: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  wordTile: {
-    minWidth: 110,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
-    backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  wordText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
   },
-  wordTextDone: {
+  legendText: {
     color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   message: {
     marginTop: 4,
