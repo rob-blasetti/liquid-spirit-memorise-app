@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 12,
     fontWeight: '700',
-    color: themeVariables.whiteColor,
+    color: themeVariables.textOnWhite,
   },
   nameContainer: {
     flexDirection: 'row',

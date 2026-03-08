@@ -23,6 +23,7 @@ const formStyles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: themeVariables.whiteColor,
     borderColor: themeVariables.primaryColor,
+    color: themeVariables.textOnWhite,
   },
 });
 
