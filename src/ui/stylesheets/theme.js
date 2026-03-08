@@ -77,7 +77,6 @@ const themeVariables = {
   textOnDark: '#F6F7FF',
   textOnSurface: 'rgba(246, 247, 255, 0.88)',
   textMutedOnDark: 'rgba(246, 247, 255, 0.72)',
-  textOnWhite: '#111827',
 
   boxShadowCard: 'rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px',
   boxShadowInfo: '0px 0px 12px -9px',
