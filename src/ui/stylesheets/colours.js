@@ -1,7 +1,12 @@
 export const colors = {
   primary: '#312783',
-  secondary: '#3FA7A1',
-  background: '#ecf0f1',
-  text: '#2c3e50',
+  secondary: '#58db33',
+  background: '#1c1453',
+  surface: '#1f2a52',
+  card: '#263569',
+  text: '#F6F7FF',
+  textMuted: 'rgba(246, 247, 255, 0.72)',
+  textOnWhite: '#111827',
   error: '#e74c3c',
+  warning: '#ffcc00',
 };
