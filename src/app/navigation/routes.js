@@ -27,6 +27,8 @@ export const APP_ROUTE_NAMES = Object.freeze([
   ...GAME_ROUTE_NAMES,
 ]);
 
+export const KNOWN_ROUTE_NAMES = Object.freeze(new Set(APP_ROUTE_NAMES));
+
 export const createRoute = (screen, params = {}) => ({ screen, ...params });
 
 export const normalizeRoute = (screen, params = {}) => {
@@ -34,7 +36,13 @@ export const normalizeRoute = (screen, params = {}) => {
     return createRoute(HOME_SCREEN);
   }
 
-  const normalizedScreen = APP_ROUTE_NAMES.includes(screen) ? screen : HOME_SCREEN;
+  const isKnownRoute = KNOWN_ROUTE_NAMES.has(screen);
+  const normalizedScreen = isKnownRoute ? screen : HOME_SCREEN;
+
+  if (__DEV__ && !isKnownRoute) {
+    console.warn('[navigation] Unknown route requested, falling back to home:', screen, params);
+  }
+
   return createRoute(normalizedScreen, params && typeof params === 'object' ? params : {});
 };
 
