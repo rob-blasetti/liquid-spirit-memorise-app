@@ -153,13 +153,11 @@ const ensureObserver = () => {
 
 const registerGlobalPerformance = () => {
   const globalObject =
-    typeof globalThis !== 'undefined'
-      ? globalThis
-      : // eslint-disable-next-line no-undef
-        typeof global !== 'undefined'
-        ? // eslint-disable-next-line no-undef
-          global
-        : undefined;
+    typeof global !== 'undefined'
+      ? global
+      : typeof window !== 'undefined'
+      ? window
+      : undefined;
 
   if (globalObject && !globalObject.performance) {
     globalObject.performance = performance;

@@ -8,20 +8,17 @@ export default function useNavigationHandlers(initialState = INITIAL_NAV_STATE) 
   const [nav, setNav] = useState(initialState);
   const [visitedGrades, setVisitedGrades] = useState({ 1: false, 2: false, 3: false, 4: false });
 
-  const goTo = useCallback(
-    (screen, extra = {}) => {
-      if (!screen) return;
-      setNav((prevNav) => {
-        const nextNav = normalizeRoute(screen, extra);
-        const previousScreen = prevNav?.screen ?? null;
-        if (previousScreen !== screen) {
-          markNavigationStart(screen, { from: previousScreen });
-        }
-        return nextNav;
-      });
-    },
-    [markNavigationStart],
-  );
+  const goTo = useCallback((screen, extra = {}) => {
+    if (!screen) return;
+    setNav((prevNav) => {
+      const nextNav = normalizeRoute(screen, extra);
+      const previousScreen = prevNav?.screen ?? null;
+      if (previousScreen !== screen) {
+        markNavigationStart(screen, { from: previousScreen });
+      }
+      return nextNav;
+    });
+  }, []);
 
   const markGradeVisited = useCallback((grade) => {
     setVisitedGrades(prev => {

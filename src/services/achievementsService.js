@@ -1,7 +1,7 @@
 // services/achievementsService.js
 import { achievements as defaultAchievements } from '../utils/data/core/achievements';
 import { saveProfile as persistProfile } from './profileService';
-import { apiRequest, authedApiRequest, authedPostJson } from './apiClient';
+import { authedApiRequest, authedPostJson } from './apiClient';
 import { filterEnabledAchievements, isAchievementEnabled } from '../config/achievementsConfig';
 
 const ENABLED_DEFAULT_ACHIEVEMENTS = filterEnabledAchievements(defaultAchievements);
@@ -9,6 +9,11 @@ const DEFAULT_BY_ID = new Map(ENABLED_DEFAULT_ACHIEVEMENTS.map((a) => [a.id, a])
 const DEFAULT_IDS = new Set(DEFAULT_BY_ID.keys());
 const DEFAULT_BY_TITLE = new Map(ENABLED_DEFAULT_ACHIEVEMENTS.map((a) => [a.title, a.id]));
 const SERVER_ID_HINTS = new Map();
+const debugAchievements = (...args) => {
+  if (__DEV__) {
+    console.debug(...args);
+  }
+};
 
 const registerServerIdHints = (list = []) => {
   list.forEach((item) => {
@@ -330,7 +335,6 @@ export async function fetchUserAchievements(userId) {
         sample: achievements.slice(0, 3).map((item) => item?.id),
         totalPoints,
       };
-      // eslint-disable-next-line no-console
       console.debug('Fetched achievements summary:', summary);
     }
     const resolvedTotal =

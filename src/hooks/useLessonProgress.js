@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { grade1Lessons } from '../utils/data/core/grade1';
 import { GRADE_SCREEN_CONFIG } from '../utils/data/core/gradesConfig';
@@ -20,7 +20,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
     '2b': { setNumber: 4, lessonNumber: 1 },
   });
 
-  const getJourneyKey = () => {
+  const getJourneyKey = useCallback(() => {
     const profileId =
       profile?._id ??
       profile?.id ??
@@ -30,9 +30,9 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
       return `journey:${profileId}`;
     }
     return 'journey:default';
-  };
+  }, [profile]);
 
-  const normalizeJourneyMap = (rawMap) => {
+  const normalizeJourneyMap = useCallback((rawMap) => {
     const defaults = getJourneyDefaults();
     if (!rawMap || typeof rawMap !== 'object') {
       return defaults;
@@ -50,7 +50,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
         lessonNumber: Number(rawMap?.['2b']?.lessonNumber ?? 1) || 1,
       },
     };
-  };
+  }, []);
 
   const persistJourneyMap = async (nextMap) => {
     const key = getJourneyKey();
@@ -210,8 +210,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
   /**
    * Generate storage key per profile
    */
-  const getProgressKey = () => {
-    // Use unique profile ID for persistence; fallback to default
+  const getProgressKey = useCallback(() => {
     const profileId =
       profile?._id ??
       profile?.id ??
@@ -221,7 +220,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
       return `progress:${profileId}`;
     }
     return 'progress:default';
-  };
+  }, [profile]);
 
   /**
    * Set override for current profile and persist
@@ -266,7 +265,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
         })
         .catch(e => console.error('Error loading progress override:', e));
     }
-  }, [profile]);
+  }, [profile, getProgressKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -285,7 +284,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
     return () => {
       cancelled = true;
     };
-  }, [profile]);
+  }, [profile, getJourneyKey, normalizeJourneyMap]);
 
   return {
     completedLessons,

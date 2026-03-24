@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   RefreshControl,
   FlatList,
 } from 'react-native';
@@ -15,7 +14,6 @@ import themeVariables from '../../ui/stylesheets/theme';
 import { useAchievementsContext } from '../../app/contexts/AchievementsContext';
 import TopNav from '../../ui/components/TopNav';
 
-const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
 const CARD_HEIGHT = 120;
 // Customize these two colors to match your design
@@ -55,14 +53,12 @@ const AchievementsScreen = ({ onBack }) => {
     const sampleIds = Array.isArray(achievements)
       ? achievements.slice(0, 3).map((item) => item?.id).filter(Boolean)
       : [];
-    // eslint-disable-next-line no-console
     console.debug('Achievements screen achievements:', {
       totalCount,
       earnedCount,
       sampleIds,
     });
     if (!isPointsSynced) {
-      // eslint-disable-next-line no-console
       console.warn('AchievementsScreen: points mismatch', { totalPoints, computedPoints });
     }
   }
@@ -123,9 +119,7 @@ const AchievementsScreen = ({ onBack }) => {
     return list;
   }, [grouped, filterOption]);
 
-  const hasFilteredAchievements = filteredAchievements.length > 0;
-
-  const emptyStateLookup = {
+  const emptyStateLookup = useMemo(() => ({
     earned: {
       title: 'No earned badges yet',
       subtitle:
@@ -140,11 +134,11 @@ const AchievementsScreen = ({ onBack }) => {
       title: 'No badges available yet',
       subtitle: 'Stay tuned—new achievements will appear here as you continue your journey.',
     },
-  };
+  }), []);
 
   const emptyStateConfig = useMemo(
     () => emptyStateLookup[filterOption] || emptyStateLookup.all,
-    [filterOption],
+    [filterOption, emptyStateLookup],
   );
 
   const renderAchievementItem = useCallback(({ item }) => {

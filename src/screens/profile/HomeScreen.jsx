@@ -38,7 +38,6 @@ const HomeScreen = ({
   onOpenColoring,
 }) => {
   if (__DEV__) {
-    // eslint-disable-next-line no-console
     console.debug('HomeScreen achievements:', achievements);
   }
   const isLinkedAccount = Boolean(profile?.linkedAccount || profile?.type === 'linked');
@@ -240,8 +239,7 @@ const HomeScreen = ({
     }
   }, [
     activeContent,
-    tabLayouts.quote,
-    tabLayouts.prayer,
+    tabLayouts,
     indicatorTranslate,
     indicatorWidth,
   ]);
@@ -262,7 +260,7 @@ const HomeScreen = ({
     cancelRef.current = true;
     speechService.hardStop();
     setIsSpeaking(false);
-  }, [playbackKey]);
+  }, [playbackKey, isSpeaking]);
 
   const handleAudioPress = async () => {
     if (!hasPlayableContent) return;

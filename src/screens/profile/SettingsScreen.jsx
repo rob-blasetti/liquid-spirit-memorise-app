@@ -198,7 +198,7 @@ const SettingsScreen = ({
         setSelectedLesson(lessons[0]);
       }
     }
-  }, [selectedSet]);
+  }, [selectedSet, selectedLesson, profile?.grade]);
 
   const isFirstRun = useRef(true);
   useEffect(() => {
@@ -207,7 +207,7 @@ const SettingsScreen = ({
       return;
     }
     onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson });
-  }, [selectedSet, selectedLesson]);
+  }, [selectedSet, selectedLesson, onSaveOverride]);
 
   // Persist and apply playback speed
   useEffect(() => {
@@ -215,7 +215,7 @@ const SettingsScreen = ({
     const v = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED));
     elevenLabs.setSpeed(v);
     onSaveProfile?.({ ...profile, ttsSpeed: v });
-  }, [speed]);
+  }, [speed, onSaveProfile, profile]);
 
   useEffect(() => {
     setFontSize(coerceFontSize(profile?.readingFontSize));
