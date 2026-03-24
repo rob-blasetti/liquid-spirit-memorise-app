@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
 import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
-const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
@@ -12,31 +12,16 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     [quote, rawQuote, sanitizedQuote],
   );
   const entries = quoteData.entries;
-  const words = useMemo(
-    () => entries.map((entry) => entry.original || entry.clean || ''),
-    [entries],
-  );
+  const words = useMemo(() => entries.map(entry => entry.original || entry.clean || ''), [entries]);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
   const hasWonRef = useRef(false);
   const mistakesRef = useRef(0);
 
-  const canonicalize = (value) =>
-    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
+  const canonicalize = value => sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
-  // prepare options on mount and when quote changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setIndex(0);
-    setMessage('');
-    generateOptions(0);
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [quote]);
-
-  const generateOptions = (idx) => {
+  const generateOptions = useCallback((idx) => {
     if (idx >= entries.length) {
       setOptions([]);
       return;
@@ -47,9 +32,17 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
       ({ entry: e }) => e.original || e.clean || '',
     );
     setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
-  };
+  }, [entries, quoteData.uniquePlayableWords]);
 
-  const handleSelect = (word) => {
+  useEffect(() => {
+    setIndex(0);
+    setMessage('');
+    generateOptions(0);
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
+  }, [quote, generateOptions]);
+
+  const handleSelect = word => {
     if (hasWonRef.current) return;
     const current = entries[index];
     if (!current) return;
@@ -74,9 +67,7 @@ const FirstLetterQuizGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     }
   };
 
-  const display = words
-    .map((w, i) => (i < index ? w : w.slice(0, 2)))
-    .join(' ');
+  const display = words.map((w, i) => (i < index ? w : w.slice(0, 2))).join(' ');
 
   return (
     <View style={styles.container}>
@@ -118,8 +109,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   quote: {
-    fontSize: 20,
-    marginVertical: 24,
+    fontSize: 24,
+    marginVertical: 16,
     textAlign: 'center',
   },
   options: {
@@ -131,20 +122,20 @@ const styles = StyleSheet.create({
     backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
     borderColor: themeVariables.primaryColor,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    margin: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    margin: 6,
     borderRadius: themeVariables.borderRadiusPill,
   },
   optionText: {
-    fontSize: 18,
     color: themeVariables.primaryColor,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
-    marginVertical: 8,
+    marginTop: 24,
   },
 });
 

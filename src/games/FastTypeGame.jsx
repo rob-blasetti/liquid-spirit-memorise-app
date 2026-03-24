@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
 import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
-const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
@@ -12,20 +12,28 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }
     [quote, rawQuote, sanitizedQuote],
   );
   const entries = quoteData.entries;
-  const words = useMemo(
-    () => entries.map((entry) => entry.original || entry.clean || ''),
-    [entries],
-  );
   const [time, setTime] = useState(30);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
   const outcomeResolvedRef = useRef(false);
   const mistakesRef = useRef(0);
-  const canonicalize = (value) =>
-    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const canonicalize = value => sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
+
+  const generateOptions = useCallback((entryList, idx) => {
+    if (idx >= entryList.length) {
+      setOptions([]);
+      return;
+    }
+    const entry = entryList[idx];
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
+    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
+  }, [quoteData.uniquePlayableWords]);
+
   useEffect(() => {
     setIndex(0);
     setMessage('');
@@ -34,12 +42,11 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }
     outcomeResolvedRef.current = false;
     mistakesRef.current = 0;
     const timer = setInterval(() => {
-      setTime((t) => t - 1);
+      setTime(t => t - 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [quote]);
+  }, [quote, entries, generateOptions]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (time === 0 && message === '') {
       setMessage("Time's up!");
@@ -51,20 +58,7 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }
     }
   }, [time, message, onLose]);
 
-  const generateOptions = (entryList, idx) => {
-    if (idx >= entryList.length) {
-      setOptions([]);
-      return;
-    }
-    const entry = entryList[idx];
-    const exclude = new Set([entry.canonical || entry.clean]);
-    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
-      ({ entry: e }) => e.original || e.clean || '',
-    );
-    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
-  };
-
-  const handleSelect = (word) => {
+  const handleSelect = word => {
     if (time === 0 || outcomeResolvedRef.current) return;
     const current = entries[index];
     if (!current) return;
@@ -138,19 +132,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: themeVariables.primaryColor,
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    margin: 4,
+    paddingHorizontal: 14,
+    margin: 6,
     borderRadius: themeVariables.borderRadiusPill,
   },
   optionText: {
-    fontSize: 18,
     color: themeVariables.primaryColor,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   message: {
-    fontSize: 18,
+    fontSize: 20,
     color: themeVariables.primaryColor,
-    marginVertical: 8,
+    marginTop: 16,
   },
 });
 

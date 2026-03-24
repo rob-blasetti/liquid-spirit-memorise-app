@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
 
-// Show a line of words. After a short delay one word changes colour.
-// The player must tap the word that changed.
 const palette = [
   themeVariables.primaryColorLight,
   '#ffd93d',
@@ -22,15 +20,8 @@ const ColorSwitchGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
   const hasWonRef = useRef(false);
   const mistakesRef = useRef(0);
 
-  useEffect(() => {
-    startRound();
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-    setMessage('');
-  }, [level]);
-
-  const startRound = () => {
-    const base = palette.map((c) => c);
+  const startRound = useCallback(() => {
+    const base = palette.map(c => c);
     setColors(base);
     const idx = Math.floor(Math.random() * base.length);
     setChangedIndex(idx);
@@ -41,9 +32,16 @@ const ColorSwitchGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
       newCols[idx] = palette[other];
       setColors(newCols);
     }, delay);
-  };
+  }, [delay]);
 
-  const handlePress = (idx) => {
+  useEffect(() => {
+    startRound();
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
+    setMessage('');
+  }, [level, startRound]);
+
+  const handlePress = idx => {
     if (hasWonRef.current) return;
     if (idx === changedIndex) {
       setMessage('Great job!');
@@ -118,7 +116,7 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
-    marginTop: 12,
+    marginTop: 24,
   },
 });
 

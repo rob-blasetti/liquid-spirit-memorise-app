@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
 import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
 
-const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
@@ -12,14 +12,11 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     [quote, rawQuote, sanitizedQuote],
   );
   const entries = quoteData.entries;
-  const words = useMemo(
-    () => entries.map((entry) => entry.original || entry.clean || ''),
-    [entries],
-  );
+  const words = useMemo(() => entries.map(entry => entry.original || entry.clean || ''), [entries]);
   const playableEntries = quoteData.playableEntries;
   const playableMap = useMemo(() => {
     const map = new Map();
-    playableEntries.forEach((entry) => map.set(entry.index, entry));
+    playableEntries.forEach(entry => map.set(entry.index, entry));
     return map;
   }, [playableEntries]);
   const [missing, setMissing] = useState([]);
@@ -28,30 +25,10 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
   const [message, setMessage] = useState('');
   const hasWonRef = useRef(false);
   const mistakesRef = useRef(0);
-  const canonicalize = (value) =>
-    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const totalEntries = entries.length;
-    const num = Math.min(3, Math.max(1, Math.floor(totalEntries / 8)));
-    const playableIndices = playableEntries.map((entry) => entry.index);
-    const indices = [];
-    while (indices.length < num && playableIndices.length > 0) {
-      const pickIdx = Math.floor(Math.random() * playableIndices.length);
-      const value = playableIndices.splice(pickIdx, 1)[0];
-      if (!indices.includes(value)) indices.push(value);
-    }
-    const sorted = indices.sort((a, b) => a - b);
-    setMissing(sorted);
-    setCurrent(0);
-    setMessage('');
-    generateOptions(words, sorted, 0);
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [quote]);
+  const canonicalize = value => sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
 
-  const generateOptions = (arr, indices, idx) => {
+  const generateOptions = useCallback((arr, indices, idx) => {
     if (idx >= indices.length) {
       setOptions([]);
       return;
@@ -67,9 +44,28 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
       ({ entry: e }) => e.original || e.clean || '',
     );
     setOptions(shuffle([word, ...distractors]));
-  };
+  }, [playableMap, quoteData.uniquePlayableWords]);
 
-  const handleSelect = (word) => {
+  useEffect(() => {
+    const totalEntries = entries.length;
+    const num = Math.min(3, Math.max(1, Math.floor(totalEntries / 8)));
+    const playableIndices = playableEntries.map(entry => entry.index);
+    const indices = [];
+    while (indices.length < num && playableIndices.length > 0) {
+      const pickIdx = Math.floor(Math.random() * playableIndices.length);
+      const value = playableIndices.splice(pickIdx, 1)[0];
+      if (!indices.includes(value)) indices.push(value);
+    }
+    const sorted = indices.sort((a, b) => a - b);
+    setMissing(sorted);
+    setCurrent(0);
+    setMessage('');
+    generateOptions(words, sorted, 0);
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
+  }, [quote, entries.length, playableEntries, words, generateOptions]);
+
+  const handleSelect = word => {
     if (hasWonRef.current) return;
     const idx = missing[current];
     const entry = playableMap.get(idx);
@@ -95,13 +91,15 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     }
   };
 
-  const display = words.map((w, i) => {
-    if (missing.includes(i)) {
-      if (missing.indexOf(i) < current) return w;
-      return '_'.repeat(w.length);
-    }
-    return w;
-  }).join(' ');
+  const display = words
+    .map((w, i) => {
+      if (missing.includes(i)) {
+        if (missing.indexOf(i) < current) return w;
+        return '_'.repeat(w.length);
+      }
+      return w;
+    })
+    .join(' ');
 
   return (
     <View style={styles.container}>
@@ -149,26 +147,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 16,
   },
   optionButton: {
     backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
     borderColor: themeVariables.primaryColor,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    margin: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    margin: 6,
     borderRadius: themeVariables.borderRadiusPill,
   },
   optionText: {
-    fontSize: 18,
     color: themeVariables.primaryColor,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
-    marginBottom: 8,
+    marginTop: 24,
   },
 });
 

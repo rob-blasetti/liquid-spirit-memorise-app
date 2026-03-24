@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import ThemedButton from '../ui/components/ThemedButton';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
 
-const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
@@ -15,17 +14,7 @@ const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
   const hasWonRef = useRef(false);
   const mistakesRef = useRef(0);
 
-  useEffect(() => {
-    const w = text.split(/\s+/);
-    setWords(w);
-    setIndex(0);
-    setMessage('');
-    generateOptions(w, 0);
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [quote]);
-
-  const generateOptions = (w, idx) => {
+  const generateOptions = useCallback((w, idx) => {
     if (idx >= w.length) {
       setOptions([]);
       return;
@@ -37,9 +26,19 @@ const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
       if (!distractors.includes(cand)) distractors.push(cand);
     }
     setOptions(shuffle([w[idx], ...distractors]));
-  };
+  }, []);
 
-  const handleSelect = (word) => {
+  useEffect(() => {
+    const w = text.split(/\s+/);
+    setWords(w);
+    setIndex(0);
+    setMessage('');
+    generateOptions(w, 0);
+    hasWonRef.current = false;
+    mistakesRef.current = 0;
+  }, [text, generateOptions]);
+
+  const handleSelect = word => {
     if (hasWonRef.current) return;
     if (word === words[index]) {
       const next = index + 1;
@@ -98,10 +97,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   quote: {
-    fontSize: 20,
-    marginVertical: 24,
+    fontSize: 24,
+    marginVertical: 16,
     textAlign: 'center',
-    fontStyle: 'italic',
   },
   options: {
     flexDirection: 'row',
@@ -112,24 +110,20 @@ const styles = StyleSheet.create({
     backgroundColor: themeVariables.whiteColor,
     borderWidth: 1,
     borderColor: themeVariables.primaryColor,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    margin: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    margin: 6,
     borderRadius: themeVariables.borderRadiusPill,
   },
   optionText: {
-    fontSize: 18,
     color: themeVariables.primaryColor,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   message: {
     fontSize: 18,
     color: themeVariables.primaryColor,
-    marginVertical: 8,
-  },
-  buttonContainer: {
-    width: '80%',
-    marginTop: 16,
+    marginTop: 24,
   },
 });
 
