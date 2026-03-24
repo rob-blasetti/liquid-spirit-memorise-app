@@ -24,11 +24,9 @@ const GradeSelectionSection = ({
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {helperText ? (
-        <Text style={styles.sectionHelper}>{helperText}</Text>
-      ) : null}
+      {helperText ? <Text style={styles.sectionHelper}>{helperText}</Text> : null}
       <View style={styles.optionGrid}>
-        {values.map((value) => {
+        {values.map(value => {
           const isSelected = selectedValue === value;
           return (
             <TouchableOpacity
@@ -51,12 +49,7 @@ const GradeSelectionSection = ({
                   size={16}
                   color={isSelected ? themeVariables.primaryColor : themeVariables.whiteColor}
                 />
-                <Text
-                  style={[
-                    styles.optionNumber,
-                    isSelected && styles.optionNumberSelected,
-                  ]}
-                >
+                <Text style={[styles.optionNumber, isSelected && styles.optionNumberSelected]}>
                   {value}
                 </Text>
                 <Ionicons
@@ -90,22 +83,21 @@ const GradeScreen = ({
 
   const config = useMemo(() => {
     if (gradeKey === '1') {
-      const lessonNumbers = grade1Lessons.map((item) => Number(item.lesson)).filter(Number.isFinite);
+      const lessonNumbers = grade1Lessons.map(item => Number(item.lesson)).filter(Number.isFinite);
       return {
         grade: 1,
         title: 'Grade 1',
         sets: [],
         lessonNumbers,
         getLessonContent: (_setNo, lessonNo) => {
-          const lesson = grade1Lessons.find((entry) => Number(entry.lesson) === Number(lessonNo));
+          const lesson = grade1Lessons.find(entry => Number(entry.lesson) === Number(lessonNo));
           if (!lesson) return {};
           return {
             text: lesson.quote,
             prayer: lesson.prayer,
           };
         },
-        fallbackQuote: (_setNo, lessonNo) =>
-          `This is a dummy quote for Lesson ${lessonNo}.`,
+        fallbackQuote: (_setNo, lessonNo) => `This is a dummy quote for Lesson ${lessonNo}.`,
       };
     }
     if (gradeKey === '2b') return GRADE_SCREEN_CONFIG['2b'];
@@ -115,30 +107,22 @@ const GradeScreen = ({
     return null;
   }, [gradeKey]);
 
-  if (!config) return null;
-
-  if (config.message) {
-    return (
-      <GradeComingSoon
-        title={config.title}
-        message={config.message}
-        onBack={backHandler}
-      />
-    );
-  }
-
-  const normalizedLessonNumber = Number(lessonNumber);
-  const hasSelectedLesson = Number.isFinite(normalizedLessonNumber) && normalizedLessonNumber > 0;
-  const availableSets = Array.isArray(config.sets) ? config.sets : [];
-  const availableLessons = Array.isArray(config.lessonNumbers) ? config.lessonNumbers : [];
-  const defaultSet = availableSets.length > 0 ? availableSets[0] : null;
+  const availableSets = useMemo(() => (Array.isArray(config?.sets) ? config.sets : []), [config]);
+  const availableLessons = useMemo(
+    () => (Array.isArray(config?.lessonNumbers) ? config.lessonNumbers : []),
+    [config],
+  );
+  const defaultSet = useMemo(() => (availableSets.length > 0 ? availableSets[0] : null), [availableSets]);
   const normalizedSetNumber = Number(setNumber);
-  const effectiveSetNumber =
-    availableSets.length > 0
-      ? (Number.isFinite(normalizedSetNumber) && availableSets.includes(normalizedSetNumber)
-          ? normalizedSetNumber
-          : defaultSet)
-      : null;
+  const normalizedLessonNumber = Number(lessonNumber);
+  const effectiveSetNumber = useMemo(() => {
+    if (availableSets.length === 0) return null;
+    if (Number.isFinite(normalizedSetNumber) && availableSets.includes(normalizedSetNumber)) {
+      return normalizedSetNumber;
+    }
+    return defaultSet;
+  }, [availableSets, normalizedSetNumber, defaultSet]);
+
   const [selectedSet, setSelectedSet] = useState(effectiveSetNumber);
 
   useEffect(() => {
@@ -153,6 +137,15 @@ const GradeScreen = ({
     setSelectedSet(defaultSet);
   }, [availableSets, effectiveSetNumber, defaultSet]);
 
+  const hasSelectedLesson = Number.isFinite(normalizedLessonNumber) && normalizedLessonNumber > 0;
+  const hasSets = availableSets.length > 0;
+
+  if (!config) return null;
+
+  if (config.message) {
+    return <GradeComingSoon title={config.title} message={config.message} onBack={backHandler} />;
+  }
+
   if (hasSelectedLesson) {
     return (
       <GradeLessonContent
@@ -166,12 +159,10 @@ const GradeScreen = ({
         onBack={backHandler}
         onComplete={(resolvedSetNumber, resolvedLessonNumber, completionPayload, meta) => {
           if (gradeKey === '1') {
-            onComplete?.(
-              null,
-              resolvedLessonNumber,
-              completionPayload,
-              { grade: 1, setNumber: resolvedLessonNumber },
-            );
+            onComplete?.(null, resolvedLessonNumber, completionPayload, {
+              grade: 1,
+              setNumber: resolvedLessonNumber,
+            });
             return;
           }
           onComplete?.(resolvedSetNumber, resolvedLessonNumber, completionPayload, meta);
@@ -181,7 +172,7 @@ const GradeScreen = ({
       />
     );
   }
-  const hasSets = availableSets.length > 0;
+
   return (
     <View style={styles.container}>
       <TopNav
@@ -212,9 +203,7 @@ const GradeScreen = ({
           values={availableLessons}
           selectedValue={null}
           disabled={hasSets && !Number.isFinite(selectedSet)}
-          onSelect={(selectedLessonNumber) =>
-            onSelectLesson?.(hasSets ? selectedSet : null, selectedLessonNumber)
-          }
+          onSelect={selectedLessonNumber => onSelectLesson?.(hasSets ? selectedSet : null, selectedLessonNumber)}
         />
       </ScrollView>
     </View>
@@ -258,37 +247,39 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   optionTile: {
-    marginBottom: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.24)',
-    borderRadius: themeVariables.borderRadiusPill,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    minHeight: 66,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 12,
+    minHeight: 72,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   optionTileThree: {
-    width: '31.5%',
+    width: '31%',
   },
   optionTileFour: {
     width: '23.5%',
   },
   optionTileSelected: {
-    borderColor: themeVariables.tertiaryColor,
     backgroundColor: themeVariables.whiteColor,
+    borderColor: themeVariables.whiteColor,
   },
   optionTileDisabled: {
-    opacity: 0.45,
+    opacity: 0.35,
   },
   optionIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    columnGap: 4,
   },
   optionNumber: {
     color: themeVariables.whiteColor,
-    fontSize: 22,
-    fontWeight: '700',
-    marginHorizontal: 8,
+    fontSize: 18,
+    fontWeight: '800',
   },
   optionNumberSelected: {
     color: themeVariables.primaryColor,
