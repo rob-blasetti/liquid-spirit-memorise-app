@@ -1,8 +1,8 @@
 // services/achievementsService.js
 import { achievements as defaultAchievements } from '../utils/data/core/achievements';
 import { saveProfile as persistProfile } from './profileService';
-import { API_URL } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiRequest } from './apiClient';
 import { filterEnabledAchievements, isAchievementEnabled } from '../config/achievementsConfig';
 
 const ENABLED_DEFAULT_ACHIEVEMENTS = filterEnabledAchievements(defaultAchievements);
@@ -188,13 +188,11 @@ export async function fetchUserAchievements(userId) {
     const headers = token
       ? { Authorization: `Bearer ${token}` }
       : undefined;
-    const res = await fetch(`${API_URL}/api/nuri/achievements/${userId}`,
-      headers ? { headers } : undefined,
-    );
-    if (!res.ok) {
-      throw new Error('Failed to fetch achievements');
-    }
-    const raw = await res.json();
+    const raw = await apiRequest({
+      path: `/api/nuri/achievements/${userId}`,
+      headers,
+      fallbackMessage: 'Failed to fetch achievements',
+    });
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
     // Normalize server achievements; preserve earned and description
     const normalizedEarned = (serverAchievements || [])
@@ -383,25 +381,21 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
       payload.achievementId = achievementId;
     }
     if (typeof totalPoints === 'number') payload.totalPoints = totalPoints;
-    const response = await fetch(`${API_URL}/api/nuri/achievement`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      let info;
-      try { info = JSON.parse(text); } catch { info = { message: text }; }
-      const message = (info && info.message ? String(info.message) : '').toLowerCase();
-      const err = new Error('Failed to update achievement on server');
+    try {
+      return await apiRequest({
+        path: '/api/nuri/achievement',
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        fallbackMessage: 'Failed to update achievement on server',
+      });
+    } catch (err) {
+      const message = String(err?.message || '').toLowerCase();
       if (message.includes('already earned')) err.code = 'ALREADY_EARNED';
       else if (message.includes('user not found')) err.code = 'USER_NOT_FOUND';
-      else if (message.includes('achievement not found') || response.status === 404) {
+      else if (message.includes('achievement not found') || err?.status === 404) {
         err.code = 'ACHIEVEMENT_NOT_FOUND';
       }
-      err.status = response.status;
-      // Log non-noisy errors only
       if (err.code === 'ALREADY_EARNED') {
         console.warn('Achievement already earned; skipping server update');
       } else if (err.code === 'USER_NOT_FOUND') {
@@ -409,11 +403,10 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
       } else if (err.code === 'ACHIEVEMENT_NOT_FOUND') {
         console.warn('Achievement update skipped: achievement not registered on server');
       } else {
-        console.error('Achievement update failed:', response.status, text);
+        console.error('Achievement update failed:', err?.status, err?.message || err);
       }
       throw err;
     }
-    return await response.json();
   } catch (err) {
     if (
       err?.code === 'ALREADY_EARNED' ||
