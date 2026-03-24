@@ -1,25 +1,19 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
-
-const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+import { pickUniqueWords } from '../services/quoteSanitizer';
+import useGameOutcome from './hooks/useGameOutcome';
+import useQuoteGameData from './hooks/useQuoteGameData';
+import { shuffleItems } from './gameUtils';
 
 const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
-  const quoteData = useMemo(
-    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
-    [quote, rawQuote, sanitizedQuote],
-  );
-  const entries = quoteData.entries;
+  const { quoteData, entries, canonicalize } = useQuoteGameData({ quote, rawQuote, sanitizedQuote });
   const [time, setTime] = useState(30);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
-  const outcomeResolvedRef = useRef(false);
-  const mistakesRef = useRef(0);
-
-  const canonicalize = value => sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin, resolveLose } = useGameOutcome({ onWin, onLose });
 
   const generateOptions = useCallback((entryList, idx) => {
     if (idx >= entryList.length) {
@@ -31,7 +25,7 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }
     const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
       ({ entry: e }) => e.original || e.clean || '',
     );
-    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
+    setOptions(shuffleItems([entry.original || entry.clean || '', ...distractors]));
   }, [quoteData.uniquePlayableWords]);
 
   useEffect(() => {
@@ -39,27 +33,23 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }
     setMessage('');
     setTime(30);
     generateOptions(entries, 0);
-    outcomeResolvedRef.current = false;
-    mistakesRef.current = 0;
+    resetOutcome();
     const timer = setInterval(() => {
       setTime(t => t - 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [quote, entries, generateOptions]);
+  }, [quote, entries, generateOptions, resetOutcome]);
 
   useEffect(() => {
     if (time === 0 && message === '') {
       setMessage("Time's up!");
       setOptions([]);
-      if (!outcomeResolvedRef.current) {
-        outcomeResolvedRef.current = true;
-        onLose?.();
-      }
+      resolveLose();
     }
-  }, [time, message, onLose]);
+  }, [time, message, resolveLose]);
 
   const handleSelect = word => {
-    if (time === 0 || outcomeResolvedRef.current) return;
+    if (time === 0 || hasWonRef.current) return;
     const current = entries[index];
     if (!current) return;
     const expectedCanonical = canonicalize(current.original || current.clean || '');
@@ -69,17 +59,14 @@ const FastTypeGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }
       if (next === entries.length) {
         setMessage('Great job!');
         setOptions([]);
-        if (!outcomeResolvedRef.current) {
-          outcomeResolvedRef.current = true;
-          onWin?.({ perfect: mistakesRef.current === 0 });
-        }
+        resolveWin();
       } else {
         setMessage('');
         generateOptions(entries, next);
       }
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 

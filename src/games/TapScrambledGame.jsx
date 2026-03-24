@@ -1,55 +1,44 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-
-const shuffle = (arr) => {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
+import useGameOutcome from './hooks/useGameOutcome';
+import { resolveQuoteText, shuffleItems, clampLevelWordLimit } from './gameUtils';
 
 const TapScrambledGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const text = resolveQuoteText(quote);
   const [words, setWords] = useState([]);
   const [scrambled, setScrambled] = useState([]);
   const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
+
+  const limit = useMemo(() => clampLevelWordLimit(level), [level]);
 
   useEffect(() => {
-    const limit = level === 1 ? 8 : level === 2 ? 12 : 16;
     const w = text.split(/\s+/).slice(0, limit);
     setWords(w);
-    setScrambled(shuffle(w));
+    setScrambled(shuffleItems(w));
     setIndex(0);
     setMessage('');
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [quote, level]);
+    resetOutcome();
+  }, [text, level, limit, resetOutcome]);
 
   const handlePress = (word, idx) => {
     if (hasWonRef.current) return;
     if (word === words[index]) {
-      setScrambled((prev) => prev.filter((_, i) => i !== idx));
+      setScrambled(prev => prev.filter((_, i) => i !== idx));
       const next = index + 1;
       setIndex(next);
       if (next === words.length) {
         setMessage('Great job!');
-        if (!hasWonRef.current) {
-          hasWonRef.current = true;
-          onWin?.({ perfect: mistakesRef.current === 0 });
-        }
+        resolveWin();
       } else {
         setMessage('');
       }
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 

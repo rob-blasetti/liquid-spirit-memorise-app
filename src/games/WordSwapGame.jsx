@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
+import useGameOutcome from './hooks/useGameOutcome';
+import { resolveQuoteText } from './gameUtils';
 
 const WordSwapGame = ({ quote, onBack, onWin, onLose }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/).slice(0, 8);
+  const text = resolveQuoteText(quote);
+  const words = useMemo(() => text.split(/\s+/).slice(0, 8), [text]);
   const [showOriginal, setShowOriginal] = useState(true);
   const [changedIndex, setChangedIndex] = useState(0);
   const [modified, setModified] = useState([]);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
   useEffect(() => {
     const idx = Math.floor(Math.random() * words.length);
@@ -19,10 +20,9 @@ const WordSwapGame = ({ quote, onBack, onWin, onLose }) => {
     const copy = [...words];
     copy[idx] = '____';
     setModified(copy);
-   setShowOriginal(true);
-   setMessage('');
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
+    setShowOriginal(true);
+    setMessage('');
+    resetOutcome();
     const timer = setTimeout(() => {
       const mod = [...words];
       mod[idx] = '???';
@@ -30,19 +30,16 @@ const WordSwapGame = ({ quote, onBack, onWin, onLose }) => {
       setShowOriginal(false);
     }, 2000);
     return () => clearTimeout(timer);
-  }, [quote]);
+  }, [quote, words, resetOutcome]);
 
-  const handlePress = (i) => {
+  const handlePress = i => {
     if (showOriginal || hasWonRef.current) return;
     if (i === changedIndex) {
       setMessage('Great job!');
-      if (!hasWonRef.current) {
-        hasWonRef.current = true;
-        onWin?.({ perfect: mistakesRef.current === 0 });
-      }
+      resolveWin();
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 

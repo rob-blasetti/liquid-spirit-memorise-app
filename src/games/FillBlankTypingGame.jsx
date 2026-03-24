@@ -1,18 +1,14 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
-
-const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+import { pickUniqueWords } from '../services/quoteSanitizer';
+import useGameOutcome from './hooks/useGameOutcome';
+import useQuoteGameData from './hooks/useQuoteGameData';
+import { shuffleItems } from './gameUtils';
 
 const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
-  const quoteData = useMemo(
-    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
-    [quote, rawQuote, sanitizedQuote],
-  );
-  const entries = quoteData.entries;
-  const words = useMemo(() => entries.map(entry => entry.original || entry.clean || ''), [entries]);
+  const { quoteData, entries, words, canonicalize } = useQuoteGameData({ quote, rawQuote, sanitizedQuote });
   const playableEntries = quoteData.playableEntries;
   const playableMap = useMemo(() => {
     const map = new Map();
@@ -23,10 +19,7 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
   const [current, setCurrent] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
-
-  const canonicalize = value => sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
   const generateOptions = useCallback((arr, indices, idx) => {
     if (idx >= indices.length) {
@@ -43,7 +36,7 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
       ({ entry: e }) => e.original || e.clean || '',
     );
-    setOptions(shuffle([word, ...distractors]));
+    setOptions(shuffleItems([word, ...distractors]));
   }, [playableMap, quoteData.uniquePlayableWords]);
 
   useEffect(() => {
@@ -61,9 +54,8 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     setCurrent(0);
     setMessage('');
     generateOptions(words, sorted, 0);
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [quote, entries.length, playableEntries, words, generateOptions]);
+    resetOutcome();
+  }, [quote, entries.length, playableEntries, words, generateOptions, resetOutcome]);
 
   const handleSelect = word => {
     if (hasWonRef.current) return;
@@ -77,17 +69,14 @@ const FillBlankTypingGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
       if (next === missing.length) {
         setMessage('Great job!');
         setOptions([]);
-        if (!hasWonRef.current) {
-          hasWonRef.current = true;
-          onWin?.({ perfect: mistakesRef.current === 0 });
-        }
+        resolveWin();
       } else {
         setMessage('Correct!');
         generateOptions(words, missing, next);
       }
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 
