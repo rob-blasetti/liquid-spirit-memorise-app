@@ -1,4 +1,7 @@
+import { lazyGameScreens } from '../../games/lazyGameRoutes';
+
 const HOME_SCREEN = 'home';
+const GAME_ROUTE_NAMES = Object.keys(lazyGameScreens);
 
 export const APP_ROUTE_NAMES = Object.freeze([
   'home',
@@ -21,6 +24,7 @@ export const APP_ROUTE_NAMES = Object.freeze([
   'grade4',
   'storyMode',
   'gameVictory',
+  ...GAME_ROUTE_NAMES,
 ]);
 
 export const createRoute = (screen, params = {}) => ({ screen, ...params });
