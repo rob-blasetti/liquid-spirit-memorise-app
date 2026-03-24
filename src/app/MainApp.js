@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SafeAreaView, View, Animated, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from './contexts/UserContext';
@@ -22,17 +22,13 @@ import { createAppActions } from '../services/appFlowService';
 import { createAvatarActions } from '../services/avatarService';
 import ScreenTransition from '../ui/components/ScreenTransition';
 
-import { normalizeChildEntries, resolveProfileId } from '../services/profileUtils';
-import { dedupeProfiles } from './mainAppHelpers';
+import { resolveProfileId } from '../services/profileUtils';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import { deleteNuriUser } from '../services/authService';
 import { clearCredentials } from '../services/credentialService';
-import {
-  markAppInteractive,
-  markNavigationComplete,
-} from '../services/performanceService';
 import useAppPreloadEffects from './hooks/useAppPreloadEffects';
 import useAuthSignInHandler from './hooks/useAuthSignInHandler';
+import useMainAppRuntime from './hooks/useMainAppRuntime';
 
 const Main = () => {
   const {
@@ -89,10 +85,6 @@ const Main = () => {
   const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [comingSoonGrade, setComingSoonGrade] = useState(null);
-
-  const previousScreenRef = useRef(null);
-  const pendingTransitionRef = useRef(null);
-  const appInteractiveReportedRef = useRef(false);
 
   const profileSwitchEligible = useMemo(() => {
     if (!profile) return false;
@@ -157,62 +149,20 @@ const Main = () => {
     childrenProfiles: children,
   });
 
-  const setUsersRef = useRef(setUsers);
-  const achievementsFetchRef = useRef(null);
-  useEffect(() => {
-    setUsersRef.current = setUsers;
-  }, [setUsers]);
-
-  useEffect(() => {
-    if (transitionState) {
-      pendingTransitionRef.current = transitionState;
-    }
-  }, [transitionState]);
-
-  useEffect(() => {
-    const screen = displayNav?.screen;
-    if (!screen || showSplash) return;
-
-    const pendingTransition = pendingTransitionRef.current;
-    const fromScreen = pendingTransition?.from?.screen ?? previousScreenRef.current ?? null;
-    const wasAnimated = Boolean(pendingTransition);
-
-    markNavigationComplete(screen, {
-      from: fromScreen,
-      animated: wasAnimated,
-    });
-
-    pendingTransitionRef.current = null;
-    previousScreenRef.current = screen;
-  }, [displayNav?.screen, showSplash, markNavigationComplete]);
-
-  useEffect(() => {
-    if (showSplash || !storageLoaded) return;
-    const screen = displayNav?.screen;
-    if (!screen || appInteractiveReportedRef.current) return;
-
-    appInteractiveReportedRef.current = true;
-    markAppInteractive({
-      initialScreen: screen,
-      hasProfile: Boolean(profile),
-      hasToken: Boolean(token),
-    });
-  }, [showSplash, storageLoaded, displayNav?.screen, profile, token, markAppInteractive]);
-
-  useEffect(() => {
-    if (!profile && !registeredProfile) return;
-    const childEntries = Array.isArray(children) ? children : [];
-    const normalizedChildList = normalizeChildEntries(childEntries, { authType: 'ls-login' });
-    const dedupedProfiles = dedupeProfiles([
-      registeredProfile,
-      profile,
-      ...normalizedChildList,
-    ]);
-
-    if (dedupedProfiles.length > 0) {
-      setUsersRef.current(dedupedProfiles);
-    }
-  }, [profile, registeredProfile, children]);
+  useMainAppRuntime({
+    transitionState,
+    displayNav,
+    showSplash,
+    storageLoaded,
+    profile,
+    registeredProfile,
+    guestProfile,
+    children,
+    user,
+    token,
+    setUsers,
+    refreshFromServer,
+  });
 
   const lessonState = useMemo(
     () => ({
@@ -276,26 +226,6 @@ const Main = () => {
     }),
     [setProfileModalVisible, setComingSoonGrade],
   );
-
-  useEffect(() => {
-    if (!storageLoaded) return;
-    if (!profile) {
-      achievementsFetchRef.current = null;
-      return;
-    }
-    const isGuestProfile = Boolean(profile?.guest || profile?.type === 'guest');
-    if (isGuestProfile) {
-      achievementsFetchRef.current = null;
-      return;
-    }
-    const profileId = resolveProfileId(profile);
-    if (!profileId) return;
-    const activeUserId = resolveProfileId(user);
-    if (!activeUserId) return;
-    if (achievementsFetchRef.current === profileId) return;
-    achievementsFetchRef.current = profileId;
-    refreshFromServer();
-  }, [storageLoaded, profile, user, refreshFromServer]);
 
   if (showSplash) return renderLazy(<SplashScreen />);
 
