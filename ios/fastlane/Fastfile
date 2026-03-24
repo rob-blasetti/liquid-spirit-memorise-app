@@ -68,45 +68,47 @@ default_platform(:ios)
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do
-    # Print environment variables to verify they load correctly (optional)
     UI.message "🚀 Using API_URL: #{ENV['API_URL']}"
     log_elevenlabs_env
 
-    # Authenticate to Apple using Appfile credentials (no API key)
-
-    sh "mkdir -p ios"
-    sh "touch ios/Config.xcconfig"
-    
-    # 1. Pull down/update provisioning profiles & certificates from your signing repo
-    match(
-      type: "appstore",
-      git_url: "git@github.com:rob-blasetti/signing-repo.git",
-      app_identifier: "com.liquidspirit.nuri",
-      readonly: true
-    )
-
-    # 2. Increment build number
-    increment_build_number(
-      xcodeproj: "liquid_spirit_memorise.xcodeproj"
-    )
-
-    # 3. Inject Environment Variables into Xcode
-
-    # 4. Build the app
-    build_app(
-      workspace: "liquid_spirit_memorise.xcworkspace",
-      scheme: "liquid_spirit_memorise",
-      export_method: "app-store"
-    )
-
-    # 5. Upload to TestFlight
-    upload_to_testflight(
-      api_key: app_store_connect_api_key(
+    asc_api_key = app_store_connect_api_key(
       key_id: ENV['ASC_KEY_ID'],
       issuer_id: ENV['ASC_ISSUER_ID'],
       key_filepath: ENV['ASC_KEY_FILE']
     )
-  )
+
+    sh "mkdir -p ios"
+    sh "touch ios/Config.xcconfig"
+
+    match(
+      type: "appstore",
+      git_url: "git@github.com:rob-blasetti/signing-repo.git",
+      app_identifier: "com.liquidspirit.nuri",
+      readonly: true,
+      api_key: asc_api_key
+    )
+
+    increment_build_number(
+      xcodeproj: "liquid_spirit_memorise.xcodeproj"
+    )
+
+    build_app(
+      workspace: "liquid_spirit_memorise.xcworkspace",
+      scheme: "liquid_spirit_memorise",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution",
+        provisioningProfiles: {
+          "com.liquidspirit.nuri" => "match AppStore com.liquidspirit.nuri"
+        }
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=7MGG8ZRN25 PROVISIONING_PROFILE_SPECIFIER='match AppStore com.liquidspirit.nuri' CODE_SIGN_IDENTITY='Apple Distribution'"
+    )
+
+    upload_to_testflight(
+      api_key: asc_api_key
+    )
   end
 
   desc "Dry run of beta lane without side effects"
