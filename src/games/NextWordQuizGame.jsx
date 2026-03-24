@@ -1,18 +1,17 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-
-const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+import useGameOutcome from './hooks/useGameOutcome';
+import { resolveQuoteText, shuffleItems } from './gameUtils';
 
 const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const text = resolveQuoteText(quote);
   const [words, setWords] = useState([]);
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
   const generateOptions = useCallback((w, idx) => {
     if (idx >= w.length) {
@@ -25,7 +24,7 @@ const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
       const cand = remaining[Math.floor(Math.random() * remaining.length)];
       if (!distractors.includes(cand)) distractors.push(cand);
     }
-    setOptions(shuffle([w[idx], ...distractors]));
+    setOptions(shuffleItems([w[idx], ...distractors]));
   }, []);
 
   useEffect(() => {
@@ -34,9 +33,8 @@ const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
     setIndex(0);
     setMessage('');
     generateOptions(w, 0);
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [text, generateOptions]);
+    resetOutcome();
+  }, [text, generateOptions, resetOutcome]);
 
   const handleSelect = word => {
     if (hasWonRef.current) return;
@@ -46,17 +44,14 @@ const NextWordQuizGame = ({ quote, onBack, onWin, onLose }) => {
       if (next === words.length) {
         setMessage('Great job!');
         setOptions([]);
-        if (!hasWonRef.current) {
-          hasWonRef.current = true;
-          onWin?.({ perfect: mistakesRef.current === 0 });
-        }
+        resolveWin();
       } else {
         setMessage('');
         generateOptions(words, next);
       }
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 

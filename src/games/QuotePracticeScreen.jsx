@@ -1,33 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-import {
-  prepareQuoteForGame,
-  pickUniqueWords,
-  sanitizeQuoteText,
-} from '../services/quoteSanitizer';
-
-const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+import { pickUniqueWords } from '../services/quoteSanitizer';
+import useQuoteGameData from './hooks/useQuoteGameData';
+import { shuffleItems } from './gameUtils';
 
 const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin }) => {
-  const quoteData = useMemo(
-    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
-    [quote, rawQuote, sanitizedQuote],
-  );
-  const entries = quoteData.entries;
-  const words = useMemo(
-    () => entries.map((entry) => entry.original || entry.clean || ''),
-    [entries],
-  );
+  const { quoteData, entries, words, canonicalize } = useQuoteGameData({ quote, rawQuote, sanitizedQuote });
   const [index, setIndex] = useState(0);
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
 
-  const canonicalize = (value) =>
-    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
-
-  const generateOptions = (idx) => {
+  const generateOptions = useCallback((idx) => {
     const entry = entries[idx];
     if (!entry) {
       setOptions([]);
@@ -38,17 +23,16 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin })
       ({ entry: e }) => e.original || e.clean || '',
     );
     const correctDisplay = entry.original || entry.clean || '';
-    setOptions(shuffle([correctDisplay, ...distractors]));
-  };
+    setOptions(shuffleItems([correctDisplay, ...distractors]));
+  }, [entries, quoteData.uniquePlayableWords]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setIndex(0);
     setMessage('');
     generateOptions(0);
-  }, [quote]);
+  }, [quote, generateOptions]);
 
-  const handleSelect = (word) => {
+  const handleSelect = word => {
     const current = entries[index];
     if (!current) return;
     const expectedCanonical = canonicalize(current.original || current.clean || '');
@@ -70,26 +54,23 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin })
 
   const displayedQuote = words
     .map((w, i) => {
-      // split word into base and trailing punctuation
       const base = w.replace(/[.,!?;:]+$/, '');
       const punctMatch = w.match(/([.,!?;:]+)$/);
       const punct = punctMatch ? punctMatch[1] : '';
       if (i < index) {
         return w;
-      } else if (i === index) {
-        // reveal a hint: first third of the word (at least one letter)
+      }
+      if (i === index) {
         const hintLength = Math.max(1, Math.floor(base.length / 2));
         const hint = base.substring(0, hintLength);
         const blanks = '_'.repeat(base.length - hintLength);
         return hint + blanks + punct;
-      } else {
-        // upcoming words: full blanks
-        const blanks = '_'.repeat(base.length);
-        return blanks + punct;
       }
+      const blanks = '_'.repeat(base.length);
+      return blanks + punct;
     })
     .join(' ');
-  // Provide a static snippet of the beginning of the quote as a hint
+
   const snippetWordCount = Math.min(3, entries.length);
   const snippet = words.slice(0, snippetWordCount).join(' ');
 
@@ -98,7 +79,6 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin })
       <GameTopBar onBack={onBack} variant="whiteShadow" />
       <Text style={styles.title}>Practice Quote</Text>
       <Text style={styles.description}>Try to type the quote one word at a time.</Text>
-      {/* Hint snippet to jog memory */}
       <Text style={styles.hint}>Hint: {snippet}...</Text>
       <Text style={styles.quote}>{displayedQuote}</Text>
       {index < words.length ? (
