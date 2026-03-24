@@ -1,28 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import ThemedButton from '../ui/components/ThemedButton';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-import Svg, { Line, Circle, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Line, Circle, Text as SvgText } from 'react-native-svg';
 import { BlurView } from '@react-native-community/blur';
 import DashedDivider from '../ui/components/DashedDivider';
+import useGameOutcome from './hooks/useGameOutcome';
+import { resolveQuoteText } from './gameUtils';
 
 const MAX_WRONG = 8;
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-// Compute initial guessed letters by revealing whole words based on difficulty level
 const initGuessed = (text, level) => {
   const words = text.split(/\s+/);
-  // easy (1): reveal up to 2 words; medium (2): 1 word; hard (3): 0 words
   const maxReveal = Math.max(0, words.length - 1);
   const revealCount = Math.min(maxReveal, 3 - level);
   const available = words.map((_, idx) => idx);
   const revealIndices = [];
-  for (let i = 0; i < revealCount; i++) {
+  for (let i = 0; i < revealCount; i += 1) {
     const pick = Math.floor(Math.random() * available.length);
     revealIndices.push(available.splice(pick, 1)[0]);
   }
   const revealedLetters = new Set();
-  revealIndices.forEach((wordIdx) => {
+  revealIndices.forEach(wordIdx => {
     const word = words[wordIdx];
     for (const ch of word) {
       if (/[a-z]/i.test(ch)) revealedLetters.add(ch.toLowerCase());
@@ -32,99 +33,94 @@ const initGuessed = (text, level) => {
 };
 
 const HangmanGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const text = resolveQuoteText(quote);
   const normalized = text.toLowerCase();
   const numericLevel = Number(level);
   const difficultyLevel = Number.isFinite(numericLevel) && numericLevel > 0
     ? Math.min(Math.max(Math.floor(numericLevel), 1), 3)
     : 1;
-  // Guessed letters, initially revealing words per difficulty
+
   const [guessed, setGuessed] = useState(() => initGuessed(text, difficultyLevel));
   const [wrong, setWrong] = useState(0);
   const [letterChoices, setLetterChoices] = useState([]);
-  const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
-  // Victory screen navigation handled by GameRenderer via onWin
+  const [status, setStatus] = useState('playing');
+  const {
+    resetOutcome,
+    recordMistake,
+    resolveWin,
+    resolveLose,
+  } = useGameOutcome({ onWin, onLose });
 
-  // Reset game state when difficulty level (or text) changes
-  useEffect(() => {
-    setGuessed(initGuessed(text, difficultyLevel));
-    setWrong(0);
-    setStatus('playing');
-  }, [difficultyLevel, text]);
-  const letters = normalized.split('');
-  const masked = letters
-    .map((ch) => {
-      if (ch === ' ' || !ch.match(/[a-z]/i)) return ch;
-      return guessed.includes(ch) ? ch : '_';
-    })
-    .join('');
+  const letters = useMemo(() => normalized.split(''), [normalized]);
 
-  // Generate letter choices based on difficulty: total options = 4 (easy), 6 (medium), 8 (hard)
-  const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
-  const generateChoices = () => {
+  const masked = useMemo(
+    () =>
+      letters
+        .map(ch => {
+          if (ch === ' ' || !/[a-z]/i.test(ch)) return ch;
+          return guessed.includes(ch) ? ch : '_';
+        })
+        .join(''),
+    [letters, guessed],
+  );
+
+  const generateChoices = useCallback(() => {
     const unguessedCorrect = [...new Set(letters.filter(ch => /[a-z]/i.test(ch) && !guessed.includes(ch)))];
     const correctCount = Math.min(2, unguessedCorrect.length);
     const correct = [];
     const correctPool = [...unguessedCorrect];
-    for (let i = 0; i < correctCount; i++) {
+    for (let i = 0; i < correctCount; i += 1) {
       const idx = Math.floor(Math.random() * correctPool.length);
       correct.push(correctPool.splice(idx, 1)[0]);
     }
     const incorrect = [];
-    const wrongPool = alphabet.filter(ch => !normalized.includes(ch) && !guessed.includes(ch));
-    // Determine total number of choices based on difficulty level
-    const totalChoices = 4 + (difficultyLevel - 1) * 2; // 4, 6, or 8
+    const wrongPool = ALPHABET.filter(ch => !normalized.includes(ch) && !guessed.includes(ch));
+    const totalChoices = 4 + (difficultyLevel - 1) * 2;
     const distractCount = totalChoices - correct.length;
-    for (let i = 0; i < distractCount && wrongPool.length > 0; i++) {
+    for (let i = 0; i < distractCount && wrongPool.length > 0; i += 1) {
       const idx = Math.floor(Math.random() * wrongPool.length);
       incorrect.push(wrongPool.splice(idx, 1)[0]);
     }
-    const all = [...correct, ...incorrect];
-    return all.sort(() => Math.random() - 0.5);
-  };
+    return [...correct, ...incorrect].sort(() => Math.random() - 0.5);
+  }, [letters, guessed, normalized, difficultyLevel]);
 
-  const handleGuess = (letter) => {
+  useEffect(() => {
+    setGuessed(initGuessed(text, difficultyLevel));
+    setWrong(0);
+    setStatus('playing');
+    resetOutcome();
+  }, [difficultyLevel, text, resetOutcome]);
+
+  useEffect(() => {
+    if (status === 'playing') {
+      setLetterChoices(generateChoices());
+    } else {
+      setLetterChoices([]);
+    }
+  }, [guessed, status, generateChoices]);
+
+  const handleGuess = letter => {
     if (status !== 'playing' || guessed.includes(letter)) return;
     if (normalized.includes(letter)) {
       const newGuessed = [...guessed, letter];
       setGuessed(newGuessed);
-      // check win
       const newMasked = letters
-        .map(ch => (ch.match(/[a-z]/i) ? (newGuessed.includes(ch) ? ch : '_') : ch))
+        .map(ch => (/[a-z]/i.test(ch) ? (newGuessed.includes(ch) ? ch : '_') : ch))
         .join('');
       if (newMasked === normalized) {
         setStatus('won');
+        resolveWin();
       }
     } else {
       const newWrong = wrong + 1;
       setWrong(newWrong);
+      recordMistake();
       if (newWrong >= MAX_WRONG) {
         setStatus('lost');
+        resolveLose();
       }
     }
   };
-
-  // Notify parent on win; overlay is handled in GameRenderer
-  const winHandledRef = useRef(false);
-  useEffect(() => {
-    if (status === 'won' && !winHandledRef.current) {
-      winHandledRef.current = true;
-      if (onWin) onWin();
-    }
-  }, [status, onWin]);
-  // Reset win handler when level or quote changes
-  useEffect(() => { winHandledRef.current = false; }, [difficultyLevel, text]);
-  // prepare letter choices on mount and after each guess
-  useEffect(() => {
-    if (status === 'playing') {
-      setLetterChoices(generateChoices());
-    }
-  }, [guessed, status]);
-
-  // Notify parent on loss to show LostOverlay
-  useEffect(() => {
-    if (status === 'lost' && onLose) onLose();
-  }, [status, onLose]);
 
   return (
     <View style={styles.container}>
@@ -139,10 +135,8 @@ const HangmanGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
         <DashedDivider style={styles.titleUnderline} />
         <View style={styles.quoteWrap}>
           <Text style={styles.quote}>{masked}</Text>
-          {/* Loss overlay handled by parent; no inline loss text */}
         </View>
       </View>
-      {/* Thematic bottom-left counter */}
       <MissesCountdown wrong={wrong} max={MAX_WRONG} />
       {status === 'playing' && (
         <View style={styles.choicesContainerFloating} pointerEvents="box-none">
@@ -153,7 +147,6 @@ const HangmanGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
               blurAmount={18}
               reducedTransparencyFallbackColor="rgba(255,255,255,0.9)"
             />
-            {/* Light tint above blur to get a frosted look */}
             <View style={styles.choicesTint} />
             <View style={styles.choicesInner}>
               {letterChoices.map((letter, i) => (
@@ -168,14 +161,12 @@ const HangmanGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
           </View>
         </View>
       )}
-      {/* Victory flow handled by parent GameRenderer */}
     </View>
   );
 };
 
-// Small animated gallows motif used in the title row
 const SwayingGallows = () => {
-  const rotate = useRef(new Animated.Value(0)).current; // -1 .. 1
+  const rotate = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const loop = () => {
       Animated.sequence([
@@ -189,21 +180,14 @@ const SwayingGallows = () => {
   return (
     <Animated.View style={[styles.motifSvg, { transform: [{ rotate: rot }] }] }>
       <Svg width={48} height={40} viewBox="0 0 48 40">
-        {/* Base */}
         <Line x1="8" y1="36" x2="40" y2="36" stroke={themeVariables.borderColor} strokeWidth="2" />
-        {/* Post and beam */}
         <Line x1="14" y1="36" x2="14" y2="6" stroke={themeVariables.primaryColor} strokeWidth="3" />
         <Line x1="14" y1="6" x2="30" y2="6" stroke={themeVariables.primaryColor} strokeWidth="3" />
-        {/* Rope */}
         <Line x1="30" y1="6" x2="30" y2="14" stroke={themeVariables.primaryColor} strokeWidth="2" />
-        {/* Head */}
         <Circle cx="30" cy="18" r="4" fill={themeVariables.whiteColor} stroke={themeVariables.borderColor} strokeWidth="2" />
-        {/* Body */}
         <Line x1="30" y1="22" x2="30" y2="28" stroke={themeVariables.borderColor} strokeWidth="2" />
-        {/* Arms */}
         <Line x1="30" y1="24" x2="26" y2="22" stroke={themeVariables.borderColor} strokeWidth="2" />
         <Line x1="30" y1="24" x2="34" y2="22" stroke={themeVariables.borderColor} strokeWidth="2" />
-        {/* Legs */}
         <Line x1="30" y1="28" x2="26" y2="34" stroke={themeVariables.borderColor} strokeWidth="2" />
         <Line x1="30" y1="28" x2="34" y2="34" stroke={themeVariables.borderColor} strokeWidth="2" />
       </Svg>
@@ -211,11 +195,8 @@ const SwayingGallows = () => {
   );
 };
 
-// Bottom-left circular countdown for misses
 const MissesCountdown = ({ wrong, max }) => {
   const remaining = Math.max(0, max - wrong);
-  // Total widget height (label + gap + ring) should equal FAB size (56)
-  // With label ~12px and gap 4px, ring size ~40px achieves alignment
   const size = 40;
   const stroke = 5;
   const r = (size - stroke) / 2;
@@ -227,7 +208,6 @@ const MissesCountdown = ({ wrong, max }) => {
   const ropeDark = '#8E6B3A';
   const ropeLight = '#D3B07A';
   const ringColor = themeVariables.woodDark || ropeDark;
-  // Pulse animation when misses change
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     pulse.setValue(0);
@@ -242,9 +222,7 @@ const MissesCountdown = ({ wrong, max }) => {
       <Text style={styles.missesLabel}>Misses</Text>
       <Animated.View style={{ transform: [{ scale }] }}>
         <Svg width={size} height={size}>
-          {/* Background circle */}
           <Circle cx={cx} cy={cy} r={r} stroke="rgba(0,0,0,0.08)" strokeWidth={stroke} fill="rgba(255,255,255,0.9)" />
-          {/* Progress (remaining) */}
           <Circle
             cx={cx}
             cy={cy}
@@ -257,7 +235,6 @@ const MissesCountdown = ({ wrong, max }) => {
             fill="none"
             transform={`rotate(-90 ${cx} ${cy})`}
           />
-          {/* Rope highlight dashes to suggest texture */}
           <Circle
             cx={cx}
             cy={cy}
@@ -270,27 +247,10 @@ const MissesCountdown = ({ wrong, max }) => {
             transform={`rotate(-90 ${cx} ${cy})`}
             opacity={0.9}
           />
-          {/* Outlined number for better readability */}
-          <SvgText
-            x={cx}
-            y={cy + 4}
-            textAnchor="middle"
-            fontSize={14}
-            fontWeight="900"
-            stroke={themeVariables.whiteColor}
-            strokeWidth={2}
-            fill="none"
-          >
+          <SvgText x={cx} y={cy + 4} textAnchor="middle" fontSize={14} fontWeight="900" stroke={themeVariables.whiteColor} strokeWidth={2} fill="none">
             {remaining}
           </SvgText>
-          <SvgText
-            x={cx}
-            y={cy + 4}
-            textAnchor="middle"
-            fontSize={14}
-            fontWeight="900"
-            fill={themeVariables.primaryColor}
-          >
+          <SvgText x={cx} y={cy + 4} textAnchor="middle" fontSize={14} fontWeight="900" fill={themeVariables.primaryColor}>
             {remaining}
           </SvgText>
         </Svg>
@@ -358,7 +318,7 @@ const styles = StyleSheet.create({
   missesWrap: {
     position: 'absolute',
     left: 12,
-    bottom: 54, // align bottom of ring with FAB bottom (54)
+    bottom: 54,
     alignItems: 'center',
     zIndex: 5,
   },
@@ -368,17 +328,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontWeight: '700',
   },
-  
-  message: {
-    fontSize: 20,
-    marginVertical: 8,
-    color: themeVariables.primaryColor,
-  },
   choicesContainerFloating: {
     position: 'absolute',
     left: 12,
     right: 12,
-    bottom: 124, // above FAB (54) + its size (56) + buffer
+    bottom: 124,
   },
   choicesTray: {
     alignSelf: 'center',
