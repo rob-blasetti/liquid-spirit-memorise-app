@@ -1,3 +1,5 @@
+import { routes } from '../app/navigation/routes';
+
 const EXPLORER_GRADES = [1, 2, 3, 4];
 
 export const createNavigationActions = ({
@@ -18,14 +20,14 @@ export const createNavigationActions = ({
     }
   };
 
-  const goHome = () => goTo('home');
+  const goHome = () => goTo(routes.home().screen);
   const goGrade1 = () => {
     markAndMaybeAward(1);
-    goTo('grade1');
+    goTo(routes.grade1().screen);
   };
   const goGrade2 = () => {
     markAndMaybeAward(2);
-    goTo('grade2');
+    goTo(routes.grade2().screen);
   };
   const goGrade3 = () => {
     markAndMaybeAward(3);
@@ -36,25 +38,50 @@ export const createNavigationActions = ({
     goTo('grade4');
   };
 
-  const goGrade2Set = (setNumber) => goTo('grade2Set', { setNumber });
-  const goGrade2Lesson = (lessonNumber) =>
-    goTo('grade2Lesson', { setNumber: nav.setNumber, lessonNumber });
+  const goGrade2Set = (setNumber) => {
+    const route = routes.grade2Set(setNumber);
+    goTo(route.screen, { setNumber: route.setNumber });
+  };
+  const goGrade2Lesson = (lessonNumber) => {
+    const route = routes.grade2Lesson(nav.setNumber, lessonNumber);
+    goTo(route.screen, { setNumber: route.setNumber, lessonNumber: route.lessonNumber });
+  };
   const goGrade2b = () => {
     markAndMaybeAward(2);
-    goTo('grade2b');
+    goTo(routes.grade2b().screen);
   };
-  const goGrade2bSet = (setNumber) => goTo('grade2bSet', { setNumber });
-  const goGrade2bLesson = (lessonNumber) =>
-    goTo('grade2bLesson', { setNumber: nav.setNumber, lessonNumber });
+  const goGrade2bSet = (setNumber) => {
+    const route = routes.grade2bSet(setNumber);
+    goTo(route.screen, { setNumber: route.setNumber });
+  };
+  const goGrade2bLesson = (lessonNumber) => {
+    const route = routes.grade2bLesson(nav.setNumber, lessonNumber);
+    goTo(route.screen, { setNumber: route.setNumber, lessonNumber: route.lessonNumber });
+  };
 
-  const goBackToGrade2Set = () => goTo('grade2Set', { setNumber: nav.setNumber });
-  const goBackToGrade2bSet = () => goTo('grade2bSet', { setNumber: nav.setNumber });
-  const goBackToLesson = () =>
-    goTo(nav.lessonScreen || 'grade2Lesson', {
-      setNumber: nav.setNumber,
-      lessonNumber: nav.lessonNumber,
+  const goBackToGrade2Set = () => {
+    const route = routes.grade2Set(nav.setNumber);
+    goTo(route.screen, { setNumber: route.setNumber });
+  };
+  const goBackToGrade2bSet = () => {
+    const route = routes.grade2bSet(nav.setNumber);
+    goTo(route.screen, { setNumber: route.setNumber });
+  };
+  const goBackToLesson = () => {
+    const lessonScreen = nav.lessonScreen || 'grade2Lesson';
+    const route = lessonScreen === 'grade2bLesson'
+      ? routes.grade2bLesson(nav.setNumber, nav.lessonNumber)
+      : lessonScreen === 'grade1Lesson'
+      ? routes.grade1Lesson(nav.lessonNumber)
+      : routes.grade2Lesson(nav.setNumber, nav.lessonNumber);
+    goTo(route.screen, {
+      ...(route.setNumber != null ? { setNumber: route.setNumber } : {}),
+      ...(route.lessonNumber != null ? { lessonNumber: route.lessonNumber } : {}),
     });
-  const goStoryMode = () => goTo('storyMode');
+  };
+  const goStoryMode = () => {
+    goTo(routes.storyMode().screen);
+  };
 
   return {
     goHome,

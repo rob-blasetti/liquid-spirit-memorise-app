@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { markNavigationStart } from '../services/performanceService';
+import { normalizeRoute } from '../app/navigation/routes';
 
-const INITIAL_NAV_STATE = { screen: 'home' };
+const INITIAL_NAV_STATE = normalizeRoute('home');
 
 export default function useNavigationHandlers(initialState = INITIAL_NAV_STATE) {
   const [nav, setNav] = useState(initialState);
@@ -11,7 +12,7 @@ export default function useNavigationHandlers(initialState = INITIAL_NAV_STATE) 
     (screen, extra = {}) => {
       if (!screen) return;
       setNav((prevNav) => {
-        const nextNav = { screen, ...extra };
+        const nextNav = normalizeRoute(screen, extra);
         const previousScreen = prevNav?.screen ?? null;
         if (previousScreen !== screen) {
           markNavigationStart(screen, { from: previousScreen });

@@ -20,7 +20,13 @@ export const createAppActions = ({
     const { setNumber, lessonNumber } = progress;
     const rawQuote = getContentFor(profile, setNumber, lessonNumber, { type: 'prayer' });
     const sanitizedQuote = sanitizeQuoteText(rawQuote);
-    goTo('practice', { quote: sanitizedQuote, rawQuote, sanitizedQuote, setNumber, lessonNumber });
+    goTo('practice', {
+      quote: sanitizedQuote,
+      rawQuote,
+      sanitizedQuote,
+      setNumber,
+      lessonNumber,
+    });
   };
 
   const playSelectedGame = (gameId) => {
