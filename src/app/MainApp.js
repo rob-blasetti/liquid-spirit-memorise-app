@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { SafeAreaView, View, Animated, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useUser } from './contexts/UserContext';
@@ -25,11 +25,10 @@ import ScreenTransition from '../ui/components/ScreenTransition';
 import { resolveProfileId } from '../services/profileUtils';
 import { canSwitchProfiles } from '../services/profileSelectionService';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
-import { deleteNuriUser } from '../services/authService';
-import { clearCredentials } from '../services/credentialService';
 import useAppPreloadEffects from './hooks/useAppPreloadEffects';
 import useAuthSignInHandler from './hooks/useAuthSignInHandler';
 import useMainAppRuntime from './hooks/useMainAppRuntime';
+import useMainAppControls from './hooks/useMainAppControls';
 
 const Main = () => {
   const {
@@ -83,10 +82,6 @@ const Main = () => {
     getCurrentProgress,
     getProgressForGrade,
   } = useLessonProgress(profile, awardAchievement, recordLessonCompletion);
-  const [profileSwitcherVisible, setProfileSwitcherVisible] = useState(false);
-  const [profileModalVisible, setProfileModalVisible] = useState(false);
-  const [comingSoonGrade, setComingSoonGrade] = useState(null);
-
   const profileSwitchEligible = useMemo(
     () =>
       canSwitchProfiles({
@@ -178,49 +173,23 @@ const Main = () => {
     ],
   );
 
-  const handleDeleteRegisteredAccount = useCallback(async () => {
-    if (!profile || profile.guest) {
-      throw new Error('Only registered accounts can be deleted.');
-    }
-
-    const userId = profile._id || profile.id || profile.nuriUserId;
-    if (!userId) {
-      throw new Error('Unable to determine account identifier.');
-    }
-
-    if (!token) {
-      throw new Error('Missing authentication token.');
-    }
-
-    await deleteNuriUser({ token, userId });
-
-    try {
-      await clearCredentials();
-    } catch (credentialError) {
-      console.warn('Failed to clear saved credentials after account deletion', credentialError);
-    }
-
-    await wipeProfile({ clearRegistered: true });
-    await clearUserData();
-  }, [profile, token, wipeProfile, clearUserData]);
-
-  const accountActions = useMemo(
-    () => ({
-      deleteGuestAccount,
-      wipeProfile,
-      saveProfile,
-      deleteRegisteredAccount: handleDeleteRegisteredAccount,
-    }),
-    [deleteGuestAccount, wipeProfile, saveProfile, handleDeleteRegisteredAccount],
-  );
-
-  const modalHandlers = useMemo(
-    () => ({
-      setProfileModalVisible,
-      setComingSoonGrade,
-    }),
-    [setProfileModalVisible, setComingSoonGrade],
-  );
+  const {
+    profileSwitcherVisible,
+    setProfileSwitcherVisible,
+    profileModalVisible,
+    setProfileModalVisible,
+    comingSoonGrade,
+    setComingSoonGrade,
+    accountActions,
+    modalHandlers,
+  } = useMainAppControls({
+    profile,
+    token,
+    wipeProfile,
+    clearUserData,
+    deleteGuestAccount,
+    saveProfile,
+  });
 
   if (showSplash) return renderLazy(<SplashScreen />);
 
