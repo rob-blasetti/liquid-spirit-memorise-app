@@ -1,45 +1,39 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-import { prepareQuoteForGame, pickUniqueWords, sanitizeQuoteText } from '../services/quoteSanitizer';
+import { pickUniqueWords } from '../services/quoteSanitizer';
+import useGameOutcome from './hooks/useGameOutcome';
+import useQuoteGameData from './hooks/useQuoteGameData';
+import { shuffleItems } from './gameUtils';
 
-const shuffle = (arr) => {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
-
-const scrambleWord = (word) => {
+const scrambleWord = word => {
   if (word.length <= 1) return word;
   const letters = word.split('');
   const first = letters.shift();
-  return first + shuffle(letters).join('');
+  return first + shuffleItems(letters).join('');
 };
 
 const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
-  const quoteData = useMemo(
-    () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
-    [quote, rawQuote, sanitizedQuote],
-  );
-  const entries = quoteData.entries;
-  const words = useMemo(
-    () => entries.map((entry) => entry.original || entry.clean || ''),
-    [entries],
-  );
+  const { quoteData, entries, words, canonicalize } = useQuoteGameData({ quote, rawQuote, sanitizedQuote });
   const [index, setIndex] = useState(0);
   const [scrambled, setScrambled] = useState('');
   const [options, setOptions] = useState([]);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
-  const canonicalize = (value) =>
-    sanitizeQuoteText(typeof value === 'string' ? value : '').toLocaleLowerCase();
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const generateOptions = useCallback((entry) => {
+    if (!entry) {
+      setOptions([]);
+      return;
+    }
+    const exclude = new Set([entry.canonical || entry.clean]);
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
+      ({ entry: e }) => e.original || e.clean || '',
+    );
+    setOptions(shuffleItems([entry.original || entry.clean || '', ...distractors]));
+  }, [quoteData.uniquePlayableWords]);
+
   useEffect(() => {
     setIndex(0);
     setMessage('');
@@ -50,51 +44,37 @@ const LetterScrambleGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
       setScrambled('');
       setOptions([]);
     }
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, [quote]);
+    resetOutcome();
+  }, [quote, entries, words, generateOptions, resetOutcome]);
 
-  const next = () => {
-    const nextIndex = index + 1;
+  const advance = useCallback((nextIndex) => {
     if (nextIndex < entries.length) {
       setScrambled(scrambleWord(words[nextIndex]));
+      generateOptions(entries[nextIndex]);
+    } else {
+      setScrambled('');
+      setOptions([]);
     }
     setIndex(nextIndex);
-    generateOptions(entries[nextIndex]);
-  };
+  }, [entries, words, generateOptions]);
 
-  const generateOptions = (entry) => {
-    if (!entry) {
-      setOptions([]);
-      return;
-    }
-    const exclude = new Set([entry.canonical || entry.clean]);
-    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, 3, exclude).map(
-      ({ entry: e }) => e.original || e.clean || '',
-    );
-    setOptions(shuffle([entry.original || entry.clean || '', ...distractors]));
-  };
-
-  const handleSelect = (choice) => {
+  const handleSelect = choice => {
     if (index >= entries.length || hasWonRef.current) return;
     const current = entries[index];
     const expected = canonicalize(current.original || current.clean || '');
     if (canonicalize(choice) === expected) {
-      if (index + 1 === entries.length) {
-        setIndex(index + 1);
+      const nextIndex = index + 1;
+      if (nextIndex === entries.length) {
+        advance(nextIndex);
         setMessage('Great job!');
-        setOptions([]);
-        if (!hasWonRef.current) {
-          hasWonRef.current = true;
-          onWin?.({ perfect: mistakesRef.current === 0 });
-        }
+        resolveWin();
       } else {
         setMessage('');
-        next();
+        advance(nextIndex);
       }
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 

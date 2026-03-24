@@ -1,27 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import ThemedButton from '../ui/components/ThemedButton';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
+import useGameOutcome from './hooks/useGameOutcome';
+import { resolveQuoteText } from './gameUtils';
 
 const RevealWordGame = ({ quote, onBack, onWin, onLose }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const text = resolveQuoteText(quote);
   const words = text.split(/\s+/);
   const [index, setIndex] = useState(0);
-  const hasWonRef = useRef(false);
+  const { resolveWin, resetOutcome } = useGameOutcome({ onWin, onLose });
 
   useEffect(() => {
     setIndex(0);
-    hasWonRef.current = false;
-  }, [quote]);
+    resetOutcome();
+  }, [quote, resetOutcome]);
 
   const revealNext = () => {
     if (index < words.length) {
       const nextIndex = Math.min(index + 2, words.length);
       setIndex(nextIndex);
-      if (nextIndex === words.length && !hasWonRef.current) {
-        hasWonRef.current = true;
-        onWin?.({ perfect: true });
+      if (nextIndex === words.length) {
+        resolveWin({ perfect: true });
       }
     }
   };
@@ -36,9 +37,7 @@ const RevealWordGame = ({ quote, onBack, onWin, onLose }) => {
       <Text style={styles.title}>Reveal the Quote</Text>
       <Text style={styles.description}>Press the button to show more words.</Text>
       <Text style={styles.quote}>{displayed}</Text>
-      {index < words.length && (
-        <ThemedButton title="Reveal Word" onPress={revealNext} />
-      )}
+      {index < words.length && <ThemedButton title="Reveal Word" onPress={revealNext} />}
       {index === words.length && <Text style={styles.message}>All done!</Text>}
     </View>
   );

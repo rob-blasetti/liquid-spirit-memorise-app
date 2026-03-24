@@ -1,24 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import ThemedButton from '../ui/components/ThemedButton';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
 import { prepareQuoteForGame, pickUniqueWords } from '../services/quoteSanitizer';
+import useGameOutcome from './hooks/useGameOutcome';
+import { shuffleItems } from './gameUtils';
 
-// Accept onWin callback to award achievements after reward banner
 const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose }) => {
   const quoteData = useMemo(
     () => prepareQuoteForGame(quote, { raw: rawQuote, sanitized: sanitizedQuote }),
     [quote, rawQuote, sanitizedQuote],
   );
-  const rawWords = useMemo(() => quoteData.entries.map((entry) => entry.original), [quoteData.entries]);
-  const playableEntries = useMemo(
-    () => quoteData.playableEntries,
-    [quoteData.playableEntries],
-  );
+  const rawWords = useMemo(() => quoteData.entries.map(entry => entry.original), [quoteData.entries]);
+  const playableEntries = useMemo(() => quoteData.playableEntries, [quoteData.playableEntries]);
   const playableMap = useMemo(() => {
     const map = new Map();
-    playableEntries.forEach((entry) => map.set(entry.index, entry));
+    playableEntries.forEach(entry => map.set(entry.index, entry));
     return map;
   }, [playableEntries]);
   const [displayWords, setDisplayWords] = useState([]);
@@ -28,28 +25,14 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [guessesLeft, setGuessesLeft] = useState(3);
-  const [status, setStatus] = useState('playing'); // 'playing', 'won', 'lost'
+  const [status, setStatus] = useState('playing');
   const [mistakes, setMistakes] = useState(0);
-  // Cache callbacks to avoid re-firing when parent re-renders after a win/loss
-  const winCallbackRef = useRef(onWin);
-  const loseCallbackRef = useRef(onLose);
-  useEffect(() => {
-    winCallbackRef.current = onWin;
-  }, [onWin]);
-  useEffect(() => {
-    loseCallbackRef.current = onLose;
-  }, [onLose]);
-  // Notify parent on terminal states without depending on callback identity
-  useEffect(() => {
-    if (status === 'won') {
-      winCallbackRef.current?.({ perfect: mistakes === 0 });
-    } else if (status === 'lost') {
-      loseCallbackRef.current?.();
-    }
-  }, [status, mistakes]);
-  const starAnimsRef = useRef([]);
+  const { resetOutcome, recordMistake, resolveWin, resolveLose } = useGameOutcome({
+    onWin: extra => onWin?.({ perfect: mistakes === 0, ...extra }),
+    onLose,
+  });
 
-  useEffect(() => {
+  const resetRound = useCallback(() => {
     const totalPlayable = playableEntries.length;
     if (totalPlayable === 0) {
       setDisplayWords(rawWords);
@@ -61,11 +44,13 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
       setGuessesLeft(3);
       setStatus('playing');
       setMistakes(0);
+      resetOutcome();
       return;
     }
+
     const numBlanks = Math.min(3, Math.max(1, Math.floor(totalPlayable / 8)));
     const indices = [];
-    const eligible = playableEntries.map((entry) => entry.index);
+    const eligible = playableEntries.map(entry => entry.index);
     while (indices.length < numBlanks && eligible.length > 0) {
       const pick = Math.floor(Math.random() * eligible.length);
       const idx = eligible.splice(pick, 1)[0];
@@ -73,20 +58,16 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     }
     indices.sort((a, b) => a - b);
     const missingEntries = indices
-      .map((i) => playableMap.get(i))
-      .filter((entry) => entry && entry.clean);
-    const missing = missingEntries.map((entry) => entry.clean);
+      .map(i => playableMap.get(i))
+      .filter(entry => entry && entry.clean);
+    const missing = missingEntries.map(entry => entry.clean);
     const display = rawWords.map((w, i) => (indices.includes(i) ? '____' : w));
-    // prepare word bank with four choices (missing words + distractors)
-    const excludeCanonicals = new Set(missingEntries.map((entry) => entry.canonical || entry.clean));
-    const uniquePool = quoteData.uniquePlayableWords;
+    const excludeCanonicals = new Set(missingEntries.map(entry => entry.canonical || entry.clean));
     const distractCount = Math.max(0, 4 - missing.length);
-    const distractors = pickUniqueWords(uniquePool, distractCount, excludeCanonicals).map(
+    const distractors = pickUniqueWords(quoteData.uniquePlayableWords, distractCount, excludeCanonicals).map(
       ({ word }) => word,
     );
-    const bank = [...missing, ...distractors].sort(() => Math.random() - 0.5);
-    // initialize star animations
-    starAnimsRef.current = [new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)];
+    const bank = shuffleItems([...missing, ...distractors]);
 
     setDisplayWords(display);
     setMissingWords(missing);
@@ -97,7 +78,20 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
     setGuessesLeft(3);
     setStatus('playing');
     setMistakes(0);
-  }, [rawWords, playableEntries, playableMap, quoteData.uniquePlayableWords, quoteData.raw]);
+    resetOutcome();
+  }, [playableEntries, playableMap, rawWords, quoteData.uniquePlayableWords, resetOutcome]);
+
+  useEffect(() => {
+    resetRound();
+  }, [resetRound]);
+
+  useEffect(() => {
+    if (status === 'won') {
+      resolveWin();
+    } else if (status === 'lost') {
+      resolveLose();
+    }
+  }, [status, resolveWin, resolveLose]);
 
   const handleWordPress = word => {
     if (status !== 'playing') return;
@@ -105,14 +99,7 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
       const newDisplay = [...displayWords];
       newDisplay[missingIndices[currentIndex]] = word;
       setDisplayWords(newDisplay);
-      setWordBank(prev => {
-        const copy = [...prev];
-        const removeIndex = copy.indexOf(word);
-        if (removeIndex !== -1) {
-          copy.splice(removeIndex, 1);
-        }
-        return copy;
-      });
+      setWordBank(prev => prev.filter(entry => entry !== word));
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
       if (nextIndex === missingWords.length) {
@@ -130,7 +117,8 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
       } else {
         setMessage(`Try again (${left} left)`);
       }
-      setMistakes((prev) => prev + 1);
+      setMistakes(prev => prev + 1);
+      recordMistake();
     }
   };
 
@@ -156,8 +144,6 @@ const TapMissingWordsGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, o
           {message ? <Text style={styles.message}>{message}</Text> : null}
         </>
       )}
-      {/* Loss overlay handled at parent; no inline loss message */}
-      {/* Victory flow handled by parent GameRenderer */}
     </View>
   );
 };
