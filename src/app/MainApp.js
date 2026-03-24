@@ -23,6 +23,7 @@ import { createAvatarActions } from '../services/avatarService';
 import ScreenTransition from '../ui/components/ScreenTransition';
 
 import { resolveProfileId } from '../services/profileUtils';
+import { canSwitchProfiles } from '../services/profileSelectionService';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import { deleteNuriUser } from '../services/authService';
 import { clearCredentials } from '../services/credentialService';
@@ -86,23 +87,17 @@ const Main = () => {
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [comingSoonGrade, setComingSoonGrade] = useState(null);
 
-  const profileSwitchEligible = useMemo(() => {
-    if (!profile) return false;
-    const activeProfileId = resolveProfileId(profile);
-    const childEntries = Array.isArray(children) ? children : [];
-    const hasSiblingOption = childEntries.some((entry) => {
-      const childObj = entry?.child && typeof entry.child === 'object' ? entry.child : entry;
-      const childId = resolveProfileId(childObj);
-      return childId && childId !== activeProfileId;
-    });
-    const hasRegisteredOption = (() => {
-      if (!registeredProfile) return false;
-      const registeredId = resolveProfileId(registeredProfile);
-      return registeredId && registeredId !== activeProfileId;
-    })();
-    const hasGuestOption = Boolean(guestProfile) && !profile?.guest;
-    return hasRegisteredOption || hasSiblingOption || hasGuestOption;
-  }, [profile, registeredProfile, guestProfile, children]);
+  const profileSwitchEligible = useMemo(
+    () =>
+      canSwitchProfiles({
+        profile,
+        registeredProfile,
+        guestProfile,
+        children,
+        authType: 'ls-login',
+      }),
+    [profile, registeredProfile, guestProfile, children],
+  );
 
   const avatarActions = useMemo(() => {
     if (!profile) return null;

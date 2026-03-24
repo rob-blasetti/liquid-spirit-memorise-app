@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { normalizeChildEntries, resolveProfileId } from '../../services/profileUtils';
-import { dedupeProfiles } from '../mainAppHelpers';
+import { resolveProfileId } from '../../services/profileUtils';
+import { buildSelectableProfiles } from '../../services/profileSelectionService';
 import {
   markAppInteractive,
   markNavigationComplete,
@@ -68,14 +68,13 @@ export default function useMainAppRuntime({
 
   useEffect(() => {
     if (!profile && !registeredProfile) return;
-    const childEntries = Array.isArray(children) ? children : [];
-    const normalizedChildList = normalizeChildEntries(childEntries, { authType: 'ls-login' });
-    const dedupedProfiles = dedupeProfiles([
-      registeredProfile,
+    const dedupedProfiles = buildSelectableProfiles({
       profile,
-      ...normalizedChildList,
+      registeredProfile,
       guestProfile,
-    ]);
+      children,
+      authType: 'ls-login',
+    });
 
     if (dedupedProfiles.length > 0) {
       setUsersRef.current(dedupedProfiles);

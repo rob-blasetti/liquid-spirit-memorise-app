@@ -7,7 +7,8 @@ import { BlurView } from '@react-native-community/blur';
 import themeVariables from '../stylesheets/theme';
 import { fetchUserAchievements } from '../../services/achievementsService';
 import { achievements as defaultAchievements } from '../../utils/data/core/achievements';
-import { buildProfileFromUser } from '../../services/profileUtils';
+import { buildProfileFromUser, resolveProfileId } from '../../services/profileUtils';
+import { buildSelectableProfiles } from '../../services/profileSelectionService';
 
 const ProfileSwitcherModal = ({
   visible,
@@ -20,13 +21,14 @@ const ProfileSwitcherModal = ({
   setProfileSwitcherVisible,
   deleteGuestAccount,
 }) => {
-  const resolveProfileId = (entity) => {
-    if (!entity || typeof entity !== 'object') return null;
-    const id = entity._id ?? entity.id ?? entity.nuriUserId ?? null;
-    return id != null ? String(id) : null;
-  };
-
   const childEntries = Array.isArray(children) ? children : [];
+  const selectableProfiles = buildSelectableProfiles({
+    profile,
+    registeredProfile,
+    guestProfile,
+    children,
+    authType: 'ls-login',
+  });
   const activeAvatarUri = profile?.profilePicture || profile?.avatar;
   const activeDisplayName = (() => {
     if (!profile || typeof profile !== 'object') return 'Current Profile';
@@ -271,7 +273,10 @@ const ProfileSwitcherModal = ({
               : null}
 
             <FlatList
-              data={childEntries}
+              data={selectableProfiles.filter((entry) => {
+                if (!entry || entry.guest) return false;
+                return entry.accountType === 'child';
+              })}
               style={modalStyles.listWrapper}
               contentContainerStyle={modalStyles.listContent}
               showsVerticalScrollIndicator={false}
