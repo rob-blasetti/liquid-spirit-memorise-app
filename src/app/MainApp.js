@@ -17,18 +17,15 @@ import useProfile from '../hooks/useProfile';
 import useAchievements from '../hooks/useAchievements';
 import useLessonProgress from '../hooks/useLessonProgress';
 import { AchievementsProvider } from './contexts/AchievementsContext';
-import { createNavigationActions } from '../services/navigationService';
-import { createAppActions } from '../services/appFlowService';
-import { createAvatarActions } from '../services/avatarService';
 import ScreenTransition from '../ui/components/ScreenTransition';
 
 import { resolveProfileId } from '../services/profileUtils';
-import { canSwitchProfiles } from '../services/profileSelectionService';
 import useHomeScreenTransition from '../hooks/useHomeScreenTransition';
 import useAppPreloadEffects from './hooks/useAppPreloadEffects';
 import useAuthSignInHandler from './hooks/useAuthSignInHandler';
 import useMainAppRuntime from './hooks/useMainAppRuntime';
 import useMainAppControls from './hooks/useMainAppControls';
+import useMainAppComposition from './hooks/useMainAppComposition';
 
 const Main = () => {
   const {
@@ -82,47 +79,32 @@ const Main = () => {
     getCurrentProgress,
     getProgressForGrade,
   } = useLessonProgress(profile, awardAchievement, recordLessonCompletion);
-  const profileSwitchEligible = useMemo(
-    () =>
-      canSwitchProfiles({
-        profile,
-        registeredProfile,
-        guestProfile,
-        children,
-        authType: 'ls-login',
-      }),
-    [profile, registeredProfile, guestProfile, children],
-  );
-
-  const avatarActions = useMemo(() => {
-    if (!profile) return null;
-    return createAvatarActions({ profile, setProfile, saveProfile });
-  }, [profile, setProfile, saveProfile]);
-
-  const navigationActions = useMemo(
-    () =>
-      createNavigationActions({
-        goTo,
-        nav,
-        markGradeVisited,
-        visitedGrades,
-        awardAchievement,
-      }),
-    [goTo, nav, markGradeVisited, visitedGrades, awardAchievement],
-  );
-
-  const appActions = useMemo(
-    () =>
-      createAppActions({
-        profile,
-        goTo,
-        nav,
-        getCurrentProgress,
-        awardAchievement,
-        recordDailyChallenge,
-      }),
-    [profile, goTo, nav, getCurrentProgress, awardAchievement, recordDailyChallenge],
-  );
+  const {
+    profileSwitchEligible,
+    avatarActions,
+    navigationActions,
+    appActions,
+    lessonState,
+  } = useMainAppComposition({
+    profile,
+    registeredProfile,
+    guestProfile,
+    children,
+    setProfile,
+    saveProfile,
+    goTo,
+    nav,
+    markGradeVisited,
+    visitedGrades,
+    awardAchievement,
+    getCurrentProgress,
+    recordDailyChallenge,
+    completeLesson,
+    overrideProgress,
+    setOverrideProgress,
+    getProgressForGrade,
+    completedLessons,
+  });
 
   const handleAuthSignIn = useAuthSignInHandler({
     setToken,
@@ -153,25 +135,6 @@ const Main = () => {
     setUsers,
     refreshFromServer,
   });
-
-  const lessonState = useMemo(
-    () => ({
-      completeLesson,
-      overrideProgress,
-      setOverrideProgress,
-      getCurrentProgress,
-      getProgressForGrade,
-      completedLessons,
-    }),
-    [
-      completeLesson,
-      overrideProgress,
-      setOverrideProgress,
-      getCurrentProgress,
-      getProgressForGrade,
-      completedLessons,
-    ],
-  );
 
   const {
     profileSwitcherVisible,
