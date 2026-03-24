@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
+import useGameOutcome from './hooks/useGameOutcome';
+import useRevealRound from './hooks/useRevealRound';
+import { resolveQuoteText } from './gameUtils';
 
 const palette = [
   themeVariables.primaryColorLight,
@@ -10,47 +13,54 @@ const palette = [
   '#4d96ff',
 ];
 
-// Display a line of words; one word changes colour.
 const SceneChangeGame = ({ quote, onBack, onWin, onLose }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/).slice(0, 4);
+  const text = resolveQuoteText(quote);
+  const words = useMemo(() => text.split(/\s+/).slice(0, 4), [text]);
   const [colors, setColors] = useState([]);
   const [changed, setChanged] = useState(0);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
-  useEffect(() => {
-    startRound();
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-  }, []);
+  const buildBaseRound = useCallback(() => {
+    const base = palette.slice(0, Math.max(words.length, 1));
+    const idx = Math.floor(Math.random() * Math.max(base.length, 1));
+    return { base, idx };
+  }, [words.length]);
 
-  const startRound = () => {
-    const base = palette.slice(0, words.length);
-    setColors(base);
-    const idx = Math.floor(Math.random() * base.length);
-    setChanged(idx);
+  const [roundSeed, setRoundSeed] = useState(() => buildBaseRound());
+
+  const handleReset = useCallback(() => {
+    const nextRound = buildBaseRound();
+    setRoundSeed(nextRound);
+    setColors(nextRound.base);
+    setChanged(nextRound.idx);
     setMessage('');
-    setTimeout(() => {
-      const newCols = [...base];
-      const other = (idx + 2) % palette.length;
-      newCols[idx] = palette[other];
-      setColors(newCols);
-    }, 2000);
-  };
+    resetOutcome();
+  }, [buildBaseRound, resetOutcome]);
 
-  const handlePress = (i) => {
+  const handleReveal = useCallback(() => {
+    const { base, idx } = roundSeed;
+    const newCols = [...base];
+    const other = (idx + 2) % palette.length;
+    newCols[idx] = palette[other];
+    setColors(newCols);
+  }, [roundSeed]);
+
+  useRevealRound({
+    resetKey: text,
+    delayMs: 2000,
+    onReset: handleReset,
+    onReveal: handleReveal,
+  });
+
+  const handlePress = i => {
     if (hasWonRef.current) return;
     if (i === changed) {
       setMessage('Great job!');
-      if (!hasWonRef.current) {
-        hasWonRef.current = true;
-        onWin?.({ perfect: mistakesRef.current === 0 });
-      }
+      resolveWin();
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 

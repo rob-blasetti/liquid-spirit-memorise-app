@@ -1,48 +1,53 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-
-// Show two target words in silhouette, then let the player select them from a list.
+import useGameOutcome from './hooks/useGameOutcome';
+import useRevealRound from './hooks/useRevealRound';
+import { resolveQuoteText } from './gameUtils';
 
 const SilhouetteSearchGame = ({ quote, onBack, onWin, onLose }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
-  const words = text.split(/\s+/).slice(0, 4);
+  const text = resolveQuoteText(quote);
+  const words = useMemo(() => text.split(/\s+/).slice(0, 4), [text]);
   const [targets, setTargets] = useState([]);
   const [found, setFound] = useState([]);
   const [showPreview, setShowPreview] = useState(true);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
+  const { resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
-  useEffect(() => {
-    // choose two target words
-    const indices = [0, 1];
-    setTargets(indices.map((i) => ({ word: words[i], id: i })));
+  const buildTargets = useCallback(() => [0, 1].map(i => ({ word: words[i], id: i })), [words]);
+
+  const handleReset = useCallback(() => {
+    setTargets(buildTargets());
     setFound([]);
     setShowPreview(true);
     setMessage('');
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
-    const timer = setTimeout(() => setShowPreview(false), 2000);
-    return () => clearTimeout(timer);
+    resetOutcome();
+  }, [buildTargets, resetOutcome]);
+
+  const handleReveal = useCallback(() => {
+    setShowPreview(false);
   }, []);
 
-  const handlePress = (id) => {
+  useRevealRound({
+    resetKey: text,
+    delayMs: 2000,
+    onReset: handleReset,
+    onReveal: handleReveal,
+  });
+
+  const handlePress = id => {
     if (showPreview) return;
-    if (targets.find((t) => t.id === id) && !found.includes(id)) {
+    if (targets.find(t => t.id === id) && !found.includes(id)) {
       const newFound = [...found, id];
       setFound(newFound);
       if (newFound.length === targets.length) {
         setMessage('Great job!');
-        if (!hasWonRef.current) {
-          hasWonRef.current = true;
-          onWin?.({ perfect: mistakesRef.current === 0 });
-        }
+        resolveWin();
       }
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 
@@ -52,7 +57,7 @@ const SilhouetteSearchGame = ({ quote, onBack, onWin, onLose }) => {
       <Text style={styles.title}>Silhouette Search</Text>
       <Text style={styles.description}>Tap the words that match the targets.</Text>
       <View style={styles.row}>
-        {targets.map((t) => (
+        {targets.map(t => (
           <View key={t.id} style={styles.targetBox}>
             <Text style={styles.targetWord}>{t.word}</Text>
           </View>
@@ -61,11 +66,7 @@ const SilhouetteSearchGame = ({ quote, onBack, onWin, onLose }) => {
       {!showPreview && (
         <View style={styles.row}>
           {words.map((w, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.optionBox}
-              onPress={() => handlePress(i)}
-            >
+            <TouchableOpacity key={i} style={styles.optionBox} onPress={() => handlePress(i)}>
               <Text style={styles.optionWord}>{w}</Text>
             </TouchableOpacity>
           ))}

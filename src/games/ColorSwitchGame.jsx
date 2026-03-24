@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
+import useGameOutcome from './hooks/useGameOutcome';
+import useRevealRound from './hooks/useRevealRound';
+import { resolveQuoteText } from './gameUtils';
 
 const palette = [
   themeVariables.primaryColorLight,
@@ -11,47 +14,54 @@ const palette = [
 ];
 
 const ColorSwitchGame = ({ quote, onBack, onWin, onLose, level = 1 }) => {
-  const text = typeof quote === 'string' ? quote : quote?.text || '';
+  const text = resolveQuoteText(quote);
   const delay = level === 1 ? 2000 : level === 2 ? 1500 : 1000;
-  const words = text.split(/\s+/).slice(0, 4);
+  const words = useMemo(() => text.split(/\s+/).slice(0, 4), [text]);
   const [colors, setColors] = useState([]);
   const [changedIndex, setChangedIndex] = useState(0);
   const [message, setMessage] = useState('');
-  const hasWonRef = useRef(false);
-  const mistakesRef = useRef(0);
+  const { hasWonRef, resetOutcome, recordMistake, resolveWin } = useGameOutcome({ onWin, onLose });
 
-  const startRound = useCallback(() => {
-    const base = palette.map(c => c);
-    setColors(base);
-    const idx = Math.floor(Math.random() * base.length);
-    setChangedIndex(idx);
-    setMessage('');
-    setTimeout(() => {
-      const newCols = [...base];
-      const other = (idx + 1) % base.length;
-      newCols[idx] = palette[other];
-      setColors(newCols);
-    }, delay);
-  }, [delay]);
+  const buildBaseRound = useCallback(() => {
+    const base = palette.slice(0, Math.max(words.length, 1)).map(c => c);
+    const idx = Math.floor(Math.random() * Math.max(base.length, 1));
+    return { base, idx };
+  }, [words.length]);
 
-  useEffect(() => {
-    startRound();
-    hasWonRef.current = false;
-    mistakesRef.current = 0;
+  const [roundSeed, setRoundSeed] = useState(() => buildBaseRound());
+
+  const handleReset = useCallback(() => {
+    const nextRound = buildBaseRound();
+    setRoundSeed(nextRound);
+    setColors(nextRound.base);
+    setChangedIndex(nextRound.idx);
     setMessage('');
-  }, [level, startRound]);
+    resetOutcome();
+  }, [buildBaseRound, resetOutcome]);
+
+  const handleReveal = useCallback(() => {
+    const { base, idx } = roundSeed;
+    const newCols = [...base];
+    const other = (idx + 1) % palette.length;
+    newCols[idx] = palette[other];
+    setColors(newCols);
+  }, [roundSeed]);
+
+  useRevealRound({
+    resetKey: `${text}-${level}`,
+    delayMs: delay,
+    onReset: handleReset,
+    onReveal: handleReveal,
+  });
 
   const handlePress = idx => {
     if (hasWonRef.current) return;
     if (idx === changedIndex) {
       setMessage('Great job!');
-      if (!hasWonRef.current) {
-        hasWonRef.current = true;
-        onWin?.({ perfect: mistakesRef.current === 0 });
-      }
+      resolveWin();
     } else {
       setMessage('Try again');
-      mistakesRef.current += 1;
+      recordMistake();
     }
   };
 
