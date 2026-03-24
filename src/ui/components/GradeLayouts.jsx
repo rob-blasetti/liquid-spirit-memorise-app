@@ -4,7 +4,6 @@ import ButtonList from './ButtonList';
 import ThemedButton from './ThemedButton';
 import QuoteBlock from './QuoteBlock';
 import PrayerBlock from './PrayerBlock';
-import { useProfile } from '../../hooks/useProfile';
 import themeVariables from '../stylesheets/theme';
 import TopNav from './TopNav';
 
@@ -135,6 +134,7 @@ export const GradeComingSoon = ({ title, message, onBack }) => (
 export const GradeLessonContent = ({
   gradeTitle,
   grade,
+  profile,
   setNumber,
   lessonNumber,
   showSetInTitle = true,
@@ -145,7 +145,6 @@ export const GradeLessonContent = ({
   onPractice,
   onPlayGame,
 }) => {
-  const { profile } = useProfile();
   const lessonContent =
     typeof getLessonContent === 'function'
       ? getLessonContent(setNumber, lessonNumber)

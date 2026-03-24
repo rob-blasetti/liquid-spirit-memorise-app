@@ -118,13 +118,24 @@ export default function useProfile() {
         return nextIsParent ? prof : prev;
       });
     }
-    // Set active profile
-    dispatch({ type: 'setProfile', payload: prof });
-    // Persist to appropriate storage
+    const currentProfileId = getProfileId(state.profile);
+    const nextProfileId = getProfileId(prof);
+    const sameActiveProfile =
+      state.profile === prof ||
+      (currentProfileId && nextProfileId && currentProfileId === nextProfileId && JSON.stringify(state.profile) === JSON.stringify(prof));
+
+    if (!sameActiveProfile) {
+      dispatch({ type: 'setProfile', payload: prof });
+    }
     await persistProfile(prof);
     if (prof.guest) {
-      // Also update in-memory guestProfile
-      dispatch({ type: 'setGuestProfile', payload: prof });
+      const currentGuestId = getProfileId(state.guestProfile);
+      const sameGuestProfile =
+        state.guestProfile === prof ||
+        (currentGuestId && nextProfileId && currentGuestId === nextProfileId && JSON.stringify(state.guestProfile) === JSON.stringify(prof));
+      if (!sameGuestProfile) {
+        dispatch({ type: 'setGuestProfile', payload: prof });
+      }
     }
   };
 

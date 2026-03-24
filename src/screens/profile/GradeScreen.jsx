@@ -68,6 +68,7 @@ const GradeSelectionSection = ({
 
 const GradeScreen = ({
   grade,
+  profile,
   setNumber,
   lessonNumber,
   from,
@@ -151,6 +152,7 @@ const GradeScreen = ({
       <GradeLessonContent
         gradeTitle={config.title}
         grade={config.grade}
+        profile={profile}
         setNumber={effectiveSetNumber}
         lessonNumber={normalizedLessonNumber}
         showSetInTitle={availableSets.length > 0}

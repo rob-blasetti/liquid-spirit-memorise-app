@@ -77,7 +77,9 @@ export default function useAchievements(profile, saveProfile) {
     } else {
       if (totalPoints !== nextComputed) {
         setTotalPoints(nextComputed);
-        if (profile) saveProfile({ ...profile, totalPoints: nextComputed });
+        if (profile && profile.totalPoints !== nextComputed) {
+          saveProfile({ ...profile, totalPoints: nextComputed });
+        }
       }
       setIsPointsSynced(true);
     }
@@ -97,7 +99,10 @@ export default function useAchievements(profile, saveProfile) {
       const nextTotal = typeof serverTotal === 'number' ? serverTotal : nextComputed;
       setTotalPoints(nextTotal);
       setIsPointsSynced(nextTotal === nextComputed);
-      if (profile) {
+      if (
+        profile &&
+        (profile.totalPoints !== nextTotal || profile.achievements !== list)
+      ) {
         saveProfile({ ...profile, achievements: list, totalPoints: nextTotal });
       }
     } catch (e) {
