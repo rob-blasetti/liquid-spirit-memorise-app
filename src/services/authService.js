@@ -108,17 +108,27 @@ export const requestLiquidSpiritPasswordReset = async email => {
   }
 };
 
-export const deleteNuriUser = async ({ token, userId } = {}) => {
+export const deleteNuriUser = async ({ token, userId, nuriUserId, email, username } = {}) => {
   if (!token) {
     throw new Error('Missing authentication token.');
   }
 
   try {
-    logAuthRoute('DELETE', '/api/nuri/user', userId ? { userId } : undefined);
+    const payload = {
+      ...(nuriUserId ? { nuriUserId } : {}),
+      ...(userId ? { userId } : {}),
+      ...(email ? { email } : {}),
+      ...(username ? { username } : {}),
+    };
+    logAuthRoute(
+      'DELETE',
+      '/api/auth/nuri/user',
+      Object.keys(payload).length > 0 ? payload : undefined
+    );
     const responseText = await deleteJson({
       baseUrl: AUTH_API_URL,
-      path: '/api/nuri/user',
-      payload: userId ? { userId } : undefined,
+      path: '/api/auth/nuri/user',
+      payload: Object.keys(payload).length > 0 ? payload : undefined,
       token,
       fallbackMessage: 'Failed to delete account.',
     });

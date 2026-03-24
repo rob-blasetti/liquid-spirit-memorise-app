@@ -19,8 +19,11 @@ export default function useMainAppControls({
       throw new Error('Only registered accounts can be deleted.');
     }
 
+    const nuriUserId = profile.nuriUserId || profile._id || profile.id;
     const userId = profile._id || profile.id || profile.nuriUserId;
-    if (!userId) {
+    const email = profile.email;
+    const username = profile.username;
+    if (!nuriUserId && !userId && !email && !username) {
       throw new Error('Unable to determine account identifier.');
     }
 
@@ -28,7 +31,13 @@ export default function useMainAppControls({
       throw new Error('Missing authentication token.');
     }
 
-    await deleteNuriUser({ token, userId });
+    await deleteNuriUser({
+      token,
+      nuriUserId,
+      userId,
+      email,
+      username,
+    });
 
     try {
       await clearCredentials();

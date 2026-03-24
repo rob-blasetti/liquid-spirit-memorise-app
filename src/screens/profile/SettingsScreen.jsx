@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -59,9 +59,12 @@ const SettingsScreen = ({
   const [fontSize, setFontSize] = useState(() => coerceFontSize(profile?.readingFontSize));
   // Slider width for rendering tick marks
   const [speedSliderWidth, setSpeedSliderWidth] = useState(0);
-  const allowedSpeeds = [MIN_TTS_SPEED, 0.75, 1.0, DEFAULT_TTS_SPEED, 1.5, 1.75, MAX_TTS_SPEED];
+  const allowedSpeeds = useMemo(
+    () => [MIN_TTS_SPEED, 0.75, 1.0, DEFAULT_TTS_SPEED, 1.5, 1.75, MAX_TTS_SPEED],
+    []
+  );
   const fmtSpeed = (v) => `${Number(v).toFixed(2)}x`;
-  const snapToAllowed = (val) => {
+  const snapToAllowed = useCallback((val) => {
     const numeric = Number(val);
     const clampedBase = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED));
     let closest = allowedSpeeds[0];
@@ -71,7 +74,7 @@ const SettingsScreen = ({
       if (d < diff) { diff = d; closest = allowedSpeeds[i]; }
     }
     return closest;
-  };
+  }, [allowedSpeeds]);
   // For grade-1 slider bubble positioning
   const [sliderWidth, setSliderWidth] = useState(0);
   const [bubbleLayout, setBubbleLayout] = useState({ width: 0, height: 0 });
@@ -99,6 +102,11 @@ const SettingsScreen = ({
   }, [profile]);
   const deletePhraseMatches =
     deleteConfirmationText.trim().toLowerCase() === deleteConfirmationPhrase.toLowerCase();
+  const profileRef = useRef(profile);
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   useEffect(() => {
     if (!canDeleteAccount && deleteModalVisible) {
@@ -209,23 +217,39 @@ const SettingsScreen = ({
     onSaveOverride({ setNumber: selectedSet, lessonNumber: selectedLesson });
   }, [selectedSet, selectedLesson, onSaveOverride]);
 
-  // Persist and apply playback speed
+  useEffect(() => {
+    setSpeed(snapToAllowed(profile?.ttsSpeed ?? DEFAULT_TTS_SPEED));
+  }, [profile?.ttsSpeed, snapToAllowed]);
+
+  // Apply playback speed locally whenever the slider changes.
   useEffect(() => {
     const numeric = Number(speed);
     const v = Math.max(MIN_TTS_SPEED, Math.min(MAX_TTS_SPEED, Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED));
     elevenLabs.setSpeed(v);
-    onSaveProfile?.({ ...profile, ttsSpeed: v });
-  }, [speed, onSaveProfile, profile]);
+  }, [speed]);
 
   useEffect(() => {
     setFontSize(coerceFontSize(profile?.readingFontSize));
   }, [profile?.readingFontSize]);
 
   useEffect(() => {
-    if (!profile) return;
-    if (profile.readingFontSize === fontSize) return;
-    onSaveProfile?.({ ...profile, readingFontSize: fontSize });
-  }, [fontSize, profile, onSaveProfile]);
+    const currentProfile = profileRef.current;
+    if (!currentProfile) return;
+    if (currentProfile.readingFontSize === fontSize) return;
+    onSaveProfile?.({ ...currentProfile, readingFontSize: fontSize });
+  }, [fontSize, profile?.readingFontSize, onSaveProfile]);
+
+  useEffect(() => {
+    const currentProfile = profileRef.current;
+    if (!currentProfile) return;
+    const numeric = Number(speed);
+    const nextSpeed = Math.max(
+      MIN_TTS_SPEED,
+      Math.min(MAX_TTS_SPEED, Number.isFinite(numeric) ? numeric : DEFAULT_TTS_SPEED)
+    );
+    if (currentProfile.ttsSpeed === nextSpeed) return;
+    onSaveProfile?.({ ...currentProfile, ttsSpeed: nextSpeed });
+  }, [speed, profile?.ttsSpeed, onSaveProfile]);
 
   // Cache is managed automatically with sensible defaults; no user controls
 
