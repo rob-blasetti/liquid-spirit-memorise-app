@@ -5,11 +5,18 @@ import {
 
 const LINKED = 'linked';
 
+const logAuthEndpoint = (label, path, payload) => {
+  if (!__DEV__) return;
+  console.log('[auth-endpoint]', label, path, payload);
+};
+
 export const signInWithLiquidSpirit = async (email, password) => {
   try {
+    const payload = { email, password, type: LINKED };
+    logAuthEndpoint('liquid-spirit-login', '/api/nuri/login-ls', { email, type: LINKED });
     return await postJson({
       path: '/api/nuri/login-ls',
-      payload: { email, password, type: LINKED },
+      payload,
       fallbackMessage: 'Failed to authenticate',
     });
   } catch (e) {
@@ -33,9 +40,11 @@ export const verifyBahaiEmail = async (bahaiId, email) => {
 
 export const registerNuriUser = async (username, email, password, grade) => {
   try {
+    const payload = { username, email, password, grade };
+    logAuthEndpoint('nuri-register', '/api/nuri/register', { username, email, grade });
     return await postJson({
       path: '/api/nuri/register',
-      payload: { username, email, password, grade },
+      payload,
       fallbackMessage: 'Registration failed',
     });
   } catch (e) {
@@ -46,9 +55,11 @@ export const registerNuriUser = async (username, email, password, grade) => {
 
 export const loginNuriUser = async (email, password) => {
   try {
+    const payload = { email, password };
+    logAuthEndpoint('nuri-login', '/api/nuri/login', { email });
     return await postJson({
       path: '/api/nuri/login',
-      payload: { email, password },
+      payload,
       fallbackMessage: 'Login failed',
     });
   } catch (e) {
