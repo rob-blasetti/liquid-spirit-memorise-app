@@ -79,19 +79,23 @@ export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
         return;
       }
       onSignIn({ ...rest, user, authType: 'ls-login' });
-    } catch (error) {
-      console.error('Liquid Spirit login failed', error);
+    } catch (authError) {
+      console.error('Liquid Spirit login failed', authError);
       const fallbackMessage = 'Unable to log in. Please try again.';
       const message =
-        error && typeof error.message === 'string' && error.message.trim().length > 0
-          ? error.message.trim()
+        authError && typeof authError.message === 'string' && authError.message.trim().length > 0
+          ? authError.message.trim()
           : fallbackMessage;
       const credentialsMessage =
-        error?.status === 400 || error?.status === 401 ? 'Incorrect email or password.' : message;
+        authError?.status === 400 || authError?.status === 401
+          ? 'Incorrect email or password.'
+          : message;
       setErrors(prev => ({
         ...prev,
-        ...(error?.status === 400 || error?.status === 401 ? { password: credentialsMessage } : {}),
-        form: message,
+        ...(authError?.status === 400 || authError?.status === 401
+          ? { password: credentialsMessage }
+          : {}),
+        form: credentialsMessage,
       }));
     } finally {
       setLoading(false);

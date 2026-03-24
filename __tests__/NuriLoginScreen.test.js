@@ -11,7 +11,11 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn(() => Promise.resolve()),
   multiRemove: jest.fn(() => Promise.resolve()),
 }), { virtual: true });
-jest.mock('react-native-config', () => ({ DEV_API: 'http://localhost' }));
+jest.mock('react-native-config', () => ({
+  DEV_API: 'http://localhost',
+  PROD_API: 'http://localhost',
+  AUTH_API_URL: 'http://localhost:3001',
+}));
 jest.mock('react-native-keychain', () => ({
   getGenericPassword: jest.fn(() => Promise.resolve({ username: 'user@example.com', password: 'secret' })),
   setGenericPassword: jest.fn(() => Promise.resolve()),

@@ -3,6 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { grade1Lessons } from '../utils/data/core/grade1';
 import { GRADE_SCREEN_CONFIG } from '../utils/data/core/gradesConfig';
 
+const getJourneyDefaults = () => ({
+  1: { lessonNumber: 1 },
+  2: { setNumber: 1, lessonNumber: 1 },
+  '2b': { setNumber: 4, lessonNumber: 1 },
+});
+
 // Hook for tracking and overriding lesson progress
 // Accepts profile (to derive grade-specific defaults) and awardAchievement callback
 // Hook to track completed lessons and per-profile override progress
@@ -13,12 +19,6 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
   // Current override for active profile
   const [overrideProgress, setOverrideProgressInternal] = useState(null);
   const [journeyProgressByGrade, setJourneyProgressByGrade] = useState({});
-
-  const getJourneyDefaults = () => ({
-    1: { lessonNumber: 1 },
-    2: { setNumber: 1, lessonNumber: 1 },
-    '2b': { setNumber: 4, lessonNumber: 1 },
-  });
 
   const getJourneyKey = useCallback(() => {
     const profileId =
@@ -52,25 +52,25 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
     };
   }, []);
 
-  const persistJourneyMap = async (nextMap) => {
+  const persistJourneyMap = useCallback(async (nextMap) => {
     const key = getJourneyKey();
     try {
       await AsyncStorage.setItem(key, JSON.stringify(nextMap));
     } catch (error) {
       console.error('Error saving journey progress:', error);
     }
-  };
+  }, [getJourneyKey]);
 
-  const getProgressForGrade = (grade) => {
+  const getProgressForGrade = useCallback((grade) => {
     const key = String(grade);
     const defaults = getJourneyDefaults();
     if (!Object.prototype.hasOwnProperty.call(defaults, key)) {
       return { setNumber: 1, lessonNumber: 1 };
     }
     return journeyProgressByGrade?.[key] || defaults[key];
-  };
+  }, [journeyProgressByGrade]);
 
-  const getNextProgressForGrade = (grade, currentProgress = {}) => {
+  const getNextProgressForGrade = useCallback((grade, currentProgress = {}) => {
     const gradeKey = String(grade);
     if (gradeKey === '1') {
       const maxLesson = Math.max(1, grade1Lessons.length);
@@ -100,9 +100,9 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
       return { setNumber: sets[resolvedSetIndex] || firstSet, lessonNumber: lessons[resolvedLessonIndex] || firstLesson };
     }
     return currentProgress;
-  };
+  }, []);
 
-  const setProgressForGrade = (grade, progress) => {
+  const setProgressForGrade = useCallback((grade, progress) => {
     const gradeKey = String(grade);
     const defaults = getJourneyDefaults();
     const nextProgress = (() => {
@@ -132,12 +132,12 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
     if (computedMap) {
       persistJourneyMap(computedMap);
     }
-  };
+  }, [normalizeJourneyMap, persistJourneyMap]);
 
   /**
    * Mark a lesson complete and award any milestones
    */
-  const completeLesson = (setNumber, lessonNumber, lessonContent = {}, meta = {}) => {
+  const completeLesson = useCallback((setNumber, lessonNumber, lessonContent = {}, meta = {}) => {
     const grade = meta?.grade;
     if (grade === 1) {
       let isNew = false;
@@ -196,16 +196,21 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
     const journeyGrade = String(meta?.grade ?? 2);
     const nextProgress = getNextProgressForGrade(journeyGrade, { setNumber, lessonNumber });
     setProgressForGrade(journeyGrade, nextProgress);
-  };
+  }, [
+    awardAchievement,
+    getNextProgressForGrade,
+    recordLessonCompletion,
+    setProgressForGrade,
+  ]);
 
   /**
    * Compute current progress: override if present, else default by grade
    */
-  const getCurrentProgress = () => {
+  const getCurrentProgress = useCallback(() => {
     if (overrideProgress) return overrideProgress;
     const grade = profile?.grade;
     return getProgressForGrade(grade);
-  };
+  }, [getProgressForGrade, overrideProgress, profile?.grade]);
 
   /**
    * Generate storage key per profile
@@ -225,7 +230,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
   /**
    * Set override for current profile and persist
    */
-  const setOverrideProgress = async (progress) => {
+  const setOverrideProgress = useCallback(async (progress) => {
     setOverrideProgressInternal(progress);
     const key = getProgressKey();
     overrideMap.current[key] = progress;
@@ -248,7 +253,7 @@ export default function useLessonProgress(profile, awardAchievement, recordLesso
     } catch (e) {
       console.error('Error saving progress override:', e);
     }
-  };
+  }, [getProgressKey, profile?.grade, setProgressForGrade]);
 
   // On profile change, load saved override from memory or storage
   useEffect(() => {

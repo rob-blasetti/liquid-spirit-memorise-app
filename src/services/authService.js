@@ -1,21 +1,23 @@
 import {
   postJson,
   deleteJson,
+  buildApiUrl,
 } from './apiClient';
+import { AUTH_API_URL } from '../config';
 
 const LINKED = 'linked';
-
-const logAuthEndpoint = (label, path, payload) => {
+const logAuthRoute = (method, path, payload) => {
   if (!__DEV__) return;
-  console.log('[auth-endpoint]', label, path, payload);
+  console.log('[auth-endpoint]', method, buildApiUrl(path, AUTH_API_URL), payload);
 };
 
 export const signInWithLiquidSpirit = async (email, password) => {
   try {
     const payload = { email, password, type: LINKED };
-    logAuthEndpoint('liquid-spirit-login', '/api/nuri/login-ls', { email, type: LINKED });
+    logAuthRoute('POST', '/api/auth/nuri/login-ls', { email, type: LINKED });
     return await postJson({
-      path: '/api/nuri/login-ls',
+      baseUrl: AUTH_API_URL,
+      path: '/api/auth/nuri/login-ls',
       payload,
       fallbackMessage: 'Failed to authenticate',
     });
@@ -27,7 +29,9 @@ export const signInWithLiquidSpirit = async (email, password) => {
 
 export const verifyBahaiEmail = async (bahaiId, email) => {
   try {
+    logAuthRoute('POST', '/api/nuri/login-ls', { identifier: bahaiId, email, type: 'verify-email' });
     return await postJson({
+      baseUrl: AUTH_API_URL,
       path: '/api/nuri/login-ls',
       payload: { identifier: bahaiId, email, type: 'verify-email' },
       fallbackMessage: 'Email verification failed',
@@ -41,9 +45,10 @@ export const verifyBahaiEmail = async (bahaiId, email) => {
 export const registerNuriUser = async (username, email, password, grade) => {
   try {
     const payload = { username, email, password, grade };
-    logAuthEndpoint('nuri-register', '/api/nuri/register', { username, email, grade });
+    logAuthRoute('POST', '/api/auth/nuri/register', { username, email, grade });
     return await postJson({
-      path: '/api/nuri/register',
+      baseUrl: AUTH_API_URL,
+      path: '/api/auth/nuri/register',
       payload,
       fallbackMessage: 'Registration failed',
     });
@@ -56,9 +61,10 @@ export const registerNuriUser = async (username, email, password, grade) => {
 export const loginNuriUser = async (email, password) => {
   try {
     const payload = { email, password };
-    logAuthEndpoint('nuri-login', '/api/nuri/login', { email });
+    logAuthRoute('POST', '/api/auth/nuri/login', { email });
     return await postJson({
-      path: '/api/nuri/login',
+      baseUrl: AUTH_API_URL,
+      path: '/api/auth/nuri/login',
       payload,
       fallbackMessage: 'Login failed',
     });
@@ -74,7 +80,9 @@ export const loginNuriUser = async (email, password) => {
 
 export const requestPasswordReset = async identifier => {
   try {
+    logAuthRoute('POST', '/api/nuri/request-password-reset', { identifier });
     return await postJson({
+      baseUrl: AUTH_API_URL,
       path: '/api/nuri/request-password-reset',
       payload: { identifier },
       fallbackMessage: 'Password reset request failed',
@@ -87,7 +95,9 @@ export const requestPasswordReset = async identifier => {
 
 export const requestLiquidSpiritPasswordReset = async email => {
   try {
+    logAuthRoute('POST', '/api/nuri/nuriForgotPassword', { email });
     return await postJson({
+      baseUrl: AUTH_API_URL,
       path: '/api/nuri/nuriForgotPassword',
       payload: { email },
       fallbackMessage: 'Liquid Spirit password reset failed',
@@ -104,7 +114,9 @@ export const deleteNuriUser = async ({ token, userId } = {}) => {
   }
 
   try {
+    logAuthRoute('DELETE', '/api/nuri/user', userId ? { userId } : undefined);
     const responseText = await deleteJson({
+      baseUrl: AUTH_API_URL,
       path: '/api/nuri/user',
       payload: userId ? { userId } : undefined,
       token,

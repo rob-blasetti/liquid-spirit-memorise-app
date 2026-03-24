@@ -24,11 +24,16 @@ const coerceInteger = (value, fallback) => {
   return Number.isFinite(numeric) ? numeric : fallback;
 };
 
-// Set the API URL
+// Set the API URLs
 export const API_URL = coerceString(Config.PROD_API);
+export const AUTH_API_URL = coerceString(Config.AUTH_API_URL, API_URL);
 
 if (!API_URL) {
   console.warn('[config] Missing PROD_API. Network requests may fail until .env is configured.');
+}
+
+if (!AUTH_API_URL) {
+  console.warn('[config] Missing AUTH_API_URL. Auth requests may fail until .env is configured.');
 }
 
 // ElevenLabs TTS configuration (optional)

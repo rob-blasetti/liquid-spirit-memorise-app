@@ -16,7 +16,11 @@ jest.mock(
   }),
   { virtual: true },
 );
-jest.mock('react-native-config', () => ({ DEV_API: 'http://localhost' }));
+jest.mock('react-native-config', () => ({
+  DEV_API: 'http://localhost',
+  PROD_API: 'http://localhost',
+  AUTH_API_URL: 'http://localhost:3001',
+}));
 jest.mock('react-native-fast-image', () => {
   const React = require('react');
   const FastImage = props => React.createElement('FastImage', props);

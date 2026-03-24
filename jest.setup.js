@@ -157,6 +157,7 @@ jest.mock('react-native-config', () => ({
   DEV_API: 'http://localhost:3000',
   STAGING_API: 'http://localhost:3000',
   PROD_API: 'http://localhost:3000',
+  AUTH_API_URL: 'http://localhost:3001',
 }));
 jest.mock('react-native/src/private/animated/NativeAnimatedHelper', () => ({
   API: {
