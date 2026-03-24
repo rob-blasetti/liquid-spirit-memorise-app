@@ -2,8 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import GameTopBar from '../ui/components/GameTopBar';
 import themeVariables from '../ui/stylesheets/theme';
-
-const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+import { shuffleItems } from './gameUtils';
 
 const FlashCardRecallGame = ({ quote, onBack, onWin, onLose }) => {
   const text = typeof quote === 'string' ? quote : quote?.text || '';
@@ -15,19 +14,18 @@ const FlashCardRecallGame = ({ quote, onBack, onWin, onLose }) => {
   const hasWonRef = useRef(false);
   const mistakesRef = useRef(0);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setShowQuote(true);
     const w = text.split(/\s+/);
     setWords(w);
-    setScrambled(shuffle(w));
+    setScrambled(shuffleItems(w));
     setIndex(0);
     setMessage('');
     hasWonRef.current = false;
     mistakesRef.current = 0;
     const timer = setTimeout(() => setShowQuote(false), 6000);
     return () => clearTimeout(timer);
-  }, [quote]);
+  }, [text]);
 
   const handlePress = (word, idx) => {
     if (hasWonRef.current) return;

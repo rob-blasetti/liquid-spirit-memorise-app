@@ -35,7 +35,6 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
   const bubbleCount = Math.min(maxBubbles, bubbleEligibleIndices.length);
   const bubbleIndices = useMemo(() => {
     if (!bubbleEligibleIndices.length || bubbleCount === 0) return [];
-    // pick unique random eligible indices across the quote, preserve reading order
     const indices = new Set();
     const pool = [...bubbleEligibleIndices];
     while (indices.size < bubbleCount && pool.length > 0) {
@@ -44,7 +43,7 @@ const BubblePopOrderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, on
       indices.add(value);
     }
     return Array.from(indices).sort((a, b) => a - b);
-  }, [bubbleEligibleIndices, bubbleCount, level]);
+  }, [bubbleEligibleIndices, bubbleCount]);
   const bubbleOrderMap = useMemo(() => {
     const m = new Map();
     bubbleIndices.forEach((idx, order) => m.set(idx, order));

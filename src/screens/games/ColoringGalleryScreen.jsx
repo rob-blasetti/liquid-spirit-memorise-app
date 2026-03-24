@@ -157,7 +157,7 @@ const ColoringGalleryScreen = ({ profile, onBack, onSelectImage, highlightImageI
         </TouchableOpacity>
       );
     },
-    [handleSelect, progressMap, highlightImageId],
+    [handleSelect, progressMap, highlightImageId, previewLayouts],
   );
 
   return (

@@ -325,7 +325,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
       positions.push(pos);
     }
     return positions;
-  }, [interactiveCount, rows, cols, startX, startY, SLOT_SIZE, PIECE_SIZE, safeInsets]);
+  }, [interactiveCount, rows, cols, startX, startY, SLOT_SIZE, PIECE_SIZE, fabBottomSpacing]);
   
   // Randomize which pieces are pre-placed
   const prePlacedIndices = useMemo(() => {
@@ -343,7 +343,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
   // Refs for each piece: pan position, placed flag, and PanResponder
   // Track placed pieces and count; initialize with pre-placed indices
   const [placedSet, setPlacedSet] = useState(() => new Set(prePlacedIndices));
-  const [placedCount, setPlacedCount] = useState(prePlacedIndices.length);
+  const [, setPlacedCount] = useState(prePlacedIndices.length);
   // Gate win detection until player interacts
   const hasInteractedRef = useRef(false);
   // Track active drag index for z-ordering
@@ -361,12 +361,10 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
       return;
     }
     if (!hasInteractedRef.current) {
-      // eslint-disable-next-line no-console
       console.log('[ShapeBuilder:win-check] skipped — no interaction yet');
       return;
     }
     const placedInteractive = Array.from(placedSet).filter((i) => i < interactiveCount).length;
-    // eslint-disable-next-line no-console
     console.log('[ShapeBuilder:win-check]', { placedInteractive, interactiveCount, level: difficulty });
     if (
       placedInteractive === interactiveCount &&
@@ -374,7 +372,6 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
       onWin &&
       !winTriggeredRef.current
     ) {
-      // eslint-disable-next-line no-console
       console.log('[ShapeBuilder:WIN] firing onWin');
       winTriggeredRef.current = true;
       // stop timer on win
@@ -384,7 +381,7 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
       }
       onWin();
     }
-  }, [placedSet, interactiveCount, onWin]);
+  }, [placedSet, interactiveCount, onWin, difficulty]);
   // Reset placedCount when difficulty changes
   useEffect(() => {
     setPlacedSet(new Set(prePlacedIndices));
@@ -392,7 +389,6 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
     hasInteractedRef.current = false;
     winTriggeredRef.current = false;
     clearFeedback();
-    // eslint-disable-next-line no-console
     console.log('[ShapeBuilder:reset]', { level: difficulty, prePlacedInteractive: prePlacedIndices.slice(0, interactiveCount) });
   }, [prePlacedIndices, interactiveCount, difficulty, clearFeedback]);
   // Keep pan values stable across renders to avoid jumping
@@ -444,7 +440,6 @@ const ShapeBuilderGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLo
               setPlacedSet(prev => {
                 const next = new Set(prev);
                 next.add(i);
-                // eslint-disable-next-line no-console
                 console.log('[ShapeBuilder:placed]', { index: i, placedInteractive: Array.from(next).filter(idx => idx < interactiveCount).length, interactiveCount });
                 return next;
               });
