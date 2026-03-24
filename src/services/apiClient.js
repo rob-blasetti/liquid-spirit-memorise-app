@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../config';
 
 export const ERROR_MESSAGE_OVERRIDES = new Map([
@@ -94,8 +95,40 @@ export const apiRequest = async ({
   return response.json();
 };
 
+export const getAuthToken = async () => AsyncStorage.getItem('token');
+
+export const getAuthHeaders = async (headers = {}) => {
+  const token = await getAuthToken();
+  if (!token) {
+    return headers;
+  }
+  return {
+    ...headers,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+export const authedApiRequest = async ({ headers = {}, ...rest }) =>
+  apiRequest({
+    ...rest,
+    headers: await getAuthHeaders(headers),
+  });
+
 export const postJson = ({ path, payload, fallbackMessage, headers = {}, overrides }) =>
   apiRequest({
+    path,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    body: JSON.stringify(payload),
+    fallbackMessage,
+    overrides,
+  });
+
+export const authedPostJson = async ({ path, payload, fallbackMessage, headers = {}, overrides }) =>
+  authedApiRequest({
     path,
     method: 'POST',
     headers: {

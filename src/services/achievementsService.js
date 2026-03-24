@@ -1,8 +1,7 @@
 // services/achievementsService.js
 import { achievements as defaultAchievements } from '../utils/data/core/achievements';
 import { saveProfile as persistProfile } from './profileService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest } from './apiClient';
+import { apiRequest, authedApiRequest, authedPostJson } from './apiClient';
 import { filterEnabledAchievements, isAchievementEnabled } from '../config/achievementsConfig';
 
 const ENABLED_DEFAULT_ACHIEVEMENTS = filterEnabledAchievements(defaultAchievements);
@@ -184,13 +183,8 @@ export async function fetchUserAchievements(userId) {
   }
 
   try {
-    const token = await AsyncStorage.getItem('token');
-    const headers = token
-      ? { Authorization: `Bearer ${token}` }
-      : undefined;
-    const raw = await apiRequest({
+    const raw = await authedApiRequest({
       path: `/api/nuri/achievements/${userId}`,
-      headers,
       fallbackMessage: 'Failed to fetch achievements',
     });
     const { achievements: serverAchievements = [], totalPoints = 0 } = raw || {};
@@ -367,10 +361,6 @@ export async function fetchUserAchievements(userId) {
  */
 export async function updateAchievementOnServer(userId, achievementId, totalPoints, options = {}) {
   try {
-    const token = await AsyncStorage.getItem('token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
     const slugValue = options.slug || achievementId || null;
     const payload = { userId };
     if (slugValue) payload.slug = slugValue;
@@ -382,11 +372,9 @@ export async function updateAchievementOnServer(userId, achievementId, totalPoin
     }
     if (typeof totalPoints === 'number') payload.totalPoints = totalPoints;
     try {
-      return await apiRequest({
+      return await authedPostJson({
         path: '/api/nuri/achievement',
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+        payload,
         fallbackMessage: 'Failed to update achievement on server',
       });
     } catch (err) {

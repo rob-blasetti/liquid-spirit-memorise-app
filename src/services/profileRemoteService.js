@@ -1,11 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest, buildApiUrl } from './apiClient';
+import { apiRequest, authedApiRequest } from './apiClient';
 
 export async function getS3PresignUrl(fileName, fileType) {
-  const token = await AsyncStorage.getItem('token');
-  const { url } = await apiRequest({
+  const { url } = await authedApiRequest({
     path: `/api/upload/s3-url?fileName=${encodeURIComponent(fileName)}&fileType=${encodeURIComponent(fileType)}`,
-    headers: { Authorization: `Bearer ${token}` },
     fallbackMessage: 'Failed to get S3 upload URL',
   });
   return url;
@@ -22,13 +19,11 @@ export async function uploadToS3(presignUrl, uri, fileType) {
 }
 
 export async function updateProfilePictureOnServer(user, profilePictureUrl) {
-  const token = await AsyncStorage.getItem('token');
-  return apiRequest({
+  return authedApiRequest({
     path: '/api/nuri/profile/avatar',
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ user, profilePicture: profilePictureUrl }),
     fallbackMessage: 'Server update failed',
