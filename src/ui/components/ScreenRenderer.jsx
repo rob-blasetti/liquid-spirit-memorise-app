@@ -400,10 +400,22 @@ const ScreenRenderer = ({
           onComingSoonGrade={(grade) => setComingSoonGrade(grade)}
           onGradeSelect={(gradeValue) => {
             if (gradeValue === 1) {
-              goToGradeJourney(1);
+              goTo('grade1');
             } else if (gradeValue === 2) {
               const preferredGrade = String(profile?.grade || '') === '2b' ? '2b' : 2;
-              goToGradeJourney(preferredGrade);
+              const progress =
+                typeof getProgressForGrade === 'function'
+                  ? getProgressForGrade(String(preferredGrade))
+                  : getCurrentProgress();
+              const resolvedSetNumber =
+                preferredGrade === '2b'
+                  ? Number(progress?.setNumber) || 4
+                  : Number(progress?.setNumber) || 1;
+              if (preferredGrade === '2b') {
+                goTo('grade2b', { setNumber: resolvedSetNumber });
+              } else {
+                goTo('grade2', { setNumber: resolvedSetNumber });
+              }
             }
           }}
         />,

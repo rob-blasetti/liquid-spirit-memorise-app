@@ -48,11 +48,27 @@ const LibraryScreen = ({
       }`;
     }
     if (gradeKey === '2b') {
-      return `Grade 2b - Set ${Number.isFinite(setNumber) ? setNumber : 4}, Lesson ${
+      return `Grade 2 - Set ${Number.isFinite(setNumber) ? setNumber : 4}, Lesson ${
         Number.isFinite(lessonNumber) ? lessonNumber : 1
       }`;
     }
     return null;
+  })();
+  const compactContinueLabel = (() => {
+    if (gradeKey === '1') {
+      return `Lesson ${Number.isFinite(lessonNumber) ? lessonNumber : 1}`;
+    }
+    if (gradeKey === '2') {
+      return `Set ${Number.isFinite(setNumber) ? setNumber : 1}, Lesson ${
+        Number.isFinite(lessonNumber) ? lessonNumber : 1
+      }`;
+    }
+    if (gradeKey === '2b') {
+      return `Set ${Number.isFinite(setNumber) ? setNumber : 4}, Lesson ${
+        Number.isFinite(lessonNumber) ? lessonNumber : 1
+      }`;
+    }
+    return progressLabel;
   })();
   const getCardProgressLabel = (cardGrade) => {
     if (cardGrade === 1) {
@@ -224,26 +240,26 @@ const LibraryScreen = ({
             onPress={onContinue}
             accessibilityLabel="Continue where you left off"
           >
-            <TouchableOpacity
-              style={styles.continueCloseButton}
-              accessibilityRole="button"
-              accessibilityLabel="Dismiss continue card"
-              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-              onPress={(event) => {
-                if (typeof event?.stopPropagation === 'function') {
-                  event.stopPropagation();
-                }
-                setContinueVisible(false);
-                setLibraryContinueCardHidden(profileId, true).catch(() => {});
-              }}
-            >
-              <Ionicons name="close" size={18} color={themeVariables.blackColor} />
-            </TouchableOpacity>
-            <Text style={styles.continueTitle}>Continue Where You Left Off</Text>
-            {progressLabel ? (
-              <Text style={styles.continueSubtitle}>{progressLabel}</Text>
-            ) : null}
-            <Text style={styles.continueAction}>Open Lesson</Text>
+            <View style={styles.continueRow}>
+              <Text style={styles.continueText} numberOfLines={1}>
+                {`Continue: ${compactContinueLabel}`}
+              </Text>
+              <TouchableOpacity
+                style={styles.continueCloseButton}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss continue card"
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                onPress={(event) => {
+                  if (typeof event?.stopPropagation === 'function') {
+                    event.stopPropagation();
+                  }
+                  setContinueVisible(false);
+                  setLibraryContinueCardHidden(profileId, true).catch(() => {});
+                }}
+              >
+                <Ionicons name="close" size={16} color={themeVariables.blackColor} />
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -280,39 +296,26 @@ const styles = StyleSheet.create({
   continueTile: {
     backgroundColor: themeVariables.secondaryColor,
     borderRadius: themeVariables.borderRadiusPill,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  continueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   continueCloseButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  continueTitle: {
+  continueText: {
+    flex: 1,
     color: themeVariables.blackColor,
-    fontSize: 20,
-    fontWeight: '700',
-    paddingRight: 30,
-  },
-  continueSubtitle: {
-    color: themeVariables.blackColor,
-    fontSize: 15,
-    marginTop: 6,
-  },
-  continueAction: {
-    color: themeVariables.blackColor,
-    fontSize: 13,
-    marginTop: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 14,
     fontWeight: '600',
-    opacity: 0.95,
   },
   tile: {
     backgroundColor: themeVariables.tertiaryDarkColor,
