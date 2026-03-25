@@ -29,7 +29,7 @@ const GAME_TITLES = {
   buildRecallGame: 'Build Recall',
   bubblePopOrderGame: 'Bubble Pop',
   wordRacerGame: 'Word Racer',
-  coloringBookGame: 'Color & Create',
+  coloringBookGame: 'Colour In',
   colorQuoteGame: 'Colour the Quote',
 };
 

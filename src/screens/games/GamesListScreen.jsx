@@ -36,7 +36,7 @@ const titles = {
   buildRecallGame: 'Build & Recall',
   bubblePopOrderGame: 'Bubble Pop',
   wordRacerGame: 'Word Racer',
-  coloringBookGame: 'Color In',
+  coloringBookGame: 'Colour In',
   colorQuoteGame: 'Colour the Quote',
 };
 const iconMap = {
