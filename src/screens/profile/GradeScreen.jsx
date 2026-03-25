@@ -13,29 +13,40 @@ import themeVariables from '../../ui/stylesheets/theme';
 const GradeSelectionSection = ({
   title,
   helperText,
+  helperPosition = 'top',
+  helperEmphasis = false,
   iconName,
   values = [],
   selectedValue,
   onSelect,
   disabled = false,
+  joined = false,
 }) => {
   if (!Array.isArray(values) || values.length === 0) return null;
 
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {helperText ? <Text style={styles.sectionHelper}>{helperText}</Text> : null}
-      <View style={styles.optionGrid}>
+      {helperText && helperPosition === 'top' ? (
+        <Text style={[styles.sectionHelper, helperEmphasis && styles.sectionHelperEmphasis]}>
+          {helperText}
+        </Text>
+      ) : null}
+      <View style={[styles.optionGrid, joined && styles.joinedOptionGrid]}>
         {values.map(value => {
           const isSelected = selectedValue === value;
+          const isLast = values[values.length - 1] === value;
           return (
             <TouchableOpacity
               key={`${title}-${value}`}
               style={[
-                styles.optionTile,
-                values.length >= 4 ? styles.optionTileFour : styles.optionTileThree,
+                joined ? styles.joinedOptionTile : styles.optionTile,
+                !joined && (values.length >= 4 ? styles.optionTileFour : styles.optionTileThree),
                 isSelected && styles.optionTileSelected,
                 disabled && styles.optionTileDisabled,
+                joined && styles.joinedOptionTileShared,
+                joined && isLast && styles.joinedOptionTileLast,
+                joined && isSelected && styles.joinedOptionTileSelected,
               ]}
               onPress={() => onSelect?.(value)}
               disabled={disabled}
@@ -43,25 +54,34 @@ const GradeSelectionSection = ({
               accessibilityState={{ selected: isSelected, disabled }}
               accessibilityLabel={`${title} ${value}`}
             >
-              <View style={styles.optionIconRow}>
-                <Ionicons
-                  name={iconName}
-                  size={16}
-                  color={isSelected ? themeVariables.primaryColor : themeVariables.whiteColor}
-                />
+              <View style={joined ? styles.joinedOptionContent : styles.optionIconRow}>
+                {!joined ? (
+                  <Ionicons
+                    name={iconName}
+                    size={16}
+                    color={isSelected ? themeVariables.primaryColor : themeVariables.whiteColor}
+                  />
+                ) : null}
                 <Text style={[styles.optionNumber, isSelected && styles.optionNumberSelected]}>
                   {value}
                 </Text>
-                <Ionicons
-                  name={iconName}
-                  size={16}
-                  color={isSelected ? themeVariables.primaryColor : themeVariables.whiteColor}
-                />
+                {!joined ? (
+                  <Ionicons
+                    name={iconName}
+                    size={16}
+                    color={isSelected ? themeVariables.primaryColor : themeVariables.whiteColor}
+                  />
+                ) : null}
               </View>
             </TouchableOpacity>
           );
         })}
       </View>
+      {helperText && helperPosition === 'bottom' ? (
+        <Text style={[styles.sectionHelper, helperEmphasis && styles.sectionHelperEmphasis]}>
+          {helperText}
+        </Text>
+      ) : null}
     </View>
   );
 };
@@ -113,6 +133,10 @@ const GradeScreen = ({
     () => (Array.isArray(config?.lessonNumbers) ? config.lessonNumbers : []),
     [config],
   );
+  const setTitles = useMemo(
+    () => (config?.setTitles && typeof config.setTitles === 'object' ? config.setTitles : {}),
+    [config],
+  );
   const defaultSet = useMemo(() => (availableSets.length > 0 ? availableSets[0] : null), [availableSets]);
   const normalizedSetNumber = Number(setNumber);
   const normalizedLessonNumber = Number(lessonNumber);
@@ -140,6 +164,40 @@ const GradeScreen = ({
 
   const hasSelectedLesson = Number.isFinite(normalizedLessonNumber) && normalizedLessonNumber > 0;
   const hasSets = availableSets.length > 0;
+  const lessonTargets = useMemo(() => {
+    if (hasSets) {
+      return availableSets.flatMap((availableSetNumber) =>
+        availableLessons.map((availableLessonNumber) => ({
+          setNumber: availableSetNumber,
+          lessonNumber: availableLessonNumber,
+        })),
+      );
+    }
+    return availableLessons.map((availableLessonNumber) => ({
+      setNumber: null,
+      lessonNumber: availableLessonNumber,
+    }));
+  }, [availableLessons, availableSets, hasSets]);
+  const currentLessonIndex = useMemo(
+    () =>
+      lessonTargets.findIndex((target) => (
+        target.lessonNumber === normalizedLessonNumber
+        && (hasSets ? target.setNumber === effectiveSetNumber : true)
+      )),
+    [lessonTargets, normalizedLessonNumber, hasSets, effectiveSetNumber],
+  );
+  const previousLessonTarget = currentLessonIndex > 0 ? lessonTargets[currentLessonIndex - 1] : null;
+  const nextLessonTarget =
+    currentLessonIndex >= 0 && currentLessonIndex < lessonTargets.length - 1
+      ? lessonTargets[currentLessonIndex + 1]
+      : null;
+  const selectedSetLabel = useMemo(() => {
+    if (!Number.isFinite(selectedSet)) {
+      return 'Choose a set';
+    }
+    const setTitle = setTitles[selectedSet];
+    return setTitle || `Set ${selectedSet}`;
+  }, [selectedSet, setTitles]);
 
   if (!config) return null;
 
@@ -159,6 +217,18 @@ const GradeScreen = ({
         getLessonContent={config.getLessonContent}
         fallbackQuote={config.fallbackQuote}
         onBack={backHandler}
+        hasPreviousLesson={Boolean(previousLessonTarget)}
+        hasNextLesson={Boolean(nextLessonTarget)}
+        onGoPreviousLesson={
+          previousLessonTarget
+            ? () => onSelectLesson?.(previousLessonTarget.setNumber, previousLessonTarget.lessonNumber)
+            : undefined
+        }
+        onGoNextLesson={
+          nextLessonTarget
+            ? () => onSelectLesson?.(nextLessonTarget.setNumber, nextLessonTarget.lessonNumber)
+            : undefined
+        }
         onComplete={(resolvedSetNumber, resolvedLessonNumber, completionPayload, meta) => {
           if (gradeKey === '1') {
             onComplete?.(null, resolvedLessonNumber, completionPayload, {
@@ -187,8 +257,11 @@ const GradeScreen = ({
         {hasSets ? (
           <GradeSelectionSection
             title="Set"
-            helperText="Choose a set"
+            helperText={selectedSetLabel}
+            helperPosition="bottom"
+            helperEmphasis
             iconName="book-outline"
+            joined
             values={availableSets}
             selectedValue={selectedSet}
             onSelect={setSelectedSet}
@@ -242,11 +315,29 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.72)',
     fontSize: 14,
   },
+  sectionHelperEmphasis: {
+    marginTop: 12,
+    color: themeVariables.whiteColor,
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 24,
+    textAlign: 'center',
+  },
   optionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginTop: 12,
+  },
+  joinedOptionGrid: {
+    flexWrap: 'nowrap',
+    justifyContent: 'flex-start',
+    gap: 0,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   optionTile: {
     borderRadius: 18,
@@ -258,6 +349,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
+  },
+  joinedOptionTile: {
+    flex: 1,
+    minHeight: 62,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  joinedOptionTileShared: {
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255,255,255,0.12)',
+  },
+  joinedOptionTileSelected: {
+    borderColor: 'transparent',
+  },
+  joinedOptionTileLast: {
+    borderRightWidth: 0,
   },
   optionTileThree: {
     width: '31%',
@@ -277,6 +385,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     columnGap: 4,
+  },
+  joinedOptionContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   optionNumber: {
     color: themeVariables.whiteColor,
