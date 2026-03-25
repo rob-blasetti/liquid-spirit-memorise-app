@@ -46,7 +46,7 @@ const HomeTopBar = ({
       const lower = normalizedGradeLabel.toLowerCase();
       if (lower.startsWith('grade ')) return normalizedGradeLabel;
       if (/^\d/.test(normalizedGradeLabel)) return `Grade ${normalizedGradeLabel}`;
-      if (lower === '2b') return 'Grade 2B';
+      if (lower === '2b') return 'Grade 2';
       return normalizedGradeLabel;
     })();
     return {

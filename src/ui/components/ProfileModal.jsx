@@ -51,7 +51,7 @@ const ProfileModal = ({
       /[a-z]+/gi,
       segment => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase(),
     );
-    if (lowered === '2b') return 'Grade 2B';
+    if (lowered === '2b') return 'Grade 2';
     if (/^\d/.test(gradeString)) return `Grade ${gradeString}`;
     if (formatted.toLowerCase().startsWith('grade ')) return formatted;
     return formatted;

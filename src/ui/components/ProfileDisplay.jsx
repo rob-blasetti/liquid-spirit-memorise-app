@@ -37,7 +37,7 @@ const ProfileDisplay = ({
     const labelLower = formattedGradeLabel.toLowerCase();
     if (labelLower.startsWith('grade ')) return formattedGradeLabel;
     if (/^\d/.test(formattedGradeLabel)) return `Grade ${formattedGradeLabel}`;
-    if (labelLower === '2b') return 'Grade 2B';
+    if (labelLower === '2b') return 'Grade 2';
     return formattedGradeLabel;
   })();
   const canPressProfile = typeof onProfilePress === 'function';

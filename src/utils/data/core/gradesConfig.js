@@ -16,6 +16,11 @@ export const GRADE_SCREEN_CONFIG = {
     grade: 2,
     title: 'Grade 2',
     sets: [1, 2, 3],
+    setTitles: {
+      1: 'Turning to God in Prayer',
+      2: 'Adhering to the Laws of God',
+      3: 'Seeking Knowledge',
+    },
     lessonNumbers: DEFAULT_LESSON_NUMBERS,
     getLessonContent: (setNumber, lessonNumber) =>
       grade2QuoteMap[`${setNumber}-${lessonNumber}`] || {},
@@ -24,11 +29,23 @@ export const GRADE_SCREEN_CONFIG = {
   },
   '2b': {
     grade: '2b',
-    title: 'Grade 2 - Book 3-2',
+    title: 'Grade 2',
     sets: [4, 5, 6, 7],
+    setTitles: {
+      4: 'Living in Harmony with Others',
+      5: 'Respecting the Dignity of Every Human Being',
+      6: 'Being A Good Friend',
+      7: "Devoting One's Life to Service",
+    },
     lessonNumbers: DEFAULT_LESSON_NUMBERS,
-    getLessonContent: (setNumber, lessonNumber) =>
-      grade2bQuoteMap[`${setNumber}-${lessonNumber}`] || {},
+    getLessonContent: (setNumber, lessonNumber) => {
+      const lessonEntry = grade2bQuoteMap[`${setNumber}-${lessonNumber}`] || {};
+      const setPrayer = grade2bQuoteMap[`${setNumber}-1`]?.prayer;
+      return {
+        ...lessonEntry,
+        prayer: lessonEntry.prayer || setPrayer,
+      };
+    },
     fallbackQuote: (setNumber, lessonNumber) =>
       `This is a dummy quote for Lesson ${lessonNumber} of Set ${setNumber}.`,
   },
@@ -43,4 +60,3 @@ export const GRADE_SCREEN_CONFIG = {
     message: 'Content coming soon',
   },
 };
-
