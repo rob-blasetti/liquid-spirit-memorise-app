@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
+import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDifficulty } from '../../app/contexts/DifficultyContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -23,11 +24,55 @@ const DIFFICULTY_LABELS = {
   3: 'Hard',
 };
 
+const shuffleItems = (items = []) => {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
+};
+
+const createConfettiDrops = () => {
+  const seeds = shuffleItems([
+    { top: -24, left: -36, right: 12, height: 246, delayRange: [0, 180] },
+    { top: -10, left: -12, right: -24, height: 238, delayRange: [60, 240] },
+    { top: 8, left: 10, right: -38, height: 254, delayRange: [100, 320] },
+    { top: 26, left: -18, right: -6, height: 270, delayRange: [180, 420] },
+    { top: 42, left: 8, right: -24, height: 286, delayRange: [220, 520] },
+    { top: 54, left: -30, right: 18, height: 278, delayRange: [260, 620] },
+    { top: 70, left: -8, right: -14, height: 296, delayRange: [420, 760] },
+    { top: 92, left: 18, right: -30, height: 304, delayRange: [520, 920] },
+    { top: 108, left: -26, right: 16, height: 312, delayRange: [620, 1120] },
+  ]);
+
+  return seeds.map((seed, index) => {
+    const [minDelay, maxDelay] = seed.delayRange;
+    const delayMs = minDelay + Math.round(Math.random() * (maxDelay - minDelay));
+    return {
+      id: `confetti-${index}-${delayMs}`,
+      delayMs,
+      style: {
+        top: seed.top + Math.round(Math.random() * 20) - 10,
+        left: seed.left + Math.round(Math.random() * 22) - 11,
+        right: seed.right + Math.round(Math.random() * 22) - 11,
+        height: seed.height + Math.round(Math.random() * 28) - 14,
+        opacity: 0.8 + Math.random() * 0.18,
+        transform: [
+          { rotate: `${Math.round(Math.random() * 24) - 12}deg` },
+          { scaleX: 0.92 + Math.random() * 0.18 },
+        ],
+      },
+    };
+  });
+};
+
 const GameVictoryScreen = ({
   gameTitle,
   difficultyLabel,
   level = 1,
   onNextLevel,
+  onReplay,
   onGoHome,
   onGoGames,
   perfect = false,
@@ -35,6 +80,9 @@ const GameVictoryScreen = ({
 }) => {
   const { setLevel } = useDifficulty();
   const insets = useSafeAreaInsets();
+  const [showCelebration, setShowCelebration] = useState(true);
+  const [confettiDrops, setConfettiDrops] = useState(() => createConfettiDrops());
+  const [visibleConfettiIds, setVisibleConfettiIds] = useState([]);
   const normalizedLevel = typeof level === 'number' && level > 0 ? level : 1;
   const hasNextLevel = normalizedLevel < maxLevel;
   const currentDifficulty = useMemo(() => {
@@ -49,14 +97,15 @@ const GameVictoryScreen = ({
 
   const resolvedGameTitle = gameTitle || 'This Game';
 
-  const handlePrimaryAction = () => {
-    if (hasNextLevel) {
-      const targetLevel = Math.min(normalizedLevel + 1, maxLevel);
-      setLevel(targetLevel);
-      onNextLevel?.();
-    } else {
-      onGoHome?.();
-    }
+  const handleReplay = () => {
+    setLevel(normalizedLevel);
+    onReplay?.();
+  };
+
+  const handleNextDifficulty = () => {
+    const targetLevel = Math.min(normalizedLevel + 1, maxLevel);
+    setLevel(targetLevel);
+    onNextLevel?.();
   };
 
   const edgeExtensionStyle = useMemo(
@@ -131,6 +180,32 @@ const GameVictoryScreen = ({
     };
   }, [starField]);
 
+  useEffect(() => {
+    const nextDrops = createConfettiDrops();
+    const timeoutIds = nextDrops.map((drop) =>
+      setTimeout(() => {
+        setVisibleConfettiIds((current) =>
+          current.includes(drop.id) ? current : [...current, drop.id],
+        );
+      }, drop.delayMs),
+    );
+    const maxDelay = nextDrops.reduce(
+      (highest, drop) => Math.max(highest, drop.delayMs),
+      0,
+    );
+    setConfettiDrops(nextDrops);
+    setShowCelebration(true);
+    setVisibleConfettiIds([]);
+    const timeoutId = setTimeout(() => {
+      setShowCelebration(false);
+      setVisibleConfettiIds([]);
+    }, maxDelay + 1400);
+    return () => {
+      timeoutIds.forEach((id) => clearTimeout(id));
+      clearTimeout(timeoutId);
+    };
+  }, [resolvedGameTitle, normalizedLevel]);
+
   const handleContentLayout = useCallback(({ nativeEvent }) => {
     const { width: nextWidth, height: nextHeight } = nativeEvent.layout || {};
     if (typeof nextWidth !== 'number' || typeof nextHeight !== 'number') return;
@@ -144,6 +219,21 @@ const GameVictoryScreen = ({
 
   return (
     <View style={[styles.root, edgeExtensionStyle]}>
+      {showCelebration ? (
+        <View pointerEvents="none" style={styles.celebrationLayer}>
+          {confettiDrops
+            .filter((drop) => visibleConfettiIds.includes(drop.id))
+            .map((drop) => (
+              <LottieView
+                key={drop.id}
+                source={require('../../assets/animations/confetti.json')}
+                autoPlay
+                loop={false}
+                style={[styles.confettiBurst, drop.style]}
+              />
+            ))}
+        </View>
+      ) : null}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, contentSpacing]}
@@ -192,8 +282,8 @@ const GameVictoryScreen = ({
                           { translateY: -star.size / 2 },
                           { rotate },
                         ],
-                        opacity: 0.9,
                       },
+                      styles.starVisible,
                     ]}
                   >
                     <Ionicons
@@ -246,12 +336,27 @@ const GameVictoryScreen = ({
                   </View>
                 </View>
               </View>
-              <ThemedButton
-                title={hasNextLevel ? `Play ${nextLevelLabel}` : 'Back to Home'}
-                onPress={handlePrimaryAction}
-                style={[styles.primaryCta, !hasNextLevel ? styles.homeCta : null]}
-                textStyle={styles.primaryCtaText}
-              />
+              <View style={[styles.actionsRow, !hasNextLevel && styles.actionsRowSingle]}>
+                <ThemedButton
+                  title="Play Again"
+                  onPress={handleReplay}
+                  style={[
+                    styles.primaryCta,
+                    styles.actionButton,
+                    styles.replayCta,
+                    !hasNextLevel && styles.actionButtonSingle,
+                  ]}
+                  textStyle={[styles.primaryCtaText, styles.replayCtaText]}
+                />
+                {hasNextLevel ? (
+                  <ThemedButton
+                    title={`Play ${nextLevelLabel}`}
+                    onPress={handleNextDifficulty}
+                    style={[styles.primaryCta, styles.actionButton, styles.nextLevelCta]}
+                    textStyle={styles.primaryCtaText}
+                  />
+                ) : null}
+              </View>
               {onGoGames ? (
                 <TouchableOpacity style={styles.secondaryLink} onPress={onGoGames}>
                   <Text style={styles.secondaryLinkText}>Choose another game</Text>
@@ -271,6 +376,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  celebrationLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 30,
+  },
+  confettiBurst: {
+    position: 'absolute',
   },
   scrollContent: {
     flexGrow: 1,
@@ -298,6 +410,9 @@ const styles = StyleSheet.create({
   },
   star: {
     position: 'absolute',
+  },
+  starVisible: {
+    opacity: 0.9,
   },
   starIcon: {
     textShadowColor: 'rgba(15,32,67,0.55)',
@@ -408,16 +523,40 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
   },
   primaryCta: {
-    width: '100%',
-    borderRadius: themeVariables.borderRadiusPill,
+    borderRadius: 999,
     marginBottom: 12,
   },
-  homeCta: {
-    backgroundColor: themeVariables.secondaryColor,
+  nextLevelCta: {
+    backgroundColor: themeVariables.primaryColor,
   },
   primaryCtaText: {
     fontWeight: '700',
     fontSize: 17,
+  },
+  replayCta: {
+    backgroundColor: themeVariables.whiteColor,
+    borderWidth: 1,
+    borderColor: themeVariables.primaryColor,
+  },
+  replayCtaText: {
+    color: themeVariables.primaryColor,
+  },
+  actionsRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  actionsRowSingle: {
+    justifyContent: 'center',
+  },
+  actionButton: {
+    flex: 1,
+  },
+  actionButtonSingle: {
+    flex: 0,
+    width: '100%',
   },
   linkButton: {
     marginBottom: 12,

@@ -235,6 +235,19 @@ const ScreenRenderer = ({
           level={currentNav.level}
           perfect={currentNav.perfect}
           maxLevel={3}
+          onReplay={() => {
+            const replayPayload = {
+              quote: currentNav.quote,
+              rawQuote: currentNav.rawQuote,
+              sanitizedQuote: currentNav.sanitizedQuote,
+              setNumber: currentNav.setNumber,
+              lessonNumber: currentNav.lessonNumber,
+              fromGames: currentNav.fromGames,
+              fromStoryMode: currentNav.fromStoryMode,
+              lessonScreen: currentNav.lessonScreen,
+            };
+            goTo(currentNav.gameId, replayPayload);
+          }}
           onNextLevel={() => {
             const nextPayload = {
               quote: currentNav.quote,
