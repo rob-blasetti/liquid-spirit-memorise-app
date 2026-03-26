@@ -1,17 +1,11 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { isGameScreen } from '../../app/navigation/router';
 import GameRenderer from './GameRenderer';
 import { sanitizeQuoteText } from '../../services/quoteSanitizer';
 import { resolveProfileId } from '../../services/profileUtils';
 import { saveColoringProgress } from '../../services/coloringProgressService';
 
-const ensureLazy = (loader, fallbackModule) => {
-  if (typeof React.lazy === 'function') {
-    return React.lazy(loader);
-  }
-  return fallbackModule;
-};
+const ensureLazy = (_loader, fallbackModule) => fallbackModule;
 
 const LibraryScreen = ensureLazy(
   () => import('../../screens/profile/LibraryScreen'),
@@ -63,30 +57,9 @@ export const SplashScreen = ensureLazy(
   require('../../screens/auth/SplashScreen').default,
 );
 
-const fallbackStyles = StyleSheet.create({
-  fill: { flex: 1 },
-});
-
 const createGameInstanceKey = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-const lazySymbol = typeof Symbol === 'function' && Symbol.for ? Symbol.for('react.lazy') : null;
-
-export const renderLazy = (node) => {
-  if (
-    lazySymbol
-    && node
-    && node.type
-    && node.type.$$typeof === lazySymbol
-    && typeof React.Suspense === 'function'
-  ) {
-    return (
-      <React.Suspense fallback={<View style={fallbackStyles.fill} />}>
-        {node}
-      </React.Suspense>
-    );
-  }
-  return node;
-};
+export const renderLazy = (node) => node;
 
 const ScreenRenderer = ({
   navState,

@@ -1,7 +1,14 @@
-import { useRef, useState, useEffect } from 'react';
+import { startTransition, useRef, useState, useEffect } from 'react';
 import { Animated, Easing, useWindowDimensions } from 'react-native';
 
 const SCREEN_SLIDE_DURATION = 280;
+const runInTransition = (callback) => {
+  if (typeof startTransition === 'function') {
+    startTransition(callback);
+    return;
+  }
+  callback();
+};
 
 const isHomeScreen = (screenName) => screenName === 'home';
 
@@ -38,8 +45,10 @@ const useHomeScreenTransition = (nav) => {
     const sameScreen = lastSettledNav?.screen === nextNav.screen;
     if (sameScreen) {
       settledNavRef.current = nextNav;
-      setDisplayNav(nextNav);
-      setTransitionState(null);
+      runInTransition(() => {
+        setDisplayNav(nextNav);
+        setTransitionState(null);
+      });
       animationRef.current?.stop();
       animationRef.current = null;
       transitionProgress.setValue(0);
@@ -51,9 +60,11 @@ const useHomeScreenTransition = (nav) => {
       animationRef.current?.stop();
       animationRef.current = null;
       transitionProgress.setValue(0);
-      setTransitionState(null);
       settledNavRef.current = nextNav;
-      setDisplayNav(nextNav);
+      runInTransition(() => {
+        setTransitionState(null);
+        setDisplayNav(nextNav);
+      });
       return undefined;
     }
 
@@ -62,7 +73,9 @@ const useHomeScreenTransition = (nav) => {
     transitionProgress.setValue(0);
 
     const direction = getDirection(lastSettledNav, nextNav);
-    setTransitionState({ from: lastSettledNav, to: nextNav, direction });
+    runInTransition(() => {
+      setTransitionState({ from: lastSettledNav, to: nextNav, direction });
+    });
 
     const animation = Animated.timing(transitionProgress, {
       toValue: 1,
@@ -73,11 +86,13 @@ const useHomeScreenTransition = (nav) => {
 
     animationRef.current = animation;
     animation.start(({ finished }) => {
-      if (finished) {
-        settledNavRef.current = nextNav;
-        setDisplayNav(nextNav);
-      }
-      setTransitionState(null);
+      runInTransition(() => {
+        if (finished) {
+          settledNavRef.current = nextNav;
+          setDisplayNav(nextNav);
+        }
+        setTransitionState(null);
+      });
       animationRef.current = null;
     });
 
