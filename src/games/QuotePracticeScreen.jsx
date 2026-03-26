@@ -29,9 +29,25 @@ const getOptionCount = (level) => {
 };
 
 const getTargetWordCount = (level, totalWords) => {
-  if (level === 1) return Math.min(totalWords, 4);
-  if (level === 2) return Math.min(totalWords, 6);
+  if (level === 1) return Math.min(totalWords, Math.max(5, Math.ceil(totalWords * 0.45)));
+  if (level === 2) return Math.min(totalWords, Math.max(8, Math.ceil(totalWords * 0.7)));
   return totalWords;
+};
+
+const getRandomTargetEntries = (uniquePlayableWords = [], targetWordCount = 0) => {
+  const pool = Array.isArray(uniquePlayableWords) ? [...uniquePlayableWords] : [];
+  if (pool.length <= targetWordCount) {
+    return pool.map(({ entry }) => entry).filter(Boolean);
+  }
+
+  const shuffled = shuffleItems(pool);
+  const selected = shuffled
+    .slice(0, targetWordCount)
+    .map(({ entry }) => entry)
+    .filter(Boolean)
+    .sort((a, b) => (a?.index || 0) - (b?.index || 0));
+
+  return selected;
 };
 
 const getRoundEntries = (playableEntries = [], cursor = 0, wordsPerRound = 3) => {
@@ -97,8 +113,8 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
     [level, uniquePlayableWords.length],
   );
   const targetEntries = useMemo(
-    () => uniquePlayableWords.slice(0, targetWordCount).map(({ entry }) => entry),
-    [uniquePlayableWords, targetWordCount],
+    () => getRandomTargetEntries(uniquePlayableWords, targetWordCount),
+    [uniquePlayableWords, targetWordCount, quoteData?.raw, level],
   );
   const [cursor, setCursor] = useState(0);
   const [answers, setAnswers] = useState([]);
