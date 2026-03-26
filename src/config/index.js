@@ -36,6 +36,11 @@ if (!AUTH_API_URL) {
   console.warn('[config] Missing AUTH_API_URL. Auth requests may fail until .env is configured.');
 }
 
+if (__DEV__) {
+  console.log('[config] PROD_API =', API_URL || '<missing>');
+  console.log('[config] AUTH_API_URL =', AUTH_API_URL || '<missing>');
+}
+
 // ElevenLabs TTS configuration (optional)
 export const USE_ELEVENLABS = coerceBoolean(Config.USE_ELEVENLABS);
 export const ELEVENLABS_API_KEY = coerceString(Config.ELEVENLABS_API_KEY);
