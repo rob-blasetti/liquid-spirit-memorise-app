@@ -67,6 +67,8 @@ const fallbackStyles = StyleSheet.create({
   fill: { flex: 1 },
 });
 
+const createGameInstanceKey = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
 const lazySymbol = typeof Symbol === 'function' && Symbol.for ? Symbol.for('react.lazy') : null;
 
 export const renderLazy = (node) => {
@@ -144,6 +146,7 @@ const ScreenRenderer = ({
       quote: sanitizedText,
       rawQuote: rawText,
       sanitizedQuote: sanitizedText,
+      instanceKey: extra.instanceKey || createGameInstanceKey(),
       ...extra,
     };
   };
@@ -200,6 +203,7 @@ const ScreenRenderer = ({
     const { screen: _screen, ...navSnapshot } = currentNav;
     return (
       <GameRenderer
+        instanceKey={currentNav.instanceKey}
         screen={currentNav.screen}
         quote={currentNav.quote}
         rawQuote={currentNav.rawQuote}
@@ -242,6 +246,7 @@ const ScreenRenderer = ({
               rawQuote: currentNav.rawQuote,
               sanitizedQuote: currentNav.sanitizedQuote,
               requestedLevel: currentNav.level,
+              instanceKey: createGameInstanceKey(),
               setNumber: currentNav.setNumber,
               lessonNumber: currentNav.lessonNumber,
               fromGames: currentNav.fromGames,
@@ -257,6 +262,7 @@ const ScreenRenderer = ({
               rawQuote: currentNav.rawQuote,
               sanitizedQuote: currentNav.sanitizedQuote,
               requestedLevel,
+              instanceKey: createGameInstanceKey(),
               setNumber: currentNav.setNumber,
               lessonNumber: currentNav.lessonNumber,
               fromGames: currentNav.fromGames,

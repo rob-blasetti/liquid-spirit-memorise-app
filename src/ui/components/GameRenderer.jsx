@@ -34,6 +34,7 @@ const GAME_TITLES = {
 };
 
 const GameRenderer = ({
+  instanceKey,
   screen,
   quote,
   rawQuote: rawQuoteProp,
@@ -104,7 +105,9 @@ const GameRenderer = ({
 
   useEffect(() => {
     suppressWinsRef.current = false;
-  }, [currentLevel, screen]);
+    setGameLost(false);
+    setRetryTick(0);
+  }, [instanceKey, currentLevel, screen]);
 
   const difficultyLabel = useMemo(() => {
     const map = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
@@ -232,7 +235,7 @@ const GameRenderer = ({
         }}
       />
       <Suspense fallback={<ActivityIndicator style={styles.loadingIndicator} size="large" />}>
-        <GameComponent key={`${screen}-${currentLevel}-${retryTick}`} {...gameProps} />
+        <GameComponent key={`${instanceKey || 'default'}-${screen}-${currentLevel}-${retryTick}`} {...gameProps} />
       </Suspense>
       {showDifficultyFab && <DifficultyFAB gameId={screen} />}
     </View>
