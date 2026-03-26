@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useState } from 'react';
+import { startTransition, useReducer, useEffect, useState } from 'react';
 import {
   loadProfile,
   loadGuestProfile,
@@ -11,6 +11,14 @@ import { normalizeGradeValue } from '../services/profileUtils';
 const initialState = {
   profile: null,       // active profile
   guestProfile: null,
+};
+
+const runInTransition = (callback) => {
+  if (typeof startTransition === 'function') {
+    startTransition(callback);
+    return;
+  }
+  callback();
 };
 
 // We keep separate registeredProfile to preserve original non-guest user
@@ -40,10 +48,12 @@ export default function useProfile() {
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') {
-      setShowSplash(false);
+      runInTransition(() => setShowSplash(false));
       return;
     }
-    const timeout = setTimeout(() => setShowSplash(false), 2000);
+    const timeout = setTimeout(() => {
+      runInTransition(() => setShowSplash(false));
+    }, 2000);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -54,8 +64,10 @@ export default function useProfile() {
       const prof = await loadProfile();
       if (prof) {
         const normalizedProf = normalizeProfileGrade(prof);
-        setRegisteredProfile(normalizedProf);
-        dispatch({ type: 'setProfile', payload: normalizedProf });
+        runInTransition(() => {
+          setRegisteredProfile(normalizedProf);
+          dispatch({ type: 'setProfile', payload: normalizedProf });
+        });
       }
       // Try loading a guest profile
       const guest = await loadGuestProfile();
@@ -72,12 +84,14 @@ export default function useProfile() {
       }
       if (guest) {
         const normalizedGuest = normalizeProfileGrade(guest);
-        // store guestProfile in state
-        dispatch({ type: 'setGuestProfile', payload: normalizedGuest });
-        // if no registered profile, make guest the active profile
-        if (!prof) {
-          dispatch({ type: 'setProfile', payload: normalizedGuest });
-        }
+        runInTransition(() => {
+          // store guestProfile in state
+          dispatch({ type: 'setGuestProfile', payload: normalizedGuest });
+          // if no registered profile, make guest the active profile
+          if (!prof) {
+            dispatch({ type: 'setProfile', payload: normalizedGuest });
+          }
+        });
       }
     };
     fetchProfiles();
@@ -97,25 +111,27 @@ export default function useProfile() {
     prof.grade = normalizeGradeValue(prof.grade);
     // If this is a registered user, update registeredProfile storage
     if (!prof.guest) {
-      setRegisteredProfile((prev) => {
-        if (!prev) return prof;
-        const prevId = getProfileId(prev);
-        const nextId = getProfileId(prof);
-        if (prevId && nextId && prevId === nextId) {
-          return prof;
-        }
-        const prevIsParent = isParentProfile(prev);
-        const nextIsParent = isParentProfile(prof);
-        if (prevIsParent && !nextIsParent) {
-          return prev;
-        }
-        if (!prevIsParent && nextIsParent) {
-          return prof;
-        }
-        if (!prevIsParent && !prevId) {
-          return prof;
-        }
-        return nextIsParent ? prof : prev;
+      runInTransition(() => {
+        setRegisteredProfile((prev) => {
+          if (!prev) return prof;
+          const prevId = getProfileId(prev);
+          const nextId = getProfileId(prof);
+          if (prevId && nextId && prevId === nextId) {
+            return prof;
+          }
+          const prevIsParent = isParentProfile(prev);
+          const nextIsParent = isParentProfile(prof);
+          if (prevIsParent && !nextIsParent) {
+            return prev;
+          }
+          if (!prevIsParent && nextIsParent) {
+            return prof;
+          }
+          if (!prevIsParent && !prevId) {
+            return prof;
+          }
+          return nextIsParent ? prof : prev;
+        });
       });
     }
     const currentProfileId = getProfileId(state.profile);
@@ -125,7 +141,9 @@ export default function useProfile() {
       (currentProfileId && nextProfileId && currentProfileId === nextProfileId && JSON.stringify(state.profile) === JSON.stringify(prof));
 
     if (!sameActiveProfile) {
-      dispatch({ type: 'setProfile', payload: prof });
+      runInTransition(() => {
+        dispatch({ type: 'setProfile', payload: prof });
+      });
     }
     await persistProfile(prof);
     if (prof.guest) {
@@ -134,17 +152,21 @@ export default function useProfile() {
         state.guestProfile === prof ||
         (currentGuestId && nextProfileId && currentGuestId === nextProfileId && JSON.stringify(state.guestProfile) === JSON.stringify(prof));
       if (!sameGuestProfile) {
-        dispatch({ type: 'setGuestProfile', payload: prof });
+        runInTransition(() => {
+          dispatch({ type: 'setGuestProfile', payload: prof });
+        });
       }
     }
   };
 
   const wipeProfile = async ({ clearRegistered = false } = {}) => {
     await clearProfile();
-    if (clearRegistered) {
-      setRegisteredProfile(null);
-    }
-    dispatch({ type: 'setProfile', payload: null });
+    runInTransition(() => {
+      if (clearRegistered) {
+        setRegisteredProfile(null);
+      }
+      dispatch({ type: 'setProfile', payload: null });
+    });
   };
 
   return {
@@ -155,22 +177,24 @@ export default function useProfile() {
     registeredProfile,
     // guest profile
     guestProfile: state.guestProfile,
-    setProfile: (p) => dispatch({ type: 'setProfile', payload: normalizeProfileGrade(p) }),
-    setGuestProfile: (p) => dispatch({ type: 'setGuestProfile', payload: normalizeProfileGrade(p) }),
+    setProfile: (p) => runInTransition(() => dispatch({ type: 'setProfile', payload: normalizeProfileGrade(p) })),
+    setGuestProfile: (p) => runInTransition(() => dispatch({ type: 'setGuestProfile', payload: normalizeProfileGrade(p) })),
     saveProfile,
     wipeProfile,
     deleteGuestAccount: async () => {
       // Remove guest profile from storage and state
       await deleteGuestProfile();
-      dispatch({ type: 'setGuestProfile', payload: null });
-      // If the active profile was a guest, switch back to registered or clear
-      if (state.profile && state.profile.guest) {
-        if (registeredProfile) {
-          dispatch({ type: 'setProfile', payload: registeredProfile });
-        } else {
-          dispatch({ type: 'setProfile', payload: null });
+      runInTransition(() => {
+        dispatch({ type: 'setGuestProfile', payload: null });
+        // If the active profile was a guest, switch back to registered or clear
+        if (state.profile && state.profile.guest) {
+          if (registeredProfile) {
+            dispatch({ type: 'setProfile', payload: registeredProfile });
+          } else {
+            dispatch({ type: 'setProfile', payload: null });
+          }
         }
-      }
+      });
     },
   };
 }
