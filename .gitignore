@@ -27,6 +27,7 @@ DerivedData
 build/
 .idea
 .gradle
+android/.gradle-user-home/
 local.properties
 *.iml
 *.hprof
@@ -95,4 +96,3 @@ android/fastlane/playstore_credentials.json
 upload_certificate.pem
 
 ios/fastlane/AuthKey_*.p8
-
