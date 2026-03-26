@@ -1,6 +1,12 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+
+def reactNativeTtsProject = findProject(":react-native-tts")
+if (reactNativeTtsProject != null) {
+    reactNativeTtsProject.buildFileName = "../../../android/react-native-tts-build.gradle"
+}
+
 rootProject.name = 'liquid_spirit_memorise'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')

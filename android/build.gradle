@@ -19,3 +19,9 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+tasks.matching { it.name == "clean" }.configureEach {
+    doFirst {
+        delete("${rootDir}/app/.cxx")
+    }
+}
