@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, InteractionManager } from 'react-native';
+import { SafeAreaView, StyleSheet, InteractionManager, View } from 'react-native';
 import { gameIds } from '../../games';
 import { prefetchGames } from '../../games/lazyGameRoutes';
 import TopNav from '../../ui/components/TopNav';
@@ -39,6 +39,32 @@ const titles = {
   coloringBookGame: 'Colour In',
   colorQuoteGame: 'Colour the Quote',
 };
+const descriptions = {
+  practice: 'Rebuild the quote by choosing the missing words.',
+  tapGame: 'Tap the words in the correct order.',
+  scrambleGame: 'Unscramble the quote one word at a time.',
+  nextWordGame: 'Choose the next word before time runs out.',
+  memoryGame: 'Match pairs and remember where they are.',
+  flashGame: 'Flip through cards and test recall.',
+  revealGame: 'Reveal the hidden word with each guess.',
+  firstLetterGame: 'Recall the quote from first-letter hints.',
+  letterScrambleGame: 'Unscramble letters to build the right word.',
+  fastTypeGame: 'Type the quote quickly and accurately.',
+  hangmanGame: 'Guess the word before you run out of tries.',
+  fillBlankGame: 'Type the missing word into each blank.',
+  shapeBuilderGame: 'Place the pieces to complete the shape.',
+  colorSwitchGame: 'React fast and switch to the right colour.',
+  rhythmRepeatGame: 'Listen and repeat the pattern.',
+  silhouetteSearchGame: 'Find the matching silhouette before time is up.',
+  memoryMazeGame: 'Memorise the path and navigate the maze.',
+  sceneChangeGame: 'Spot what changed in the scene.',
+  wordSwapGame: 'Swap words back into the correct places.',
+  buildRecallGame: 'Rebuild the phrase from memory.',
+  bubblePopOrderGame: 'Pop the bubbles in the right quote order.',
+  wordRacerGame: 'Steer the car to collect words in order.',
+  coloringBookGame: 'Colour the image and save your artwork.',
+  colorQuoteGame: 'Match colours to words and paint the scene.',
+};
 const iconMap = {
   practice: 'book-outline',
   tapGame: 'hand-left-outline',
@@ -70,7 +96,6 @@ const imageMap = {
   wordRacerGame: placeholderImages.wordRacer,
   bubblePopOrderGame: placeholderImages.bubblePop,
 };
-
 const GamesListScreen = ({ onSelect, onBack }) => {
   const carouselData = useMemo(
     () =>
@@ -84,6 +109,7 @@ const GamesListScreen = ({ onSelect, onBack }) => {
         return {
           id,
           title: baseTitle,
+          description: descriptions[id] || 'Play and practise the lesson in a new way.',
           icon: iconMap[id] || 'game-controller-outline',
           cardImage: imageMap[id] || placeholderImages.solvePuzzle,
           gradient: ['#E21281', '#6E33A7'],
@@ -107,7 +133,9 @@ const GamesListScreen = ({ onSelect, onBack }) => {
   return (
     <SafeAreaView style={styles.container}>
       <TopNav title="Games" onBack={onBack} containerStyle={styles.header} />
-      <GameCarousel data={carouselData} onSelect={onSelect} />
+      <View style={styles.carouselWrap}>
+        <GameCarousel data={carouselData} onSelect={onSelect} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -122,5 +150,10 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     paddingHorizontal: HORIZONTAL_PADDING,
+  },
+  carouselWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 28,
   },
 });

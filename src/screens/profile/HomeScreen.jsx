@@ -505,7 +505,7 @@ const HomeScreen = ({
                     libraryButtonDisabled && styles.actionButtonTextDisabled,
                   ]}
                 >
-                  Go To Library
+                  Library
                 </Text>
               </TouchableOpacity>
             ) : null}

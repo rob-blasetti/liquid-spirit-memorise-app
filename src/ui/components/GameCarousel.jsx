@@ -5,8 +5,8 @@ import GameTile from './GameTile';
 
 const { width } = Dimensions.get('window');
 const CAROUSEL_SPACING = 18;
-const CARD_WIDTH = width * 0.64;
-const CARD_HEIGHT = CARD_WIDTH * 1.08;
+const CARD_WIDTH = width * 0.68;
+const CARD_HEIGHT = CARD_WIDTH * 1.12;
 const SIDE_SPACING = (width - CARD_WIDTH) / 2;
 const DEFAULT_AUTOSCROLL_INTERVAL = 6000;
 
@@ -194,6 +194,11 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
         gradient={item.gradient}
         onPress={() => onSelect?.(item.id)}
       />
+      {item.description ? (
+        <Text numberOfLines={2} style={styles.cardDescription}>
+          {item.description}
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -250,13 +255,22 @@ const GameCarousel = ({ data, onSelect, interval = DEFAULT_AUTOSCROLL_INTERVAL }
 
 const styles = StyleSheet.create({
   carouselContent: {
-    paddingVertical: 24,
+    paddingVertical: 28,
     paddingHorizontal: SIDE_SPACING,
   },
   cardWrapper: {
     width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    height: CARD_HEIGHT + 72,
     marginHorizontal: CAROUSEL_SPACING / 2,
+  },
+  cardDescription: {
+    marginTop: 16,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    lineHeight: 19,
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.9)',
+    minHeight: 38,
   },
   emptyState: {
     width,
@@ -278,7 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 10,
   },
   dot: {
     width: 10,

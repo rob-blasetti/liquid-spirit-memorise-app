@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
   },
   carouselImage: {
     width: '100%',
-    height: '122%',
-    marginTop: -20,
+    height: '142%',
+    marginTop: -76,
   },
   carouselFooterSection: {
     width: '100%',
