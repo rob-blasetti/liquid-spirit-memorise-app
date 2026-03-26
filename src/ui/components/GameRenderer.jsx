@@ -165,7 +165,8 @@ const GameRenderer = ({
     }
     suppressWinsRef.current = true;
     markLevelComplete?.(screen, currentLevel);
-    console.log('[GameRenderer:onWin]', { screen, level: currentLevel });
+    const nextUnlockedLevel = Math.min(currentLevel + 1, 3);
+    setContextLevel?.(nextUnlockedLevel);
     if (typeof recordGamePlay === 'function') {
       Promise.resolve(
         recordGamePlay({
@@ -224,7 +225,7 @@ const GameRenderer = ({
       <Suspense fallback={<ActivityIndicator style={styles.loadingIndicator} size="large" />}>
         <GameComponent key={`${screen}-${currentLevel}-${retryTick}`} {...gameProps} />
       </Suspense>
-      {showDifficultyFab && <DifficultyFAB />}
+      {showDifficultyFab && <DifficultyFAB gameId={screen} />}
     </View>
   );
 };

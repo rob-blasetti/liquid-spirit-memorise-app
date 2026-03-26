@@ -13,6 +13,7 @@ const BOTTOM_PLAY_PADDING = 160;
 const WORD_MARGIN = 32;
 const MIN_WORD_RADIUS = 24;
 const MAX_WORD_RADIUS = 44;
+const MIN_READABLE_WORD_RADIUS = 18;
 const WORD_OVERLAP_BUFFER = 8;
 const CAR_SPAWN_BUFFER = 96;
 const TOP_SAFE_ZONE = 120;
@@ -31,6 +32,11 @@ const clampWordCenterY = (value, radius) =>
   Math.max(PLAY_AREA_TOP + TOP_SAFE_ZONE + radius, Math.min(PLAY_AREA_BOTTOM_EDGE - radius, value));
 const computeWordRadius = (text) =>
   Math.min(MAX_WORD_RADIUS, Math.max(MIN_WORD_RADIUS, text.length * 2.5 + 14));
+const computeWordFontSize = (text, radius) => {
+  const baseFromRadius = radius >= 36 ? 17 : radius >= 28 ? 15 : 13;
+  const textPenalty = text.length >= 9 ? 1 : 0;
+  return Math.max(12, Math.min(18, baseFromRadius - textPenalty));
+};
 const computeCenterCarPosition = () => ({
   x: clampCarX(SCREEN_WIDTH / 2 - CAR_SIZE / 2),
   y: clampCarY((PLAY_AREA_TOP + CAR_BOTTOM_BOUND) / 2),
@@ -502,8 +508,8 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
       }
       if (!placement) {
         const fallbackRadii = [
-          Math.max(16, MIN_WORD_RADIUS - 4),
-          Math.max(14, MIN_WORD_RADIUS - 8),
+          Math.max(MIN_READABLE_WORD_RADIUS, MIN_WORD_RADIUS - 4),
+          Math.max(MIN_READABLE_WORD_RADIUS, MIN_WORD_RADIUS - 8),
         ];
         for (let i = 0; i < fallbackRadii.length && !placement; i += 1) {
           const radius = fallbackRadii[i];
@@ -511,17 +517,25 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         }
       }
       if (!placement) {
-        for (let radius = Math.max(12, MIN_WORD_RADIUS - 10); radius >= 12 && !placement; radius -= 2) {
+        for (
+          let radius = Math.max(MIN_READABLE_WORD_RADIUS, MIN_WORD_RADIUS - 10);
+          radius >= MIN_READABLE_WORD_RADIUS && !placement;
+          radius -= 2
+        ) {
           placement = tryDenseRadius(radius) || tryRadius(radius);
         }
       }
       if (!placement) {
-        for (let radius = Math.max(10, MIN_WORD_RADIUS - 12); radius >= 8 && !placement; radius -= 2) {
+        for (
+          let radius = Math.max(MIN_READABLE_WORD_RADIUS, MIN_WORD_RADIUS - 12);
+          radius >= MIN_READABLE_WORD_RADIUS && !placement;
+          radius -= 2
+        ) {
           placement = tryDenseRadius(radius) || tryRadius(radius);
         }
       }
       if (!placement) {
-        const minRadius = 8;
+        const minRadius = MIN_READABLE_WORD_RADIUS;
         const minX = WORD_MARGIN + minRadius;
         const maxX = SCREEN_WIDTH - WORD_MARGIN - minRadius;
         const minY = PLAY_AREA_TOP + TOP_SAFE_ZONE + minRadius;
@@ -548,12 +562,12 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         }
       }
       if (!placement) {
-        for (let radius = 6; radius >= 4 && !placement; radius -= 2) {
+        for (let radius = MIN_READABLE_WORD_RADIUS; radius >= MIN_READABLE_WORD_RADIUS && !placement; radius -= 2) {
           placement = tryDenseRadius(radius) || tryRadius(radius);
         }
       }
       if (!placement) {
-        const safeRadius = 8;
+        const safeRadius = MIN_READABLE_WORD_RADIUS;
         const orbitDistance = safeRadius + CAR_SPAWN_BUFFER;
         for (let angle = 0; angle < 360 && !placement; angle += 6) {
           const radians = (angle * Math.PI) / 180;
@@ -563,7 +577,7 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         }
       }
       if (!placement) {
-        const safeRadius = 8;
+        const safeRadius = MIN_READABLE_WORD_RADIUS;
         placement = tryCandidate(
           SCREEN_WIDTH / 2,
           (PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2,
@@ -571,10 +585,10 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
         );
       }
       if (!placement) {
-        const safeRadius = 8;
+        const safeRadius = MIN_READABLE_WORD_RADIUS;
         placement = tryCandidate(
-          clampWordCenterX(WORD_MARGIN + safeRadius, safeRadius),
-          clampWordCenterY(PLAY_AREA_TOP + TOP_SAFE_ZONE + safeRadius, safeRadius),
+          clampWordCenterX(WORD_MARGIN + safeRadius + 4, safeRadius),
+          clampWordCenterY(PLAY_AREA_TOP + TOP_SAFE_ZONE + safeRadius + 4, safeRadius),
           safeRadius,
         );
       }
@@ -583,9 +597,12 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
           text: displayWord,
           matchKey,
           id,
-          cx: clampWordCenterX(SCREEN_WIDTH / 2, 8),
-          cy: clampWordCenterY((PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2, 8),
-          radius: 8,
+          cx: clampWordCenterX(SCREEN_WIDTH / 2, MIN_READABLE_WORD_RADIUS),
+          cy: clampWordCenterY(
+            (PLAY_AREA_TOP + PLAY_AREA_BOTTOM_EDGE) / 2,
+            MIN_READABLE_WORD_RADIUS,
+          ),
+          radius: MIN_READABLE_WORD_RADIUS,
         }
       );
     };
@@ -960,10 +977,10 @@ const WordRacerGame = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, onLose,
             ]}
           >
             <Text
-              style={styles.wordText}
+              style={[styles.wordText, { fontSize: computeWordFontSize(w.text, w.radius) }]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.5}
+              minimumFontScale={0.85}
             >
               {w.text}
             </Text>

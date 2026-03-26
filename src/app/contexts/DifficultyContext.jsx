@@ -66,21 +66,21 @@ export const DifficultyProvider = ({ children }) => {
     setLevelState(resolved);
     const gameId = activeGameRef.current;
     if (!gameId) return;
-    setProgressMap((prev) => {
-      const updated = setSelectedLevel(prev, gameId, resolved);
-      if (updated === prev) {
-        const entry = resolveProgressEntry(prev, gameId, { fallbackToGlobal: false });
-        const clampedSelection = Math.min(resolved, entry.highestUnlocked || resolved);
-        if (clampedSelection !== resolved) {
-          setLevelState(clampedSelection);
-        }
-        return prev;
+    const currentProgress = progressRef.current;
+    const updated = setSelectedLevel(currentProgress, gameId, resolved);
+    if (updated === currentProgress) {
+      const entry = resolveProgressEntry(currentProgress, gameId, { fallbackToGlobal: false });
+      const clampedSelection = Math.min(resolved, entry.highestUnlocked || resolved);
+      if (clampedSelection !== resolved) {
+        setLevelState(clampedSelection);
       }
-      const entry = resolveProgressEntry(updated, gameId, { fallbackToGlobal: false });
-      setLevelState(entry.currentLevel || entry.highestUnlocked || resolved);
-      persist(updated);
-      return updated;
-    });
+      return;
+    }
+    progressRef.current = updated;
+    setProgressMap(updated);
+    const entry = resolveProgressEntry(updated, gameId, { fallbackToGlobal: false });
+    setLevelState(entry.currentLevel || entry.highestUnlocked || resolved);
+    persist(updated);
   }, [persist]);
 
   const setActiveGame = useCallback((gameId) => {
@@ -94,16 +94,16 @@ export const DifficultyProvider = ({ children }) => {
     if (completedLevel == null) return;
     const targetGame = gameId ? String(gameId) : activeGameRef.current;
     if (!targetGame) return;
-    setProgressMap((prev) => {
-      const updated = markLevelCompleted(prev, targetGame, completedLevel);
-      if (updated === prev) return prev;
-      persist(updated);
-      const entry = resolveProgressEntry(updated, targetGame, { fallbackToGlobal: false });
-      if (targetGame === activeGameRef.current) {
-        setLevelState(entry.currentLevel || entry.highestUnlocked || clampLevel(completedLevel));
-      }
-      return updated;
-    });
+    const currentProgress = progressRef.current;
+    const updated = markLevelCompleted(currentProgress, targetGame, completedLevel);
+    if (updated === currentProgress) return;
+    progressRef.current = updated;
+    setProgressMap(updated);
+    persist(updated);
+    const entry = resolveProgressEntry(updated, targetGame, { fallbackToGlobal: false });
+    if (targetGame === activeGameRef.current) {
+      setLevelState(entry.currentLevel || entry.highestUnlocked || clampLevel(completedLevel));
+    }
   }, [persist]);
 
   const resetProgress = useCallback(() => {
@@ -122,12 +122,12 @@ export const DifficultyProvider = ({ children }) => {
   const ensureEntryForGame = useCallback((gameId) => {
     const key = gameId ? String(gameId) : null;
     if (!key) return;
-    setProgressMap((prev) => {
-      if (prev[key]) return prev;
-      const next = { ...prev, [key]: createDefaultEntry() };
-      persist(next);
-      return next;
-    });
+    const currentProgress = progressRef.current;
+    if (currentProgress[key]) return;
+    const next = { ...currentProgress, [key]: createDefaultEntry() };
+    progressRef.current = next;
+    setProgressMap(next);
+    persist(next);
   }, [persist]);
 
   useEffect(() => {

@@ -17,7 +17,7 @@ import { BlurView } from '@react-native-community/blur';
 export const FAB_BOTTOM_MARGIN = 12;
 
 const LEVEL_ORDER = [1, 2, 3];
-const LEVEL_OFFSETS = [-44, -88, -132];
+const LEVEL_OFFSETS = [-68, -122, -176];
 
 const LevelButton = ({
   value,
@@ -30,7 +30,7 @@ const LevelButton = ({
   setOpen,
 }) => {
   const disabled = value > highestUnlocked;
-  const baseLift = 12;
+  const baseLift = 22;
   const targetY = (LEVEL_OFFSETS[index] || (-(index + 1) * 44)) - baseLift;
   const translateY = openAnim.interpolate({ inputRange: [0, 1], outputRange: [0, targetY] });
   const scale = openAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
@@ -50,6 +50,7 @@ const LevelButton = ({
       <TouchableOpacity
         style={[
           styles.levelButton,
+          !disabled && styles.levelButtonAvailable,
           level === value && styles.selected,
           disabled && styles.disabled,
         ]}
@@ -60,13 +61,15 @@ const LevelButton = ({
         }}
         disabled={disabled}
       >
-        <Text style={styles.levelText}>{value}</Text>
+        <Text style={[styles.levelText, level === value && styles.selectedLevelText]}>
+          {value}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
-const DifficultyFAB = () => {
+const DifficultyFAB = ({ gameId }) => {
   const { level, setLevel, activeGame, getProgressForGame } = useDifficulty();
   const safeInsets = useContext(SafeAreaInsetsContext);
   const topInset = Math.max(safeInsets?.top || 0, 0);
@@ -89,18 +92,26 @@ const DifficultyFAB = () => {
     [topInset, bottomInset, leftInset, rightInset],
   );
 
+  const resolvedGameId = gameId ? String(gameId) : activeGame;
+
   const progressForActiveGame = useMemo(() => {
     if (typeof getProgressForGame === 'function') {
-      return getProgressForGame(activeGame) || { completed: {}, highestUnlocked: 1 };
+      return getProgressForGame(resolvedGameId) || { completed: {}, highestUnlocked: 1 };
     }
     return { completed: {}, highestUnlocked: 1 };
-  }, [getProgressForGame, activeGame]);
+  }, [getProgressForGame, resolvedGameId]);
 
   const highestDefinedLevel = LEVEL_ORDER[LEVEL_ORDER.length - 1];
 
   const highestUnlocked = useMemo(() => {
     if (Number.isFinite(progressForActiveGame?.highestUnlocked)) {
-      return Math.max(1, Math.min(progressForActiveGame.highestUnlocked, highestDefinedLevel));
+      return Math.max(
+        1,
+        Math.min(
+          Math.max(progressForActiveGame.highestUnlocked, level || 1),
+          highestDefinedLevel,
+        ),
+      );
     }
 
     const completedForActiveGame = progressForActiveGame?.completed || {};
@@ -114,7 +125,7 @@ const DifficultyFAB = () => {
       }
     }
     return highest;
-  }, [progressForActiveGame, highestDefinedLevel]);
+  }, [progressForActiveGame, highestDefinedLevel, level]);
 
   useEffect(() => {
     if (level > highestUnlocked) {
@@ -235,16 +246,31 @@ const styles = StyleSheet.create({
     borderColor: theme.primaryColor,
     alignItems: 'center',
   },
+  levelButtonAvailable: {
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderColor: 'rgba(49,39,131,0.78)',
+  },
   levelText: {
     fontSize: 16,
     color: theme.primaryColor,
     fontWeight: 'bold',
   },
+  selectedLevelText: {
+    color: theme.whiteColor,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   selected: {
     backgroundColor: theme.primaryColor,
+    borderColor: 'rgba(255,255,255,0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
   },
   disabled: {
-    opacity: 0.4,
+    opacity: 0.58,
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,

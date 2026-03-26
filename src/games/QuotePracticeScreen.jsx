@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import GameTopBar from '../ui/components/GameTopBar';
+import { FAB_BOTTOM_MARGIN } from '../ui/components/DifficultyFAB';
 import themeVariables from '../ui/stylesheets/theme';
 import {
   getEntryDisplayWord,
@@ -17,10 +18,19 @@ import {
 import useQuoteGameData from './hooks/useQuoteGameData';
 import { shuffleItems } from './gameUtils';
 
-const WORDS_PER_ROUND = 3;
-const OPTION_COUNT = 6;
+const getWordsPerRound = (level) => {
+  if (level === 1) return 2;
+  if (level === 2) return 3;
+  return 4;
+};
 
-const getRoundEntries = (playableEntries = [], cursor = 0) => {
+const getOptionCount = (level) => {
+  if (level === 1) return 4;
+  if (level === 2) return 6;
+  return 8;
+};
+
+const getRoundEntries = (playableEntries = [], cursor = 0, wordsPerRound = 3) => {
   const selected = [];
   const seen = new Set();
   for (let index = cursor; index < playableEntries.length; index += 1) {
@@ -29,17 +39,17 @@ const getRoundEntries = (playableEntries = [], cursor = 0) => {
     if (seen.has(key)) continue;
     seen.add(key);
     selected.push(entry);
-    if (selected.length >= WORDS_PER_ROUND) {
+    if (selected.length >= wordsPerRound) {
       break;
     }
   }
   return selected;
 };
 
-const getNextCursor = (playableEntries = [], cursor = 0) => {
+const getNextCursor = (playableEntries = [], cursor = 0, wordsPerRound = 3) => {
   const seen = new Set();
   let nextCursor = cursor;
-  while (nextCursor < playableEntries.length && seen.size < WORDS_PER_ROUND) {
+  while (nextCursor < playableEntries.length && seen.size < wordsPerRound) {
     const entry = playableEntries[nextCursor];
     const key = entry?.canonical || entry?.clean || `entry-${nextCursor}`;
     seen.add(key);
@@ -72,11 +82,14 @@ const buildMaskedToken = (entry, answer) => {
   return `${leading}${'_'.repeat(blankLength)}${trailing}`;
 };
 
-const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
+const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, level = 1 }) => {
+  const insets = useSafeAreaInsets();
   const { quoteData } = useQuoteGameData({ quote, rawQuote, sanitizedQuote });
   const entries = useMemo(() => quoteData?.entries || [], [quoteData]);
   const playableEntries = useMemo(() => quoteData?.playableEntries || [], [quoteData]);
   const uniquePlayableWords = useMemo(() => quoteData?.uniquePlayableWords || [], [quoteData]);
+  const wordsPerRound = useMemo(() => getWordsPerRound(level), [level]);
+  const optionCount = useMemo(() => getOptionCount(level), [level]);
   const [cursor, setCursor] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [options, setOptions] = useState([]);
@@ -84,8 +97,8 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   const [isComplete, setIsComplete] = useState(false);
 
   const currentRoundEntries = useMemo(
-    () => getRoundEntries(playableEntries, cursor),
-    [playableEntries, cursor],
+    () => getRoundEntries(playableEntries, cursor, wordsPerRound),
+    [playableEntries, cursor, wordsPerRound],
   );
 
   const remainingUniqueWords = useMemo(() => {
@@ -104,7 +117,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     setOptions([]);
     setFeedback('');
     setIsComplete(false);
-  }, [quoteData?.raw]);
+  }, [quoteData?.raw, level, optionCount, playableEntries.length, wordsPerRound]);
 
   useEffect(() => {
     if (!currentRoundEntries.length) {
@@ -121,17 +134,23 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     const exclude = new Set(
       currentRoundEntries.map((entry) => entry?.canonical || entry?.clean).filter(Boolean),
     );
-    const distractorCount = Math.max(0, OPTION_COUNT - currentRoundEntries.length);
+    const distractorCount = Math.max(0, optionCount - currentRoundEntries.length);
     const distractors = pickUniqueWords(uniquePlayableWords, distractorCount, exclude)
       .map(({ entry }) => getEntryDisplayWord(entry));
     const correctOptions = currentRoundEntries.map((entry) => getEntryDisplayWord(entry));
     setOptions(shuffleItems([...correctOptions, ...distractors]));
-  }, [currentRoundEntries, playableEntries.length, uniquePlayableWords]);
+  }, [currentRoundEntries, optionCount, playableEntries.length, uniquePlayableWords]);
 
   const hiddenEntryIndexes = useMemo(
     () => new Set(currentRoundEntries.map((entry) => entry.index)),
     [currentRoundEntries],
   );
+  const fabBottomOffset = useMemo(
+    () => insets.bottom + (insets.bottom > 0 ? 2 : FAB_BOTTOM_MARGIN) + 30,
+    [insets.bottom],
+  );
+  const contentBottomPadding = useMemo(() => fabBottomOffset + 76, [fabBottomOffset]);
+  const interactiveRightPadding = 96;
 
   const handleWordPress = (selectedWord) => {
     if (isComplete || !currentRoundEntries.length) {
@@ -164,10 +183,15 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     setFeedback('');
 
     if (nextAnswers.every(Boolean)) {
-      const nextCursor = getNextCursor(playableEntries, cursor);
+      const nextCursor = getNextCursor(playableEntries, cursor, wordsPerRound);
       if (nextCursor >= playableEntries.length) {
         setIsComplete(true);
         setFeedback('You rebuilt the whole quote.');
+        onWin?.({
+          practice: true,
+          wordsLearned: playableEntries.length,
+          perfect: true,
+        });
         return;
       }
       setCursor(nextCursor);
@@ -178,7 +202,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
     const exclude = new Set(
       currentRoundEntries.map((entry) => entry?.canonical || entry?.clean).filter(Boolean),
     );
-    const distractorCount = Math.max(0, OPTION_COUNT - currentRoundEntries.length);
+    const distractorCount = Math.max(0, optionCount - currentRoundEntries.length);
     const distractors = pickUniqueWords(uniquePlayableWords, distractorCount, exclude)
       .map(({ entry }) => getEntryDisplayWord(entry));
     const correctOptions = currentRoundEntries.map((entry) => getEntryDisplayWord(entry));
@@ -215,13 +239,10 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
   );
 
   return (
-    <LinearGradient
-      colors={['#120C2C', '#1A1F3F']}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <GameTopBar title="Practice" onBack={onBack} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroCard}>
@@ -233,7 +254,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
             <View style={styles.statusRow}>
               <Ionicons name="layers-outline" size={16} color={themeVariables.whiteColor} />
               <Text style={styles.statusText}>
-                {remainingUniqueWords} word{remainingUniqueWords === 1 ? '' : 's'} left
+                {remainingUniqueWords} word{remainingUniqueWords === 1 ? '' : 's'} left · {level === 1 ? 'Easy' : level === 2 ? 'Medium' : 'Hard'}
               </Text>
             </View>
           ) : null}
@@ -244,7 +265,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
         </View>
 
         {!isComplete ? (
-          <>
+          <View style={[styles.wordBankSection, { paddingRight: interactiveRightPadding }]}>
             <View style={styles.wordBankHeader}>
               <Text style={styles.wordBankTitle}>Word Bank</Text>
               <TouchableOpacity
@@ -270,9 +291,11 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
                 </TouchableOpacity>
               ))}
             </View>
-          </>
+          </View>
         ) : (
-          <View style={styles.completionCard}>
+          <View
+            style={[styles.completionCard, { marginRight: interactiveRightPadding }]}
+          >
             <Ionicons name="checkmark-circle-outline" size={28} color={themeVariables.secondaryColor} />
             <Text style={styles.completionTitle}>All done</Text>
             <Text style={styles.completionText}>You rebuilt the full phrase.</Text>
@@ -294,7 +317,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack }) => {
           </Text>
         ) : null}
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 };
 
@@ -353,7 +376,7 @@ const styles = StyleSheet.create({
     color: themeVariables.whiteColor,
   },
   quoteTokenMissing: {
-    color: '#FFE082',
+    color: themeVariables.whiteColor,
     fontWeight: '700',
   },
   quoteTokenFilled: {
@@ -364,6 +387,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  wordBankSection: {
+    width: '100%',
   },
   wordBankTitle: {
     color: themeVariables.whiteColor,
