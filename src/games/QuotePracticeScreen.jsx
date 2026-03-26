@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,10 +6,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import GameTopBar from '../ui/components/GameTopBar';
-import { FAB_BOTTOM_MARGIN } from '../ui/components/DifficultyFAB';
 import themeVariables from '../ui/stylesheets/theme';
 import {
   getEntryDisplayWord,
@@ -28,6 +26,12 @@ const getOptionCount = (level) => {
   if (level === 1) return 4;
   if (level === 2) return 6;
   return 8;
+};
+
+const getTargetWordCount = (level, totalWords) => {
+  if (level === 1) return Math.min(totalWords, 4);
+  if (level === 2) return Math.min(totalWords, 6);
+  return totalWords;
 };
 
 const getRoundEntries = (playableEntries = [], cursor = 0, wordsPerRound = 3) => {
@@ -83,33 +87,30 @@ const buildMaskedToken = (entry, answer) => {
 };
 
 const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, level = 1 }) => {
-  const insets = useSafeAreaInsets();
   const { quoteData } = useQuoteGameData({ quote, rawQuote, sanitizedQuote });
   const entries = useMemo(() => quoteData?.entries || [], [quoteData]);
-  const playableEntries = useMemo(() => quoteData?.playableEntries || [], [quoteData]);
   const uniquePlayableWords = useMemo(() => quoteData?.uniquePlayableWords || [], [quoteData]);
   const wordsPerRound = useMemo(() => getWordsPerRound(level), [level]);
   const optionCount = useMemo(() => getOptionCount(level), [level]);
+  const targetWordCount = useMemo(
+    () => getTargetWordCount(level, uniquePlayableWords.length),
+    [level, uniquePlayableWords.length],
+  );
+  const targetEntries = useMemo(
+    () => uniquePlayableWords.slice(0, targetWordCount).map(({ entry }) => entry),
+    [uniquePlayableWords, targetWordCount],
+  );
   const [cursor, setCursor] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [options, setOptions] = useState([]);
   const [feedback, setFeedback] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const completionHandledRef = useRef(false);
 
   const currentRoundEntries = useMemo(
-    () => getRoundEntries(playableEntries, cursor, wordsPerRound),
-    [playableEntries, cursor, wordsPerRound],
+    () => getRoundEntries(targetEntries, cursor, wordsPerRound),
+    [targetEntries, cursor, wordsPerRound],
   );
-
-  const remainingUniqueWords = useMemo(() => {
-    const seen = new Set();
-    playableEntries.forEach((entry, index) => {
-      if (index < cursor) return;
-      const key = entry?.canonical || entry?.clean || `entry-${index}`;
-      seen.add(key);
-    });
-    return seen.size;
-  }, [playableEntries, cursor]);
 
   useEffect(() => {
     setCursor(0);
@@ -117,16 +118,38 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
     setOptions([]);
     setFeedback('');
     setIsComplete(false);
-  }, [quoteData?.raw, level, optionCount, playableEntries.length, wordsPerRound]);
+    completionHandledRef.current = false;
+    console.log('[QuotePracticeScreen:reset]', {
+      level,
+      targetWordCount,
+      targetEntriesLength: targetEntries.length,
+      wordsPerRound,
+      optionCount,
+    });
+  }, [quoteData?.raw, level, optionCount, targetEntries.length, targetWordCount, wordsPerRound]);
 
   useEffect(() => {
     if (!currentRoundEntries.length) {
+      console.log('[QuotePracticeScreen:round]', {
+        level,
+        cursor,
+        currentRoundSize: 0,
+        targetEntriesLength: targetEntries.length,
+        markComplete: targetEntries.length > 0,
+      });
       setAnswers([]);
       setOptions([]);
-      setIsComplete(playableEntries.length > 0);
+      setIsComplete(targetEntries.length > 0);
       return;
     }
 
+    console.log('[QuotePracticeScreen:round]', {
+      level,
+      cursor,
+      currentRoundSize: currentRoundEntries.length,
+      targetEntriesLength: targetEntries.length,
+      roundWords: currentRoundEntries.map((entry) => getEntryDisplayWord(entry)),
+    });
     setIsComplete(false);
     setAnswers(Array(currentRoundEntries.length).fill(''));
     setFeedback('');
@@ -139,17 +162,12 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
       .map(({ entry }) => getEntryDisplayWord(entry));
     const correctOptions = currentRoundEntries.map((entry) => getEntryDisplayWord(entry));
     setOptions(shuffleItems([...correctOptions, ...distractors]));
-  }, [currentRoundEntries, optionCount, playableEntries.length, uniquePlayableWords]);
+  }, [currentRoundEntries, cursor, level, optionCount, targetEntries.length, uniquePlayableWords]);
 
   const hiddenEntryIndexes = useMemo(
     () => new Set(currentRoundEntries.map((entry) => entry.index)),
     [currentRoundEntries],
   );
-  const fabBottomOffset = useMemo(
-    () => insets.bottom + (insets.bottom > 0 ? 2 : FAB_BOTTOM_MARGIN) + 30,
-    [insets.bottom],
-  );
-  const contentBottomPadding = useMemo(() => fabBottomOffset + 76, [fabBottomOffset]);
   const interactiveRightPadding = 96;
 
   const handleWordPress = (selectedWord) => {
@@ -159,18 +177,47 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
 
     const nextBlankIndex = answers.findIndex((value) => !value);
     if (nextBlankIndex < 0) {
+      console.log('[QuotePracticeScreen:tap:ignored]', {
+        level,
+        cursor,
+        selectedWord,
+        reason: 'no-blank-slot',
+      });
       return;
     }
 
     const targetEntry = currentRoundEntries[nextBlankIndex];
     const expectedWord = getEntryDisplayWord(targetEntry);
+    console.log('[QuotePracticeScreen:tap]', {
+      level,
+      cursor,
+      selectedWord,
+      expectedWord,
+      nextBlankIndex,
+      answers,
+      currentRoundSize: currentRoundEntries.length,
+    });
     if ((selectedWord || '').toLowerCase() !== expectedWord.toLowerCase()) {
+      console.log('[QuotePracticeScreen:tap:wrong]', {
+        level,
+        cursor,
+        selectedWord,
+        expectedWord,
+        nextBlankIndex,
+      });
       setFeedback('Try again');
       return;
     }
 
     const nextAnswers = [...answers];
     nextAnswers[nextBlankIndex] = expectedWord;
+    console.log('[QuotePracticeScreen:tap:correct]', {
+      level,
+      cursor,
+      selectedWord,
+      nextAnswers,
+      targetEntriesLength: targetEntries.length,
+    });
     setAnswers(nextAnswers);
     setOptions((prev) => {
       const next = [...prev];
@@ -183,15 +230,29 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
     setFeedback('');
 
     if (nextAnswers.every(Boolean)) {
-      const nextCursor = getNextCursor(playableEntries, cursor, wordsPerRound);
-      if (nextCursor >= playableEntries.length) {
+      const nextCursor = getNextCursor(targetEntries, cursor, wordsPerRound);
+      console.log('[QuotePracticeScreen:advance]', {
+        level,
+        cursor,
+        nextCursor,
+        targetEntriesLength: targetEntries.length,
+        wordsPerRound,
+      });
+      if (nextCursor >= targetEntries.length) {
         setIsComplete(true);
         setFeedback('You rebuilt the whole quote.');
-        onWin?.({
-          practice: true,
-          wordsLearned: playableEntries.length,
-          perfect: true,
-        });
+        if (typeof onWin === 'function' && !completionHandledRef.current) {
+          completionHandledRef.current = true;
+          console.log('[QuotePracticeScreen:onWin]', {
+            level,
+            targetEntriesLength: targetEntries.length,
+          });
+          onWin({
+            practice: true,
+            wordsLearned: targetEntries.length,
+            perfect: true,
+          });
+        }
         return;
       }
       setCursor(nextCursor);
@@ -242,7 +303,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
     <View style={styles.container}>
       <GameTopBar title="Practice" onBack={onBack} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroCard}>
@@ -250,14 +311,6 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
           <Text style={styles.description}>
             Tap the missing words from the choices below to rebuild the full quote.
           </Text>
-          {!isComplete ? (
-            <View style={styles.statusRow}>
-              <Ionicons name="layers-outline" size={16} color={themeVariables.whiteColor} />
-              <Text style={styles.statusText}>
-                {remainingUniqueWords} word{remainingUniqueWords === 1 ? '' : 's'} left · {level === 1 ? 'Easy' : level === 2 ? 'Medium' : 'Hard'}
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={styles.quoteCard}>
@@ -265,7 +318,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
         </View>
 
         {!isComplete ? (
-          <View style={[styles.wordBankSection, { paddingRight: interactiveRightPadding }]}>
+          <View style={styles.wordBankSection}>
             <View style={styles.wordBankHeader}>
               <Text style={styles.wordBankTitle}>Word Bank</Text>
               <TouchableOpacity
@@ -279,7 +332,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
                 <Text style={styles.resetButtonText}>Reset</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.optionsWrap}>
+            <View style={[styles.optionsWrap, { paddingRight: interactiveRightPadding }]}>
               {options.map((option, index) => (
                 <TouchableOpacity
                   key={`${option}-${index}`}
@@ -292,7 +345,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
               ))}
             </View>
           </View>
-        ) : (
+        ) : typeof onWin !== 'function' ? (
           <View
             style={[styles.completionCard, { marginRight: interactiveRightPadding }]}
           >
@@ -309,7 +362,7 @@ const QuotePracticeScreen = ({ quote, rawQuote, sanitizedQuote, onBack, onWin, l
               <Text style={styles.doneButtonText}>Back to Lesson</Text>
             </TouchableOpacity>
           </View>
-        )}
+        ) : null}
 
         {feedback ? (
           <Text style={[styles.feedbackText, isComplete && styles.feedbackTextSuccess]}>
@@ -347,17 +400,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.82)',
     fontSize: 15,
     lineHeight: 22,
-  },
-  statusRow: {
-    marginTop: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statusText: {
-    color: themeVariables.whiteColor,
-    fontSize: 14,
-    fontWeight: '600',
   },
   quoteCard: {
     marginTop: 16,
@@ -420,9 +462,9 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     backgroundColor: themeVariables.whiteColor,
-    borderRadius: themeVariables.borderRadiusPill,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 999,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
     borderWidth: 1,
     borderColor: themeVariables.primaryColor,
   },

@@ -38,6 +38,7 @@ const GameRenderer = ({
   quote,
   rawQuote: rawQuoteProp,
   sanitizedQuote: sanitizedQuoteProp,
+  requestedLevel,
   onBack,
   initialImageId,
   awardGameAchievement,
@@ -81,13 +82,25 @@ const GameRenderer = ({
   }, [getProgressForGame, screen]);
 
   const highestUnlocked = progressEntry?.highestUnlocked || 1;
+  const preferredLevel = useMemo(() => {
+    const numericRequested = Number(requestedLevel);
+    if (Number.isFinite(numericRequested) && numericRequested > 0) {
+      return Math.min(Math.max(Math.floor(numericRequested), 1), highestUnlocked || 1);
+    }
+    const persistedLevel = progressEntry?.currentLevel || highestUnlocked || 1;
+    return Math.min(Math.max(persistedLevel, 1), highestUnlocked || 1);
+  }, [requestedLevel, progressEntry, highestUnlocked]);
 
   const currentLevel = useMemo(() => {
     if (activeGame === screen) {
-      return Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
+      const resolvedContextLevel = Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
+      if (resolvedContextLevel === preferredLevel) {
+        return resolvedContextLevel;
+      }
+      return preferredLevel;
     }
-    return progressEntry?.currentLevel || highestUnlocked || 1;
-  }, [activeGame, screen, contextLevel, highestUnlocked, progressEntry]);
+    return preferredLevel;
+  }, [activeGame, screen, contextLevel, highestUnlocked, preferredLevel]);
 
   useEffect(() => {
     suppressWinsRef.current = false;
@@ -102,13 +115,11 @@ const GameRenderer = ({
     if (!screen) return;
     if (activeGame !== screen) {
       setActiveGame(screen);
-      return;
     }
-    const clamped = Math.min(Math.max(contextLevel || 1, 1), highestUnlocked || 1);
-    if (contextLevel !== clamped) {
-      setContextLevel(clamped);
+    if (contextLevel !== preferredLevel) {
+      setContextLevel(preferredLevel);
     }
-  }, [screen, activeGame, highestUnlocked, contextLevel, setActiveGame, setContextLevel]);
+  }, [screen, activeGame, contextLevel, preferredLevel, setActiveGame, setContextLevel]);
 
   const screenTitle = useMemo(() => {
     if (GAME_TITLES[screen]) return GAME_TITLES[screen];
@@ -165,8 +176,6 @@ const GameRenderer = ({
     }
     suppressWinsRef.current = true;
     markLevelComplete?.(screen, currentLevel);
-    const nextUnlockedLevel = Math.min(currentLevel + 1, 3);
-    setContextLevel?.(nextUnlockedLevel);
     if (typeof recordGamePlay === 'function') {
       Promise.resolve(
         recordGamePlay({

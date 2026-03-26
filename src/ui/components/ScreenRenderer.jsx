@@ -204,6 +204,7 @@ const ScreenRenderer = ({
         quote={currentNav.quote}
         rawQuote={currentNav.rawQuote}
         sanitizedQuote={currentNav.sanitizedQuote}
+        requestedLevel={currentNav.requestedLevel}
         onBack={backHandler}
         initialImageId={currentNav.imageId}
         awardGameAchievement={awardGameAchievement}
@@ -240,6 +241,7 @@ const ScreenRenderer = ({
               quote: currentNav.quote,
               rawQuote: currentNav.rawQuote,
               sanitizedQuote: currentNav.sanitizedQuote,
+              requestedLevel: currentNav.level,
               setNumber: currentNav.setNumber,
               lessonNumber: currentNav.lessonNumber,
               fromGames: currentNav.fromGames,
@@ -249,10 +251,12 @@ const ScreenRenderer = ({
             goTo(currentNav.gameId, replayPayload);
           }}
           onNextLevel={() => {
+            const requestedLevel = Math.min((Number(currentNav.level) || 1) + 1, 3);
             const nextPayload = {
               quote: currentNav.quote,
               rawQuote: currentNav.rawQuote,
               sanitizedQuote: currentNav.sanitizedQuote,
+              requestedLevel,
               setNumber: currentNav.setNumber,
               lessonNumber: currentNav.lessonNumber,
               fromGames: currentNav.fromGames,

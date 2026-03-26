@@ -191,7 +191,8 @@ export const markLevelCompleted = (progressMap, gameId, level) => {
     const completed = { ...entry.completed, [numericLevel]: true };
     const unlockedCandidate = clampLevel(numericLevel + 1);
     const highestUnlocked = Math.max(entry.highestUnlocked || 1, unlockedCandidate, numericLevel);
-    const currentLevel = Math.max(entry.currentLevel || 1, highestUnlocked);
+    const previouslySelectedLevel = entry.currentLevel || numericLevel;
+    const currentLevel = Math.min(previouslySelectedLevel, highestUnlocked);
     return {
       completed,
       highestUnlocked,
