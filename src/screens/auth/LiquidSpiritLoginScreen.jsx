@@ -15,6 +15,7 @@ export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -28,6 +29,10 @@ export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
   }, []);
 
   const clearFieldError = useCallback(field => {
+    if (field === 'form') {
+      setFormError('');
+      return;
+    }
     setErrors(prev => {
       if (!prev[field]) {
         return prev;
@@ -60,16 +65,15 @@ export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
     Keyboard.dismiss();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
-      setErrors({
-        ...validationErrors,
-        form: 'Please fix the errors above before continuing.',
-      });
+      setErrors(validationErrors);
+      setFormError('Please fix the errors above before continuing.');
       return;
     }
 
     try {
       setLoading(true);
       setErrors({});
+      setFormError('');
       const trimmedEmail = sanitizeString(email);
       const data = await signInWithLiquidSpirit(trimmedEmail, password);
       await saveCredentials(trimmedEmail, password);
@@ -86,17 +90,19 @@ export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
         authError && typeof authError.message === 'string' && authError.message.trim().length > 0
           ? authError.message.trim()
           : fallbackMessage;
-      const credentialsMessage =
-        authError?.status === 400 || authError?.status === 401
-          ? 'Incorrect email or password.'
-          : message;
-      setErrors(prev => ({
-        ...prev,
-        ...(authError?.status === 400 || authError?.status === 401
-          ? { password: credentialsMessage }
-          : {}),
-        form: credentialsMessage,
-      }));
+      const isCredentialIssue = authError?.status === 400 || authError?.status === 401;
+      const resolvedFormError = isCredentialIssue ? 'Incorrect email or password.' : message;
+
+      setErrors(prev => {
+        const next = { ...prev };
+        if (isCredentialIssue) {
+          next.password = resolvedFormError;
+        } else {
+          delete next.password;
+        }
+        return next;
+      });
+      setFormError(resolvedFormError);
     } finally {
       setLoading(false);
     }
@@ -157,7 +163,7 @@ export default function LiquidSpiritLoginScreen({ navigation, onSignIn }) {
               >
                 Forgot your password?
               </Text>
-              {errors.form ? <Text style={styles.generalError}>{errors.form}</Text> : null}
+              {formError ? <Text style={styles.generalError}>{formError}</Text> : null}
               <Button
                 label={loading ? 'Logging in...' : 'Log In'}
                 onPress={handleLogin}
